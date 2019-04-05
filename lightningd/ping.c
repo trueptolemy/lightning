@@ -75,6 +75,9 @@ void ping_reply(struct subd *subd, const u8 *msg)
 
 		json_object_start(response, NULL);
 		json_add_num(response, "totlen", totlen);
+		json_add_string(response, "note",
+						"next ping must after 30s,"
+						" or peer may fail the channel");
 		json_object_end(response);
 		was_pending(command_success(pc->cmd, response));
 	}

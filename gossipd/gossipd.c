@@ -923,12 +923,20 @@ static void ping_flooding_prevent_timeout(struct peer *peer)
 	peer->ping_timer = NULL;
 }
 
+static void ping_limit_timeout(struct peer *peer)
+{
+	tal_free(peer->pong_timer);
+	peer->pong_timer = NULL;
+}
+
 /*~ For simplicity, all pings and pongs are forwarded to us here in gossipd. */
 static u8 *handle_ping(struct peer *peer, const u8 *ping)
 {
 	u8 *pong;
 
 	if(peer->ping_timer) {
+		status_unusual("peer %s ping too much, and we should fail this channel",
+			       type_to_string(tmpctx, struct pubkey, &peer->id));
 		destroy_peer(peer);
 		return;
 	}
@@ -961,6 +969,15 @@ static u8 *handle_ping(struct peer *peer, const u8 *ping)
  * to the `ping` JSON RPC command). */
 static const u8 *handle_pong(struct peer *peer, const u8 *pong)
 {
+	ping_limit_timeout(peer);
+
+	peer->pong_timer
+		= new_reltimer(&peer->daemon->timers,
+						peer,
+						time_from_sec(30),
+			       		ping_limit_timeout,
+						peer);
+
 	const char *err = got_pong(pong, &peer->num_pings_outstanding);
 
 	if (err)
@@ -1671,6 +1688,7 @@ static struct io_plan *connectd_new_peer(struct io_conn *conn,
 	peer->num_pings_outstanding = 0;
 	peer->gossip_timer = NULL;
 	peer->ping_timer = NULL;
+	peer->pong_timer = NULL;
 
 	/* We keep a list so we can find peer by id */
 	list_add_tail(&peer->daemon->peers, &peer->list);
@@ -2153,7 +2171,14 @@ static struct io_plan *ping_req(struct io_conn *conn, struct daemon *daemon,
 	if (tal_count(ping) > 65535)
 		status_failed(STATUS_FAIL_MASTER_IO, "Oversize ping");
 
-	queue_peer_msg(peer, take(ping));
+	if(peer->pong_timer)
+		status_unusual("ping to peer(%s) too frequently, may fail this channel",
+			       type_to_string(tmpctx, struct pubkey, &peer->id));
+
+	while(!peer->pong_timer) {
+		queue_peer_msg(peer, take(ping));
+	}
+
 	status_trace("sending ping expecting %sresponse",
 		     num_pong_bytes >= 65532 ? "no " : "");
 
