@@ -167,6 +167,9 @@ struct peer {
 
 	/* Gossiped only accept one "ping" per 30 seconds */
 	struct oneshot *ping_timer;
+
+	/* Gossiped only send a new "ping" 30 seconds after receiving last "pong" */
+	struct oneshot *pong_timer;
 };
 
 /*~ A channel consists of a `struct half_chan` for each direction, each of
