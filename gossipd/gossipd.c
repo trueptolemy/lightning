@@ -164,6 +164,9 @@ struct peer {
 
 	/* The daemon_conn used to queue messages to/from the peer. */
 	struct daemon_conn *dc;
+
+	/* Gossiped only accept one "ping" per 30 seconds */
+	struct oneshot *ping_timer;
 };
 
 /*~ A channel consists of a `struct half_chan` for each direction, each of
@@ -911,10 +914,35 @@ static const u8 *handle_reply_channel_range(struct peer *peer, const u8 *msg)
 	return NULL;
 }
 
+static void ping_flooding_prevent_timeout(struct peer *peer)
+{
+	tal_free(peer->ping_timer);
+	peer->ping_timer = NULL;
+}
+
 /*~ For simplicity, all pings and pongs are forwarded to us here in gossipd. */
 static u8 *handle_ping(struct peer *peer, const u8 *ping)
 {
 	u8 *pong;
+
+	if(peer->ping_timer) {
+		destroy_peer(peer);
+		return;
+	}
+
+	/* BOLT #1:
+	 *
+	 * A node receiving a `ping` message:
+	 *  - SHOULD fail the channels if it has received significantly in
+	 *    excess of one `ping` per 30 seconds.
+	 */
+
+	peer->ping_timer
+		= new_reltimer(&peer->daemon->timers,
+						peer,
+						time_from_sec(30),
+			       		ping_flooding_prevent_timeout,
+						peer);
 
 	/* This checks the ping packet and makes a pong reply if needed; peer
 	 * can specify it doesn't want a response, to simulate traffic. */
@@ -1639,6 +1667,7 @@ static struct io_plan *connectd_new_peer(struct io_conn *conn,
 	peer->query_channel_blocks = NULL;
 	peer->num_pings_outstanding = 0;
 	peer->gossip_timer = NULL;
+	peer->timer = NULL;
 
 	/* We keep a list so we can find peer by id */
 	list_add_tail(&peer->daemon->peers, &peer->list);
