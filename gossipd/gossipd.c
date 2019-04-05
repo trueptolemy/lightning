@@ -1670,7 +1670,7 @@ static struct io_plan *connectd_new_peer(struct io_conn *conn,
 	peer->query_channel_blocks = NULL;
 	peer->num_pings_outstanding = 0;
 	peer->gossip_timer = NULL;
-	peer->timer = NULL;
+	peer->ping_timer = NULL;
 
 	/* We keep a list so we can find peer by id */
 	list_add_tail(&peer->daemon->peers, &peer->list);
