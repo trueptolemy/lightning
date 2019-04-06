@@ -170,6 +170,8 @@ struct peer {
 
 	/* Gossiped only send a new "ping" 30 seconds after receiving last "pong" */
 	struct oneshot *pong_timer;
+
+	u32 ping_count;
 };
 
 /*~ A channel consists of a `struct half_chan` for each direction, each of
@@ -921,6 +923,7 @@ static void ping_flooding_prevent_timeout(struct peer *peer)
 {
 	tal_free(peer->ping_timer);
 	peer->ping_timer = NULL;
+	peer->ping_count = 0;
 }
 
 static void ping_limit_timeout(struct peer *peer)
@@ -930,15 +933,24 @@ static void ping_limit_timeout(struct peer *peer)
 }
 
 /*~ For simplicity, all pings and pongs are forwarded to us here in gossipd. */
-static u8 *handle_ping(struct peer *peer, const u8 *ping)
+static u8 *handle_ping(struct peer *peer, const u8 *ping, bool *ping_flooding)
 {
 	u8 *pong;
 
 	if(peer->ping_timer) {
+		/* Three and Out! */
+		if(peer->ping_count == 1) {
+			status_broken("ping flooding from peer %s",
+					type_to_string(tmpctx, struct pubkey, &peer->id));
+			&ping_flooding = true;
+			return NULL;
+		}
+
 		status_unusual("peer %s ping too much, and we should fail this channel",
 			       type_to_string(tmpctx, struct pubkey, &peer->id));
-		destroy_peer(peer);
-		return NULL;
+		peer->ping_count++;
+		return towire_errorfmt(peer, NULL, "ping flooding: received more than"
+								" one 'ping' in 30s, and channel will fail");
 	}
 
 	/* BOLT #1:
@@ -1547,6 +1559,7 @@ static struct io_plan *peer_msg_in(struct io_conn *conn,
 {
 	const u8 *err;
 	bool ok;
+	bool ping_flooding = false;
 
 	/* These are messages relayed from peer */
 	switch ((enum wire_type)fromwire_peektype(msg)) {
@@ -1575,7 +1588,9 @@ static struct io_plan *peer_msg_in(struct io_conn *conn,
 		err = handle_gossip_timestamp_filter(peer, msg);
 		goto handled_relay;
 	case WIRE_PING:
-		err = handle_ping(peer, msg);
+		err = handle_ping(peer, msg, &ping_flooding);
+		if(ping_flooding)
+			goto handle_ping_flooding;
 		goto handled_relay;
 	case WIRE_PONG:
 		err = handle_pong(peer, msg);
@@ -1646,6 +1661,9 @@ handled_relay:
 		queue_peer_msg(peer, take(err));
 done:
 	return daemon_conn_read_next(conn, peer->dc);
+handle_ping_flooding:
+	tal_free(peer);
+	return &io_conn_freed;
 }
 
 /*~ This is where connectd tells us about a new peer, and we hand back an fd for
@@ -1688,6 +1706,7 @@ static struct io_plan *connectd_new_peer(struct io_conn *conn,
 	peer->num_pings_outstanding = 0;
 	peer->gossip_timer = NULL;
 	peer->ping_timer = NULL;
+	peer->ping_count = 0;
 	peer->pong_timer = NULL;
 
 	/* We keep a list so we can find peer by id */
