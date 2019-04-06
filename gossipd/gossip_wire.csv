@@ -59,6 +59,7 @@ gossip_ping_reply,3108
 gossip_ping_reply,,id,struct pubkey
 # False if id in gossip_ping was unknown.
 gossip_ping_reply,,sent,bool
+gossip_ping_reply,,time_limit,bool
 # 0 == no pong expected
 gossip_ping_reply,,totlen,u16
 

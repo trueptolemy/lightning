@@ -984,7 +984,7 @@ static const u8 *handle_pong(struct peer *peer, const u8 *pong)
 		return towire_errorfmt(peer, NULL, "%s", err);
 
 	daemon_conn_send(peer->daemon->master,
-			 take(towire_gossip_ping_reply(NULL, &peer->id, true,
+			 take(towire_gossip_ping_reply(NULL, &peer->id, true, false,
 						       tal_count(pong))));
 	return NULL;
 }
@@ -2158,11 +2158,13 @@ static struct io_plan *ping_req(struct io_conn *conn, struct daemon *daemon,
 	/* Even if lightningd were to check for valid ids, there's a race
 	 * where it might vanish before we read this command; cleaner to
 	 * handle it here with 'sent' = false. */
+	/* Before checking the pong_timer, we always set 'time_limit' = true.
+	 * It means we can't send ping before pong_timer expirs.*/
 	peer = find_peer(daemon, &id);
 	if (!peer) {
 		daemon_conn_send(daemon->master,
 				 take(towire_gossip_ping_reply(NULL, &id,
-							       false, 0)));
+							       false, true, 0)));
 		goto out;
 	}
 
@@ -2171,13 +2173,16 @@ static struct io_plan *ping_req(struct io_conn *conn, struct daemon *daemon,
 	if (tal_count(ping) > 65535)
 		status_failed(STATUS_FAIL_MASTER_IO, "Oversize ping");
 
-	if(peer->pong_timer)
+	if(peer->pong_timer) {
 		status_unusual("ping to peer(%s) too frequently, may fail this channel",
 			       type_to_string(tmpctx, struct pubkey, &peer->id));
-
-	while(!peer->pong_timer) {
-		queue_peer_msg(peer, take(ping));
+		daemon_conn_send(daemon->master,
+				 take(towire_gossip_ping_reply(NULL, &id,
+							       true, true, 0)));
+		goto out;
 	}
+
+	queue_peer_msg(peer, take(ping));
 
 	status_trace("sending ping expecting %sresponse",
 		     num_pong_bytes >= 65532 ? "no " : "");
@@ -2195,7 +2200,7 @@ static struct io_plan *ping_req(struct io_conn *conn, struct daemon *daemon,
 	if (num_pong_bytes >= 65532)
 		daemon_conn_send(daemon->master,
 				 take(towire_gossip_ping_reply(NULL, &id,
-							       true, 0)));
+							       true, false, 0)));
 	else
 		/* We'll respond to lightningd once the pong comes in */
 		peer->num_pings_outstanding++;

@@ -55,7 +55,7 @@ static struct ping_command *new_ping_command(const tal_t *ctx,
 void ping_reply(struct subd *subd, const u8 *msg)
 {
 	u16 totlen;
-	bool ok, sent = true;
+	bool ok, sent = true, time_limit = false;
 	struct pubkey id;
 	struct ping_command *pc;
 
@@ -70,14 +70,13 @@ void ping_reply(struct subd *subd, const u8 *msg)
 					 "Bad reply message"));
 	else if (!sent)
 		was_pending(command_fail(pc->cmd, LIGHTNINGD, "Unknown peer"));
+	else if (time_limit)
+		was_pending(command_fail(pc->cmd, LIGHTNINGD, "Only one 'ping' per 30s"));
 	else {
 		struct json_stream *response = json_stream_success(pc->cmd);
 
 		json_object_start(response, NULL);
 		json_add_num(response, "totlen", totlen);
-		json_add_string(response, "note",
-						"next ping must after 30s,"
-						" or peer may fail the channel");
 		json_object_end(response);
 		was_pending(command_success(pc->cmd, response));
 	}
