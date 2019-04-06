@@ -938,7 +938,7 @@ static u8 *handle_ping(struct peer *peer, const u8 *ping)
 		status_unusual("peer %s ping too much, and we should fail this channel",
 			       type_to_string(tmpctx, struct pubkey, &peer->id));
 		destroy_peer(peer);
-		return;
+		return NULL;
 	}
 
 	/* BOLT #1:
