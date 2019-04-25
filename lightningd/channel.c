@@ -173,7 +173,9 @@ struct channel *new_channel(struct peer *peer, u64 dbid,
 			    const struct pubkey *local_funding_pubkey,
 			    const struct pubkey *future_per_commitment_point,
 			    u32 feerate_base,
-			    u32 feerate_ppm)
+			    u32 feerate_ppm,
+				secp256k1_ecdsa_signature *remote_ann_node_sig,
+				secp256k1_ecdsa_signature *remote_ann_bitcoin_sig)
 {
 	struct channel *channel = tal(peer->ld, struct channel);
 
@@ -240,6 +242,15 @@ struct channel *new_channel(struct peer *peer, u64 dbid,
 		= tal_steal(channel, future_per_commitment_point);
 	channel->feerate_base = feerate_base;
 	channel->feerate_ppm = feerate_ppm;
+
+	if((channel->channel_flags & CHANNEL_FLAGS_ANNOUNCE_CHANNEL)
+					&& remote_ann_node_sig && remote_ann_bitcoin_sig) {
+		channel->remote_ann_node_sig = tal_steal(channel, remote_ann_node_sig);
+		channel->remote_ann_bitcoin_sig = tal_steal(channel, remote_ann_bitcoin_sig);
+	} else {
+		channel->remote_ann_node_sig = NULL;
+		channel->remote_ann_bitcoin_sig = NULL;
+	}
 
 	list_add_tail(&peer->channels, &channel->list);
 	tal_add_destructor(channel, destroy_channel);
