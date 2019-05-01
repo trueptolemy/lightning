@@ -616,6 +616,8 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 	struct basepoints local_basepoints;
 	struct pubkey local_funding_pubkey;
 	struct pubkey *future_per_commitment_point;
+	secp256k1_ecdsa_signature ann_sig;
+	secp256k1_ecdsa_signature *remote_ann_node_sig, *remote_ann_bitcoin_sig;
 
 	peer_dbid = sqlite3_column_int64(stmt, 1);
 	peer = find_peer_by_dbid(w->ld, peer_dbid);
@@ -698,6 +700,27 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 		return NULL;
 	}
 
+	if (sqlite3_column_type(stmt, 44) != SQLITE_NULL) {
+		if (!sqlite3_column_signature(stmt, 44, &ann_sig)) {
+			db_stmt_done(stmt);
+			return NULL;
+		}
+		remote_ann_node_sig = tal_dup(tmpctx, secp256k1_ecdsa_signature, &ann_sig);
+	} else {
+		remote_ann_node_sig = NULL;
+	}
+
+	if (sqlite3_column_type(stmt, 45) != SQLITE_NULL) {
+		if (!sqlite3_column_signature(stmt, 45, &ann_sig)) {
+			db_stmt_done(stmt);
+			return NULL;
+		}
+		remote_ann_bitcoin_sig = tal(tmpctx, secp256k1_ecdsa_signature, &ann_sig);
+	} else {
+		remote_ann_bitcoin_sig = NULL;
+	}
+
+
 	get_channel_basepoints(w->ld, &peer->id, sqlite3_column_int64(stmt, 0),
 			       &local_basepoints, &local_funding_pubkey);
 	chan = new_channel(peer, sqlite3_column_int64(stmt, 0),
@@ -738,7 +761,9 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 			   &local_basepoints, &local_funding_pubkey,
 			   future_per_commitment_point,
 			   sqlite3_column_int(stmt, 42),
-			   sqlite3_column_int(stmt, 43));
+			   sqlite3_column_int(stmt, 43),
+			   remote_ann_node_sig,
+			   remote_ann_bitcoin_sig);
 
 	return chan;
 }
@@ -764,7 +789,8 @@ static const char *channel_fields =
     /*36*/ "min_possible_feerate, max_possible_feerate, "
     /*38*/ "msatoshi_to_us_min, msatoshi_to_us_max, future_per_commitment_point, "
     /*41*/ "last_sent_commit, "
-    /*42*/ "feerate_base, feerate_ppm";
+    /*42*/ "feerate_base, feerate_ppm, "
+	/*44*/ "remote_ann_node_sig, remote_ann_bitcoin_sig";
 
 bool wallet_channels_load_active(const tal_t *ctx, struct wallet *w)
 {
@@ -950,6 +976,29 @@ u64 wallet_get_channel_dbid(struct wallet *wallet)
 	return ++wallet->max_channel_dbid;
 }
 
+/* When we receive the remote announcement message, we will also call this function */
+void wallet_announcement_save(struct wallet *w, struct channel *chan)
+{
+	sqlite3_stmt *stmt;
+
+	stmt = db_prepare(w->db, "UPDATE channels SET"
+					    	 "  remote_ann_node_sig=?,"
+			  		  		 "  remote_ann_bitcoin_sig=?"
+			 		         " WHERE id=?");
+
+	if ((chan->channel_flags & CHANNEL_FLAGS_ANNOUNCE_CHANNEL) &&
+					chan->remote_ann_node_sig &&
+					chan->remote_ann_bitcoin_sig) {
+		sqlite3_bind_signature(stmt, 1, chan->remote_ann_node_sig);
+		sqlite3_bind_signature(stmt, 2, chan->remote_ann_bitcoin_sig);
+	} else {
+		sqlite3_bind_null(stmt, 1);
+		sqlite3_bind_null(stmt, 2);
+	}
+	sqlite3_bind_int64(stmt, 3, chan->dbid);
+	db_exec_prepared(w->db, stmt);
+}
+
 void wallet_channel_save(struct wallet *w, struct channel *chan)
 {
 	sqlite3_stmt *stmt;
@@ -1078,6 +1127,8 @@ void wallet_channel_save(struct wallet *w, struct channel *chan)
 		sqlite3_bind_null(stmt, 1);
 	sqlite3_bind_int64(stmt, 2, chan->dbid);
 	db_exec_prepared(w->db, stmt);
+
+	wallet_announcement_save(w, chan);
 }
 
 void wallet_channel_insert(struct wallet *w, struct channel *chan)
