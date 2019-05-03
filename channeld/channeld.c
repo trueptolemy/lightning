@@ -2862,12 +2862,13 @@ static void init_channel(struct peer *peer)
 	struct failed_htlc **failed;
 	enum side *failed_sides;
 	struct added_htlc *htlcs;
-	bool reconnected;
 	u8 *funding_signed;
 	const u8 *msg;
 	u32 feerate_per_kw[NUM_SIDES];
 	u32 minimum_depth;
 	struct secret last_remote_per_commit_secret;
+	secp256k1_ecdsa_signature *remote_ann_node_sig;
+	secp256k1_ecdsa_signature *remote_ann_bitcoin_sig;
 
 	assert(!(fcntl(MASTER_FD, F_GETFL) & O_NONBLOCK));
 
@@ -2913,7 +2914,9 @@ static void init_channel(struct peer *peer)
 				   &peer->funding_locked[LOCAL],
 				   &peer->funding_locked[REMOTE],
 				   &peer->short_channel_ids[LOCAL],
-				   &reconnected,
+				   &remote_ann_node_sig,
+				   &remote_ann_bitcoin_sig,
+				   &peer->reconnected,
 				   &peer->send_shutdown,
 				   &peer->shutdown_sent[REMOTE],
 				   &peer->final_scriptpubkey,
@@ -2939,6 +2942,20 @@ static void init_channel(struct peer *peer)
 		     peer->revocations_received,
 		     feerate_per_kw[LOCAL], feerate_per_kw[REMOTE],
 		     peer->feerate_min, peer->feerate_max);
+
+	if(remote_ann_node_sig && remote_ann_bitcoin_sig) {
+		peer->announcement_node_sigs[REMOTE] = *remote_ann_node_sig;
+		peer->announcement_bitcoin_sigs[REMOTE] = *remote_ann_bitcoin_sig;
+		peer->have_sigs[REMOTE] = true;
+
+		tal_steal(tmpctx, remote_ann_node_sig);
+		tal_steal(tmpctx, remote_ann_bitcoin_sig);
+		/* Before we store announcement into DB, we have made sure
+		 * remote short_channel_id matched the local. Now we initial
+		 * it directly!
+		 */
+		peer->short_channel_ids[REMOTE] = peer->short_channel_ids[LOCAL];
+	}
 
 	/* First commit is used for opening: if we've sent 0, we're on
 	 * index 1. */
@@ -2996,7 +3013,7 @@ static void init_channel(struct peer *peer)
 	peer->depth_togo = minimum_depth;
 
 	/* OK, now we can process peer messages. */
-	if (reconnected)
+	if (peer->reconnected)
 		peer_reconnect(peer, &last_remote_per_commit_secret);
 
 	/* If we have a funding_signed message, send that immediately */
@@ -3007,6 +3024,8 @@ static void init_channel(struct peer *peer)
 	channel_announcement_negotiate(peer);
 
 	billboard_update(peer);
+
+	peer->reconnected = false;
 }
 
 static void send_shutdown_complete(struct peer *peer)
@@ -3042,6 +3061,7 @@ int main(int argc, char *argv[])
 	peer->last_update_timestamp = 0;
 	/* We actually received it in the previous daemon, but near enough */
 	peer->last_recv = time_now();
+	peer->reconnected = false;
 
 	/* We send these to HSM to get real signatures; don't have valgrind
 	 * complain. */
