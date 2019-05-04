@@ -700,7 +700,7 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 	}
 
 	if (sqlite3_column_type(stmt, 44) != SQLITE_NULL) {
-		remote_ann_node_sig = tal(ctx, secp256k1_ecdsa_signature);
+		remote_ann_node_sig = tal(tmpctx, secp256k1_ecdsa_signature);
 		if (!sqlite3_column_signature(stmt, 44, remote_ann_node_sig)) {
 			db_stmt_done(stmt);
 			return NULL;
@@ -710,7 +710,7 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 	}
 
 	if (sqlite3_column_type(stmt, 45) != SQLITE_NULL) {
-		remote_ann_bitcoin_sig = tal(ctx, secp256k1_ecdsa_signature);
+		remote_ann_bitcoin_sig = tal(tmpctx, secp256k1_ecdsa_signature);
 		if (!sqlite3_column_signature(stmt, 45, remote_ann_bitcoin_sig)) {
 			db_stmt_done(stmt);
 			return NULL;
