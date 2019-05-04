@@ -899,9 +899,6 @@ def test_channel_reenable_with_announcement(node_factory):
 
     cid = l1.rpc.listpeers()['peers'][0]['channels'][0]['channel_id']
 
-    assert l1.info['id'] == '0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518'
-    assert l2.info['id'] == '022d223620a359a47ff7f7ac447c85c46c923da53389221a0054c11c1e3ca31d59'
-
     l1.daemon.wait_for_log('store the announcement into DB')
     l2.daemon.wait_for_log('store the announcement into DB')
 

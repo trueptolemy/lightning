@@ -510,10 +510,11 @@ static void channel_announcement_negotiate(struct peer *peer)
 			 * We will never waste time on waiting for remote peer announcement
 			 * reply when restart.
 			 */
-			wire_sync_write(MASTER_FD,
-					take(towire_channel_got_announcement(NULL,
+			master_wait_sync_reply(tmpctx, peer,
+								take(towire_channel_got_announcement(NULL,
 								&peer->announcement_node_sigs[REMOTE],
-								&peer->announcement_bitcoin_sigs[REMOTE])));
+								&peer->announcement_bitcoin_sigs[REMOTE])),
+								WIRE_CHANNEL_GOT_ANNOUNCEMENT_REPLY);
 			peer->remote_ann_stored = true;
 		}
 		announce_channel(peer);

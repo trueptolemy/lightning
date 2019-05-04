@@ -136,6 +136,8 @@ static void peer_got_announcement(struct channel *channel, const u8 *msg)
 	/* save remote peer announcement signatures into DB! */
 	log_debug(channel->log, "store the announcement into DB");
 	wallet_announcement_save(channel->peer->ld->wallet, channel);
+	subd_send_msg(channel->owner,
+		      take(towire_channel_got_announcement_reply(msg)));
 }
 
 static void peer_got_shutdown(struct channel *channel, const u8 *msg)
