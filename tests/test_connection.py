@@ -892,7 +892,7 @@ def test_channel_reenable(node_factory):
     wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [True, True])
     wait_for(lambda: [c['active'] for c in l2.rpc.listchannels()['channels']] == [True, True])
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1 for --dev-broadcast-interval")
 def test_channel_reenable_with_announcement(node_factory):
     l1, l2 = node_factory.line_graph(2, opts={'may_reconnect': True}, fundchannel=True, wait_for_announce=True)
@@ -912,7 +912,7 @@ def test_channel_reenable_with_announcement(node_factory):
 
     assert not l1.daemon.is_in_log('store the announcement into DB')
     assert not l2.daemon.is_in_log('store the announcement into DB')
-
+'''
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1 for --dev-broadcast-interval")
 def test_channel_reenable_with_announcement2(node_factory):
