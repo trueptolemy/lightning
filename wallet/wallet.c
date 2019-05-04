@@ -616,7 +616,6 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 	struct basepoints local_basepoints;
 	struct pubkey local_funding_pubkey;
 	struct pubkey *future_per_commitment_point;
-	secp256k1_ecdsa_signature ann_sig;
 	secp256k1_ecdsa_signature *remote_ann_node_sig, *remote_ann_bitcoin_sig;
 
 	peer_dbid = sqlite3_column_int64(stmt, 1);
@@ -701,21 +700,21 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 	}
 
 	if (sqlite3_column_type(stmt, 44) != SQLITE_NULL) {
-		if (!sqlite3_column_signature(stmt, 44, &ann_sig)) {
+		remote_ann_node_sig = tal(tmpctx, secp256k1_ecdsa_signature);
+		if (!sqlite3_column_signature(stmt, 44, remote_ann_node_sig)) {
 			db_stmt_done(stmt);
 			return NULL;
 		}
-		remote_ann_node_sig = tal_dup(tmpctx, secp256k1_ecdsa_signature, &ann_sig);
 	} else {
 		remote_ann_node_sig = NULL;
 	}
 
 	if (sqlite3_column_type(stmt, 45) != SQLITE_NULL) {
-		if (!sqlite3_column_signature(stmt, 45, &ann_sig)) {
+		remote_ann_bitcoin_sig = tal(tmpctx, secp256k1_ecdsa_signature);
+		if (!sqlite3_column_signature(stmt, 45, remote_ann_bitcoin_sig)) {
 			db_stmt_done(stmt);
 			return NULL;
 		}
-		remote_ann_bitcoin_sig = tal_dup(tmpctx, secp256k1_ecdsa_signature, &ann_sig);
 	} else {
 		remote_ann_bitcoin_sig = NULL;
 	}
