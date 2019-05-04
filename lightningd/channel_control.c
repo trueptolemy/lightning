@@ -128,6 +128,9 @@ static void peer_got_announcement(struct channel *channel, const u8 *msg)
 		return;
 	}
 
+	tal_free(channel->remote_ann_node_sig);
+	tal_free(channel->remote_ann_bitcoin_sig);
+
 	channel->remote_ann_node_sig
 		= tal_dup(channel, secp256k1_ecdsa_signature, &remote_ann_node_sig);
 	channel->remote_ann_bitcoin_sig
@@ -273,6 +276,7 @@ static unsigned channel_msg(struct subd *sd, const u8 *msg, const int *fds)
 	case WIRE_CHANNEL_OFFER_HTLC_REPLY:
 	case WIRE_CHANNEL_DEV_REENABLE_COMMIT_REPLY:
 	case WIRE_CHANNEL_DEV_MEMLEAK_REPLY:
+	case WIRE_CHANNEL_GOT_ANNOUNCEMENT_REPLY:
 		break;
 	}
 
