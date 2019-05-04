@@ -893,6 +893,25 @@ def test_channel_reenable(node_factory):
     wait_for(lambda: [c['active'] for c in l2.rpc.listchannels()['channels']] == [True, True])
 
 
+@unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1 for --dev-broadcast-interval")
+def test_channel_reenable_with_announcement(node_factory):
+    l1, l2 = node_factory.line_graph(2, opts={'may_reconnect': True}, fundchannel=True, wait_for_announce=True)
+
+    l1.daemon.wait_for_log('Received node_announcement for node {}'.format(l2.info['id']))
+    l2.daemon.wait_for_log('Received node_announcement for node {}'.format(l1.info['id']))
+
+    # Both directions should be active before the restart
+    wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [True, True])
+
+    # Restart l2, will cause l1 to reconnect
+    l2.stop()
+    wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [False, False])
+    l2.start()
+
+    assert not l1.daemon.is_in_log('Received node_announcement for node {}'.format(l2.info['id']))
+    assert not l2.daemon.is_in_log('Received node_announcement for node {}'.format(l1.info['id']))
+
+
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_update_fee(node_factory, bitcoind):
     l1, l2 = node_factory.line_graph(2, fundchannel=True)
