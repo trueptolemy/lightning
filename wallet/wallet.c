@@ -716,7 +716,6 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 		}
 	} else
 		remote_ann_bitcoin_sig = NULL;
-	
 
 	get_channel_basepoints(w->ld, &peer->id, sqlite3_column_int64(stmt, 0),
 			       &local_basepoints, &local_funding_pubkey);
