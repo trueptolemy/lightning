@@ -231,6 +231,60 @@ static const u8 *hsm_req(const tal_t *ctx, const u8 *req TAKES)
 	return msg;
 }
 
+/* This queues other traffic from the fd until we get reply. */
+static u8 *wait_sync_reply(const tal_t *ctx,
+			   const u8 *msg,
+			   int replytype,
+			   int fd,
+			   struct msg_queue *queue,
+			   const char *who)
+{
+	u8 *reply;
+
+	status_trace("Sending %s %u", who, fromwire_peektype(msg));
+
+	if (!wire_sync_write(fd, msg))
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "Could not set sync write to %s: %s",
+			      who, strerror(errno));
+
+	status_trace("... , awaiting %u", replytype);
+
+	for (;;) {
+		reply = wire_sync_read(ctx, fd);
+		if (!reply)
+			status_failed(STATUS_FAIL_INTERNAL_ERROR,
+				      "Could not set sync read from %s: %s",
+				      who, strerror(errno));
+		if (fromwire_peektype(reply) == replytype) {
+			status_trace("Got it!");
+			break;
+		}
+
+		status_trace("Nope, got %u instead", fromwire_peektype(reply));
+		msg_enqueue(queue, take(reply));
+	}
+
+	return reply;
+}
+
+static u8 *master_wait_sync_reply(const tal_t *ctx,
+				  struct peer *peer, const u8 *msg,
+				  enum channel_wire_type replytype)
+{
+	return wait_sync_reply(ctx, msg, replytype,
+			       MASTER_FD, peer->from_master, "master");
+}
+
+static u8 *gossipd_wait_sync_reply(const tal_t *ctx,
+				   struct peer *peer, const u8 *msg,
+				   enum gossip_peerd_wire_type replytype)
+{
+	return wait_sync_reply(ctx, msg, replytype,
+			       GOSSIP_FD, peer->from_gossipd, "gossipd");
+}
+
+
 /*
  * The maximum msat that this node will accept for an htlc.
  * It's flagged as an optional field in `channel_update`.
@@ -455,6 +509,7 @@ static void announce_channel(struct peer *peer)
 
 static void channel_announcement_negotiate(struct peer *peer)
 {
+	u8 *msg;
 	/* Don't do any announcement work if we're shutting down */
 	if (peer->shutdown_sent[LOCAL])
 		return;
@@ -510,10 +565,11 @@ static void channel_announcement_negotiate(struct peer *peer)
 			 * We will never waste time on waiting for remote peer announcement
 			 * reply when restart.
 			 */
-			master_wait_sync_reply(tmpctx, peer,
-								take(towire_channel_got_announcement(NULL,
+			msg = towire_channel_got_announcement(NULL,
 								&peer->announcement_node_sigs[REMOTE],
-								&peer->announcement_bitcoin_sigs[REMOTE])),
+								&peer->announcement_bitcoin_sigs[REMOTE]);
+			master_wait_sync_reply(tmpctx, peer,
+								take(msg),
 								WIRE_CHANNEL_GOT_ANNOUNCEMENT_REPLY);
 			peer->remote_ann_stored = true;
 		}
@@ -844,59 +900,6 @@ static void maybe_send_shutdown(struct peer *peer)
 	peer->send_shutdown = false;
 	peer->shutdown_sent[LOCAL] = true;
 	billboard_update(peer);
-}
-
-/* This queues other traffic from the fd until we get reply. */
-static u8 *wait_sync_reply(const tal_t *ctx,
-			   const u8 *msg,
-			   int replytype,
-			   int fd,
-			   struct msg_queue *queue,
-			   const char *who)
-{
-	u8 *reply;
-
-	status_trace("Sending %s %u", who, fromwire_peektype(msg));
-
-	if (!wire_sync_write(fd, msg))
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "Could not set sync write to %s: %s",
-			      who, strerror(errno));
-
-	status_trace("... , awaiting %u", replytype);
-
-	for (;;) {
-		reply = wire_sync_read(ctx, fd);
-		if (!reply)
-			status_failed(STATUS_FAIL_INTERNAL_ERROR,
-				      "Could not set sync read from %s: %s",
-				      who, strerror(errno));
-		if (fromwire_peektype(reply) == replytype) {
-			status_trace("Got it!");
-			break;
-		}
-
-		status_trace("Nope, got %u instead", fromwire_peektype(reply));
-		msg_enqueue(queue, take(reply));
-	}
-
-	return reply;
-}
-
-static u8 *master_wait_sync_reply(const tal_t *ctx,
-				  struct peer *peer, const u8 *msg,
-				  enum channel_wire_type replytype)
-{
-	return wait_sync_reply(ctx, msg, replytype,
-			       MASTER_FD, peer->from_master, "master");
-}
-
-static u8 *gossipd_wait_sync_reply(const tal_t *ctx,
-				   struct peer *peer, const u8 *msg,
-				   enum gossip_peerd_wire_type replytype)
-{
-	return wait_sync_reply(ctx, msg, replytype,
-			       GOSSIP_FD, peer->from_gossipd, "gossipd");
 }
 
 static u8 *foreign_channel_update(const tal_t *ctx,
@@ -2823,6 +2826,7 @@ static void req_in(struct peer *peer, const u8 *msg)
 	case WIRE_CHANNEL_GOT_REVOKE_REPLY:
 	case WIRE_CHANNEL_GOT_FUNDING_LOCKED:
 	case WIRE_CHANNEL_GOT_ANNOUNCEMENT:
+	case WIRE_CHANNEL_GOT_ANNOUNCEMENT_REPLY:
 	case WIRE_CHANNEL_GOT_SHUTDOWN:
 	case WIRE_CHANNEL_SHUTDOWN_COMPLETE:
 	case WIRE_CHANNEL_DEV_REENABLE_COMMIT_REPLY:
