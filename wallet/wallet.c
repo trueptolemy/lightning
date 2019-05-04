@@ -706,8 +706,6 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 			return NULL;
 		}
 		remote_ann_existed = true;
-	} else {
-		remote_ann_node_sig = NULL;
 	}
 
 	if (sqlite3_column_type(stmt, 45) != SQLITE_NULL) {
@@ -716,10 +714,7 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 			db_stmt_done(stmt);
 			return NULL;
 		}
-	} else {
-		remote_ann_bitcoin_sig = NULL;
 	}
-
 
 	get_channel_basepoints(w->ld, &peer->id, sqlite3_column_int64(stmt, 0),
 			       &local_basepoints, &local_funding_pubkey);
