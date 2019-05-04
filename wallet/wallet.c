@@ -715,7 +715,7 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 			db_stmt_done(stmt);
 			return NULL;
 		}
-		remote_ann_bitcoin_sig = tal(tmpctx, secp256k1_ecdsa_signature, &ann_sig);
+		remote_ann_bitcoin_sig = tal_dup(tmpctx, secp256k1_ecdsa_signature, &ann_sig);
 	} else {
 		remote_ann_bitcoin_sig = NULL;
 	}
