@@ -134,6 +134,7 @@ static void peer_got_announcement(struct channel *channel, const u8 *msg)
 		= tal_dup(channel, secp256k1_ecdsa_signature, &remote_ann_bitcoin_sig);
 
 	/* save remote peer announcement signatures into DB! */
+	log_debug(channel->log, "store the announcement into DB");
 	wallet_announcement_save(channel->peer->ld->wallet, channel);
 }
 
