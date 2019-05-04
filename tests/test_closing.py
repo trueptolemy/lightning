@@ -9,7 +9,7 @@ import re
 import threading
 import unittest
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "Too slow without --dev-bitcoind-poll")
 def test_closing(node_factory, bitcoind):
     l1, l2 = node_factory.line_graph(2)
@@ -1491,3 +1491,4 @@ def test_shutdown(node_factory):
             raise Exception("Node {} has memory leaks: {}"
                             .format(l1.daemon.lightning_dir, leaks))
     l1.rpc.stop()
+'''
