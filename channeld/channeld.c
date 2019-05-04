@@ -158,8 +158,8 @@ struct peer {
 	/* Additional confirmations need for local lockin. */
 	u32 depth_togo;
 
-	/* It means if we are in reconnection process*/
-	bool reconnected;
+	/* It means if we have stored announcement signatures so far*/
+	bool remote_ann_stored;
 };
 
 static u8 *create_channel_announcement(const tal_t *ctx, struct peer *peer);
@@ -505,7 +505,7 @@ static void channel_announcement_negotiate(struct peer *peer)
 		 * announcement to MASTER.
 		 * But we won't do this when restart, because we load announcement
 		 * signatures form DB when we reenable Channeld! */
-		if(peer->reconnected == false){
+		if(peer->remote_ann_stored == false){
 			/* Ask Master to save remote announcement into DB.
 			 * We will never waste time on waiting for remote peer announcement
 			 * reply when restart.
@@ -514,6 +514,7 @@ static void channel_announcement_negotiate(struct peer *peer)
 					take(towire_channel_got_announcement(NULL,
 								&peer->announcement_node_sigs[REMOTE],
 								&peer->announcement_bitcoin_sigs[REMOTE])));
+			peer->remote_ann_stored == true;
 		}
 		announce_channel(peer);
 	}
@@ -2869,6 +2870,7 @@ static void init_channel(struct peer *peer)
 	struct secret last_remote_per_commit_secret;
 	secp256k1_ecdsa_signature *remote_ann_node_sig;
 	secp256k1_ecdsa_signature *remote_ann_bitcoin_sig;
+	bool reconnected;
 
 	assert(!(fcntl(MASTER_FD, F_GETFL) & O_NONBLOCK));
 
@@ -2916,7 +2918,7 @@ static void init_channel(struct peer *peer)
 				   &peer->short_channel_ids[LOCAL],
 				   &remote_ann_node_sig,
 				   &remote_ann_bitcoin_sig,
-				   &peer->reconnected,
+				   &reconnected,
 				   &peer->send_shutdown,
 				   &peer->shutdown_sent[REMOTE],
 				   &peer->final_scriptpubkey,
@@ -2947,6 +2949,7 @@ static void init_channel(struct peer *peer)
 		peer->announcement_node_sigs[REMOTE] = *remote_ann_node_sig;
 		peer->announcement_bitcoin_sigs[REMOTE] = *remote_ann_bitcoin_sig;
 		peer->have_sigs[REMOTE] = true;
+		peer->remote_ann_stored = true;
 
 		tal_steal(tmpctx, remote_ann_node_sig);
 		tal_steal(tmpctx, remote_ann_bitcoin_sig);
@@ -3013,7 +3016,7 @@ static void init_channel(struct peer *peer)
 	peer->depth_togo = minimum_depth;
 
 	/* OK, now we can process peer messages. */
-	if (peer->reconnected)
+	if (reconnected)
 		peer_reconnect(peer, &last_remote_per_commit_secret);
 
 	/* If we have a funding_signed message, send that immediately */
@@ -3024,8 +3027,6 @@ static void init_channel(struct peer *peer)
 	channel_announcement_negotiate(peer);
 
 	billboard_update(peer);
-
-	peer->reconnected = false;
 }
 
 static void send_shutdown_complete(struct peer *peer)
@@ -3061,7 +3062,7 @@ int main(int argc, char *argv[])
 	peer->last_update_timestamp = 0;
 	/* We actually received it in the previous daemon, but near enough */
 	peer->last_recv = time_now();
-	peer->reconnected = false;
+	peer->remote_ann_stored = false;
 
 	/* We send these to HSM to get real signatures; don't have valgrind
 	 * complain. */

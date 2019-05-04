@@ -119,13 +119,6 @@ static void peer_got_announcement(struct channel *channel, const u8 *msg)
 				       tal_hex(tmpctx, msg));
 	}
 
-	/* Make sure we haven't stored sigs so far.(Only store ann sigs once!) */
-//	if (channel->remote_ann_node_sig || channel->remote_ann_bitcoin_sig) {
-//		channel_internal_error(channel,
-//				       "Never store the same announcement sigs twice %s",
-//				       tal_hex(tmpctx, msg));
-//	}
-
 	if (!fromwire_channel_got_announcement(msg,
 						 &remote_ann_node_sig,
 						 &remote_ann_bitcoin_sig)) {
