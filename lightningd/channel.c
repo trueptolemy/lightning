@@ -243,14 +243,13 @@ struct channel *new_channel(struct peer *peer, u64 dbid,
 	channel->feerate_base = feerate_base;
 	channel->feerate_ppm = feerate_ppm;
 
-	if((channel->channel_flags & CHANNEL_FLAGS_ANNOUNCE_CHANNEL)
-					&& remote_ann_node_sig && remote_ann_bitcoin_sig) {
-		channel->remote_ann_node_sig = tal_steal(channel, remote_ann_node_sig);
-		channel->remote_ann_bitcoin_sig = tal_steal(channel, remote_ann_bitcoin_sig);
-	} else {
-		channel->remote_ann_node_sig = NULL;
-		channel->remote_ann_bitcoin_sig = NULL;
+	if(remote_ann_node_sig || remote_ann_bitcoin_sig) {
+		assert(channel->channel_flags & CHANNEL_FLAGS_ANNOUNCE_CHANNEL);
+		assert(remote_ann_node_sig && remote_ann_bitcoin_sig);
 	}
+
+	channel->remote_ann_node_sig = tal_steal(channel, remote_ann_node_sig);
+	channel->remote_ann_bitcoin_sig = tal_steal(channel, remote_ann_bitcoin_sig);
 
 	list_add_tail(&peer->channels, &channel->list);
 	tal_add_destructor(channel, destroy_channel);
