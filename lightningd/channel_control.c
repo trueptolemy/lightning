@@ -113,7 +113,7 @@ static void peer_got_announcement(struct channel *channel, const u8 *msg)
 	secp256k1_ecdsa_signature remote_ann_node_sig;
 	secp256k1_ecdsa_signature remote_ann_bitcoin_sig;
 
-	if(!channel->channel_flags & CHANNEL_FLAGS_ANNOUNCE_CHANNEL) {
+	if(!(channel->channel_flags & CHANNEL_FLAGS_ANNOUNCE_CHANNEL)) {
 		channel_internal_error(channel,
 				       "No ANNOUNCE flag, no announcemnt signatures! %s",
 				       tal_hex(tmpctx, msg));
