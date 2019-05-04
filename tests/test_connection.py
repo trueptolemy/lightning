@@ -897,8 +897,13 @@ def test_channel_reenable(node_factory):
 def test_channel_reenable_with_announcement(node_factory):
     l1, l2 = node_factory.line_graph(2, opts={'may_reconnect': True}, fundchannel=True, wait_for_announce=True)
 
-    l1.daemon.wait_for_log('Received node_announcement for node {}'.format(l2.info['id']))
-    l2.daemon.wait_for_log('Received node_announcement for node {}'.format(l1.info['id']))
+    cid = l1.rpc.listpeers()['peers'][0]['channels'][0]['channel_id']
+
+    assert l1.info['id'] == '0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518'
+    assert l2.info['id'] == '022d223620a359a47ff7f7ac447c85c46c923da53389221a0054c11c1e3ca31d59'
+
+    l1.deamon.wait_for_log('store the announcement into DB')
+    l2.daemon.wait_for_log('store the announcement into DB')
 
     # Both directions should be active before the restart
     wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [True, True])
@@ -908,8 +913,8 @@ def test_channel_reenable_with_announcement(node_factory):
     wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [False, False])
     l2.start()
 
-    assert not l1.daemon.is_in_log('Received node_announcement for node {}'.format(l2.info['id']))
-    assert not l2.daemon.is_in_log('Received node_announcement for node {}'.format(l1.info['id']))
+    assert not l1.daemon.is_in_log('Received channel announcement for channel {}'.format(cid) ' from node {}'.format(l2.info['id']))
+    assert not l2.daemon.is_in_log('Received channel announcement for channel {}'.format(cid) ' from node {}'.format(l1.info['id']))
 
 '''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")

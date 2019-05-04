@@ -592,6 +592,10 @@ static void handle_peer_announcement_signatures(struct peer *peer, const u8 *msg
 			    type_to_string(tmpctx, struct channel_id, &chanid));
 	}
 
+	status_trace("Received channel announcement for channel %s from node %s",
+		     type_to_string(tmpctx, struct channel_id, &chanid),
+			 type_to_string(tmpctx, struct node_id, &peer->node_ids[REMOTE]));
+
 	/* If we received remote announcement before, now we need to make
 	 * sure the new announcement is same as the old and then ignore it.
 	 */
