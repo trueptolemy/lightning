@@ -514,7 +514,7 @@ static void channel_announcement_negotiate(struct peer *peer)
 					take(towire_channel_got_announcement(NULL,
 								&peer->announcement_node_sigs[REMOTE],
 								&peer->announcement_bitcoin_sigs[REMOTE])));
-			peer->remote_ann_stored == true;
+			peer->remote_ann_stored = true;
 		}
 		announce_channel(peer);
 	}
