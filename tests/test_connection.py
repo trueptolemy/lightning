@@ -913,6 +913,40 @@ def test_channel_reenable_with_announcement(node_factory):
     assert not l1.daemon.is_in_log('store the announcement into DB')
     assert not l2.daemon.is_in_log('store the announcement into DB')
 
+
+@unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1 for --dev-broadcast-interval")
+def test_channel_reenable_with_announcement2(node_factory):
+    disconnects = ['-WIRE_CHANNEL_GOT_ANNOUNCEMENT',
+                   '@WIRE_CHANNEL_GOT_ANNOUNCEMENT',
+                   '+WIRE_CHANNEL_GOT_ANNOUNCEMENT']
+    l1 = node_factory.get_node(may_reconnect=True, wait_for_announce=True)
+    l2 = node_factory.get_node(disconnect=disconnects, may_reconnect=True, wait_for_announce=True)
+
+    l1.fundwallet(2000000)
+    for d in disconnects:
+        l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
+        with pytest.raises(RpcError):
+            l1.rpc.fundchannel(l2.info['id'], 20000)
+        assert l1.daemon.is_in_log('UPDATE WIRE_CHANNEL_GOT_ANNOUNCEMENT')
+        assert l2.daemon.is_in_log('UPDATE WIRE_CHANNEL_GOT_ANNOUNCEMENT' * 2)
+
+    # This one will succeed.
+    l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
+    l1.rpc.fundchannel(l2.info['id'], 20000)
+
+    wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [True, True])
+
+    # Restart l2, will cause l1 to reconnect
+    l2.stop()
+    wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [False, False])
+    l2.start()
+
+    # Should still only have one peer!
+    assert l1.daemon.is_in_log('UPDATE WIRE_CHANNEL_GOT_ANNOUNCEMENT')
+    assert l1.daemon.is_in_log('UPDATE WIRE_CHANNEL_GOT_ANNOUNCEMENT')
+    assert not l1.daemon.is_in_log('UPDATE WIRE_CHANNEL_GOT_ANNOUNCEMENT' * 2)
+    assert not l1.daemon.is_in_log('UPDATE WIRE_CHANNEL_GOT_ANNOUNCEMENT' * 2)
+
 '''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_update_fee(node_factory, bitcoind):
