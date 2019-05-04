@@ -1091,6 +1091,8 @@ def test_peerinfo(node_factory, bitcoind):
     chan = l1.fund_channel(l2, 10**6)
     # Now proceed to funding-depth and do a full gossip round
     bitcoind.generate_block(5)
+
+    sync_blockheight(bitcoind, [l1, l2])
     l1.daemon.wait_for_logs(['Received node_announcement for node ' + l2.info['id']])
     l2.daemon.wait_for_logs(['Received node_announcement for node ' + l1.info['id']])
 
