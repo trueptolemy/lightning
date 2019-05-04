@@ -913,8 +913,8 @@ def test_channel_reenable_with_announcement(node_factory):
     wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [False, False])
     l2.start()
 
-    assert not l1.daemon.is_in_log('Received channel announcement for channel {}'.format(cid) ' from node {}'.format(l2.info['id']))
-    assert not l2.daemon.is_in_log('Received channel announcement for channel {}'.format(cid) ' from node {}'.format(l1.info['id']))
+    assert not l1.daemon.is_in_log('Received channel announcement for channel {} from node {}'.format(cid, l2.info['id']))
+    assert not l2.daemon.is_in_log('Received channel announcement for channel {} from node {}'.format(cid, l1.info['id']))
 
 '''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
