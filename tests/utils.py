@@ -869,6 +869,7 @@ class NodeFactory(object):
             return nodes
 
         bitcoin.generate_block(5)
+        sync_blockheight(bitcoin, nodes)
 
         def both_dirs_ready(n, scid):
             resp = n.rpc.listchannels(scid)
