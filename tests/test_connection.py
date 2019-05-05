@@ -902,7 +902,7 @@ def test_channel_reenable(node_factory):
     wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [True, True])
     wait_for(lambda: [c['active'] for c in l2.rpc.listchannels()['channels']] == [True, True])
 
-    assert len(l1.rpc.listpeers()) == 1
+    assert len(l1.rpc.listpeers()) == 0
 
 '''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
