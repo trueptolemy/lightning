@@ -1,6 +1,6 @@
 from fixtures import *  # noqa: F401,F403
 from lightning import RpcError
-from utils import wait_for, TIMEOUT, only_one
+from utils import wait_for, TIMEOUT, only_one, sync_blockheight
 
 import json
 import logging
@@ -370,6 +370,8 @@ def test_gossip_weirdalias(node_factory, bitcoind):
     l2.daemon.wait_for_log('openingd-{} chan #1: Handed peer, entering loop'.format(l1.info['id']))
     l2.fund_channel(l1, 10**6)
     bitcoind.generate_block(6)
+
+    sync_blockheight(bitcoind, [l1, l2])
 
     # They should gossip together.
     l1.daemon.wait_for_log('Received node_announcement for node {}'
@@ -942,6 +944,8 @@ def test_gossip_notices_close(node_factory, bitcoind):
     subprocess.run(['kill', '-USR1', l1.subd_pid('openingd')])
 
     bitcoind.generate_block(5)
+
+    sync_blockheight(bitcoind, [l1])
 
     # Make sure l1 learns about channel.
     wait_for(lambda: len(l1.rpc.listchannels()['channels']) == 2)
