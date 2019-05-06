@@ -894,11 +894,11 @@ def test_channel_reenable(node_factory):
     wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [True, True])
 
     # Restart l2, will cause l1 to reconnect
-    l2.rpc.disconnect(l1.info['id'])
+    l2.stop()
     wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [False, False])
-    assert len(l2.rpc.listchannels()['channels']) == 0
+    assert len(l1.rpc.listchannels()['channels']) == 0
 
-    l2.rpc.connect(l1.info['id'], 'localhost', port=l2.port)
+    l2.start()
     # Updates may be suppressed if redundant; just test results.
     wait_for(lambda: [c['active'] for c in l1.rpc.listchannels()['channels']] == [True, True])
     wait_for(lambda: [c['active'] for c in l2.rpc.listchannels()['channels']] == [True, True])
