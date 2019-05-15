@@ -595,6 +595,42 @@ wallet_htlc_sigs_load(const tal_t *ctx, struct wallet *w, u64 channelid)
 	return htlc_sigs;
 }
 
+bool wallet_remote_ann_sigs_load(struct wallet *w, u64 id,
+						         secp256k1_ecdsa_signature *remote_ann_node_sig,
+						         secp256k1_ecdsa_signature *remote_ann_bitcoin_sig)
+{
+	sqlite3_stmt *stmt;
+	int res;
+	stmt = db_select_prepare(w->db,
+			  "remote_ann_node_sig, remote_ann_bitcoin_sig"
+			  " FROM channels WHERE id = ?");
+	sqlite3_bind_int64(stmt, 1, id);
+
+	res = sqlite3_step(stmt);
+
+	/* This must succeed, since we know the channel exists */
+	assert(res == SQLITE_ROW);
+
+	if (sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
+		if (!sqlite3_column_signature(stmt, 0, remote_ann_node_sig)) {
+			db_stmt_done(stmt);
+			return false;
+		}
+	} else
+		remote_ann_node_sig = NULL;
+
+	if (sqlite3_column_type(stmt, 1) != SQLITE_NULL) {
+		if (!sqlite3_column_signature(stmt, 1, remote_ann_bitcoin_sig)) {
+			db_stmt_done(stmt);
+			return false;
+		}
+	} else
+		remote_ann_bitcoin_sig = NULL;
+
+	db_stmt_done(stmt);
+	return true;
+}
+
 /**
  * wallet_stmt2channel - Helper to populate a wallet_channel from a sqlite3_stmt
  */
@@ -741,6 +777,7 @@ static struct channel *wallet_stmt2channel(const tal_t *ctx, struct wallet *w, s
 			   sqlite3_column_int(stmt, 42),
 			   sqlite3_column_int(stmt, 43),
 			   sqlite3_column_arr(tmpctx, stmt, 44, u8));
+
 	return chan;
 }
 
@@ -951,6 +988,24 @@ u64 wallet_get_channel_dbid(struct wallet *wallet)
 	return ++wallet->max_channel_dbid;
 }
 
+/* When we receive the remote announcement message, we will also call this function */
+void wallet_announcement_save(struct wallet *w, u64 id,
+			        secp256k1_ecdsa_signature *remote_ann_node_sig,
+			        secp256k1_ecdsa_signature *remote_ann_bitcoin_sig)
+{
+	sqlite3_stmt *stmt;
+
+	stmt = db_prepare(w->db, "UPDATE channels SET"
+			  "  remote_ann_node_sig=?,"
+			  "  remote_ann_bitcoin_sig=?"
+			  " WHERE id=?");
+
+	sqlite3_bind_signature(stmt, 1, remote_ann_node_sig);
+	sqlite3_bind_signature(stmt, 2, remote_ann_bitcoin_sig);
+	sqlite3_bind_int64(stmt, 3, id);
+	db_exec_prepared(w->db, stmt);
+}
+
 void wallet_channel_save(struct wallet *w, struct channel *chan)
 {
 	sqlite3_stmt *stmt;
@@ -1085,6 +1140,16 @@ void wallet_channel_save(struct wallet *w, struct channel *chan)
 	else
 		sqlite3_bind_null(stmt, 1);
 	sqlite3_bind_int64(stmt, 2, chan->dbid);
+	db_exec_prepared(w->db, stmt);
+
+	/* save announcement sigs only when we ge announcement*/
+	stmt = db_prepare(w->db,
+			  "UPDATE channels SET"
+			  "  remote_ann_node_sig=?,"
+			  "  remote_ann_bitcoin_sig=?"
+			  " WHERE id=?");
+	sqlite3_bind_null(stmt, 1);
+	sqlite3_bind_null(stmt, 2);
 	db_exec_prepared(w->db, stmt);
 }
 
