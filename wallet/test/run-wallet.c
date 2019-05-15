@@ -1035,8 +1035,8 @@ static bool test_channel_crud(struct lightningd *ld, const tal_t *ctx)
 	CHECK_MSG(!wallet_err,
 		  tal_fmt(w, "Load ann sigs from DB: %s", wallet_err));
 	CHECK(load == true);
-	CHECK_MSG(memcmp(node_sig1, node_sig2, sizeof(*node_sig1)), "Compare ann sigs loaded with saved (v5)");
-	CHECK_MSG(memcmp(bitcoin_sig1, bitcoin_sig2, sizeof(*bitcoin_sig1)), "Compare ann sigs loaded with saved (v5)");
+	CHECK_MSG(memcmp(node_sig1, node_sig2, sizeof(*node_sig1)), "Compare ann node sigs loaded with saved (v5)");
+	CHECK_MSG(memcmp(bitcoin_sig1, bitcoin_sig2, sizeof(*bitcoin_sig1)), "Compare ann bitcoin sigs loaded with saved (v5)");
 
 	/* Normally freed by destroy_channel, but we don't call that */
 	db_commit_transaction(w->db);
