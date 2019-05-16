@@ -507,10 +507,10 @@ static void channel_announcement_negotiate(struct peer *peer)
 
 		/* After making sure short_channel_ids match, we can send remote
 		 * announcement to MASTER. */
-		wire_sync_write(MASTER_FD,
-				        take(towire_channel_got_announcement(NULL,
-				        &peer->announcement_node_sigs[REMOTE],
-				        &peer->announcement_bitcoin_sigs[REMOTE])));
+//		wire_sync_write(MASTER_FD,
+//				        take(towire_channel_got_announcement(NULL,
+//				        &peer->announcement_node_sigs[REMOTE],
+//				        &peer->announcement_bitcoin_sigs[REMOTE])));
 
 		announce_channel(peer);
 	}
