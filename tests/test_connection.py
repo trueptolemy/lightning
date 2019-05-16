@@ -1327,7 +1327,7 @@ def test_funder_simple_reconnect(node_factory, bitcoind):
 def test_reenable_channel_with_sigs(node_factory, bitcoind):
     """check that we reenable with the remote announcement signatures from DB,
        which was stored before"""
-    disconnects = ['@WIRE_ANNOUNCEMENT_SIGNATURES*2', 'permfail']
+    disconnects = ['+WIRE_ANNOUNCEMENT_SIGNATURES*2', 'permfail']
     l1 = node_factory.get_node(may_reconnect=True)
     l2 = node_factory.get_node(disconnect=disconnects, may_reconnect=True)
     l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
