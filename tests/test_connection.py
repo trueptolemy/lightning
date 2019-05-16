@@ -1345,7 +1345,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     l1.start()
 
     sync_blockheight(bitcoind, [l1, l2])
-    l1.daemon.wait_for_logs(['WIRE_CHANNEL_GOT_ANNOUNCEMENT'] * 2)
+    l1.daemon.wait_for_log('WIRE_CHANNEL_GOT_ANNOUNCEMENT')
     l2.daemon.wait_for_log('permfail')
     assert not l1.daemon.is_in_log('=WIRE_ANNOUNCEMENT_SIGNATURES')
 
