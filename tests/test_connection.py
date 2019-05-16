@@ -1344,7 +1344,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     wait_for(lambda: [c['active'] for c in l2.rpc.listchannels()['channels']] == [False, False])
     l1.start()
 
-    l1.daemon.wait_for_log('WIRE_CHANNEL_REESTABLISH')
+    l2.daemon.wait_for_log('peer_in WIRE_CHANNEL_REESTABLISH')
     l2.daemon.wait_for_log('permfail')
     l1.daemon.wait_for_log('WIRE_CHANNEL_GOT_ANNOUNCEMENT')
     assert not l1.daemon.is_in_log('=WIRE_ANNOUNCEMENT_SIGNATURES')
