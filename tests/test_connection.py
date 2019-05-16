@@ -1350,7 +1350,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
 #    assert not l1.daemon.is_in_log('=WIRE_ANNOUNCEMENT_SIGNATURES')
 
     billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
-    assert billboard != ['CHANNELD_NORMAL:Funding transaction locked. Channel announced.']
+    assert billboard == ['CHANNELD_NORMAL:Funding transaction locked. Channel announced.']
 
 
 @unittest.skipIf(not DEVELOPER, "needs LIGHTNINGD_DEV_LOG_IO")
