@@ -1348,7 +1348,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
 
     l2.daemon.wait_for_log('peer_in WIRE_CHANNEL_REESTABLISH')
     l2.daemon.wait_for_log('permfail')
-    l1.daemon.wait_for_log('WIRE_CHANNEL_GOT_ANNOUNCEMENT')
+    l1.daemon.wait_for_logs(['WIRE_CHANNEL_GOT_ANNOUNCEMENT'] * 2)
     assert not l1.daemon.is_in_log('=WIRE_ANNOUNCEMENT_SIGNATURES')
 
     billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
