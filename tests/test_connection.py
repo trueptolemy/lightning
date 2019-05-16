@@ -1327,9 +1327,9 @@ def test_funder_simple_reconnect(node_factory, bitcoind):
 def test_reenable_channel_with_sigs(node_factory, bitcoind):
     """check that we reenable with the remote announcement signatures from DB,
        which was stored before"""
-    disconnects = ['+WIRE_ANNOUNCEMENT_SIGNATURES*2', 'permfail']
-    l1 = node_factory.get_node(disconnect=disconnects, may_reconnect=True)
-    l2 = node_factory.get_node()
+    disconnects = ['+WIRE_CHANNEL_REESTABLISH', 'permfail']
+    l1 = node_factory.get_node()
+    l2 = node_factory.get_node(disconnect=disconnects)
     l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
     l1.fund_channel(l2, 10**6)
 
@@ -1344,10 +1344,11 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     wait_for(lambda: [c['active'] for c in l2.rpc.listchannels()['channels']] == [False, False])
     l1.start()
 
+    l2.daemon.wait_for_log('permfail')
+
     l1.daemon.wait_for_log('WIRE_CHANNEL_GOT_ANNOUNCEMENT')
-    l2.daemon.wait_for_log('WIRE_ANNOUNCEMENT_SIGNATURES')
-    l1.daemon.wait_for_log('permfail')
     assert not l1.daemon.is_in_log('=WIRE_ANNOUNCEMENT_SIGNATURES')
+
     billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
     assert billboard == ['CHANNELD_NORMAL:Funding transaction locked. Channel announced.']
 
