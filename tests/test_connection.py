@@ -44,7 +44,7 @@ def test_connect(node_factory):
     with pytest.raises(RpcError, match=r'Cryptographic handshake: peer closed connection \(wrong key\?\)'):
         l1.rpc.connect('032cf15d1ad9c4a08d26eab1918f732d8ef8fdc6abb9640bf3db174372c491304e', 'localhost', l2.port)
 
-
+'''
 def test_connect_standard_addr(node_factory):
     """Test standard node@host:port address
     """
@@ -1322,6 +1322,7 @@ def test_funder_simple_reconnect(node_factory, bitcoind):
 
     # Should work normally.
     l1.pay(l2, 200000000)
+'''
 
 def test_reenable_channel_with_sigs(node_factory, bitcoind):
     """check that we reenable with the remote announcement signatures from DB,
@@ -1331,6 +1332,9 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     l2 = node_factory.get_node(disconnect=disconnects, may_reconnect=False)
     l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
     l1.fund_channel(l2, 10**6)
+
+    bitcoind.generate_block(5)
+    sync_blockheight(bitcoind, [l1, l2])
 
     l1.daemon.wait_for_log('WIRE_CHANNEL_GOT_ANNOUNCEMENT')
     billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
