@@ -1328,8 +1328,8 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     """check that we reenable with the remote announcement signatures from DB,
        which was stored before"""
     disconnects = ['+WIRE_ANNOUNCEMENT_SIGNATURES*2', 'permfail']
-    l1 = node_factory.get_node(may_reconnect=True)
-    l2 = node_factory.get_node(disconnect=disconnects, may_reconnect=True)
+    l1 = node_factory.get_node(disconnect=disconnects, may_reconnect=True)
+    l2 = node_factory.get_node(may_reconnect=True)
     l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
     l1.fund_channel(l2, 10**6)
 
@@ -1345,7 +1345,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     l1.start()
     sync_blockheight(bitcoind, [l1, l2])
     l1.daemon.wait_for_log('WIRE_CHANNEL_GOT_ANNOUNCEMENT')
-    l2.daemon.wait_for_log('permfail')
+    l1.daemon.wait_for_log('permfail')
     assert not l1.daemon.is_in_log('=WIRE_ANNOUNCEMENT_SIGNATURES')
 
     billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
