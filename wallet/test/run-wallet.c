@@ -1031,7 +1031,7 @@ static bool test_channel_crud(struct lightningd *ld, const tal_t *ctx)
 	wallet_announcement_save(w, c1.dbid, node_sig1, bitcoin_sig1);
 	CHECK_MSG(!wallet_err,
 		  tal_fmt(w, "Insert ann sigs into DB: %s", wallet_err));
-	CHECK_MSG(load = wallet_remote_ann_sigs_load(w, c1.dbid, node_sig2, bitcoin_sig2), tal_fmt(w, "Load ann sigs from DB"));
+	CHECK_MSG(load = wallet_remote_ann_sigs_load(w, c1.dbid, &node_sig2, &bitcoin_sig2), tal_fmt(w, "Load ann sigs from DB"));
 	CHECK_MSG(!wallet_err,
 		  tal_fmt(w, "Load ann sigs from DB: %s", wallet_err));
 	CHECK(load == true);
