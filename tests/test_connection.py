@@ -1327,7 +1327,7 @@ def test_funder_simple_reconnect(node_factory, bitcoind):
 def test_reenable_channel_with_sigs(node_factory, bitcoind):
     """check that we reenable with the remote announcement signatures from DB,
        which was stored before"""
-    disconnects = ['-WIRE_ANNOUNCEMENT_SIGNATURES*2', 'permfail']
+    disconnects = ['-WIRE_ANNOUNCEMENT_SIGNATURES*2']
     l1 = node_factory.get_node(may_reconnect=True)
     l2 = node_factory.get_node(disconnect=disconnects)
     l1.info['id'] = '0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518'
@@ -1346,7 +1346,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     l1.start()
     sync_blockheight(bitcoind, [l1, l2])
 #    l1.daemon.wait_for_logs(['WIRE_CHANNEL_GOT_ANNOUNCEMENT'] * 2)
-    l2.daemon.wait_for_log('permfail')
+    l2.daemon.wait_for_log('dev_disconnect: -WIRE_ANNOUNCEMENT_SIGNATURES')
     assert not l1.daemon.is_in_log('=WIRE_ANNOUNCEMENT_SIGNATURES')
 
     billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
