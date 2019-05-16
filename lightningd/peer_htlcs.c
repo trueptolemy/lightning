@@ -384,7 +384,7 @@ static void rcvd_htlc_reply(struct subd *subd, const u8 *msg, const int *fds UNU
 			 * so set htlc field with NULL */
 			wallet_forwarded_payment_add(ld->wallet,
 					 hout->in, NULL,
-					 FORWARD_LOCAL_FAILED,
+					 ,
 					 failure_code);
 		}
 

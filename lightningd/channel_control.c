@@ -381,7 +381,7 @@ void peer_start_channeld(struct channel *channel,
 		log_debug(channel->log, "Ignoring fee limits!");
 
 	if(!wallet_remote_ann_sigs_load(channel->peer->ld->wallet, channel->dbid,
-				       remote_ann_node_sig, remote_ann_bitcoin_sig)) {
+				       &remote_ann_node_sig, &remote_ann_bitcoin_sig)) {
 		channel_fail_permanent(channel,
 				       "Could not load remote announcement signatures");
 		return;

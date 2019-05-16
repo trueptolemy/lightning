@@ -596,8 +596,8 @@ wallet_htlc_sigs_load(const tal_t *ctx, struct wallet *w, u64 channelid)
 }
 
 bool wallet_remote_ann_sigs_load(struct wallet *w, u64 id,
-						         secp256k1_ecdsa_signature *remote_ann_node_sig,
-						         secp256k1_ecdsa_signature *remote_ann_bitcoin_sig)
+						         secp256k1_ecdsa_signature **remote_ann_node_sig,
+						         secp256k1_ecdsa_signature **remote_ann_bitcoin_sig)
 {
 	sqlite3_stmt *stmt;
 	int res;
@@ -612,20 +612,20 @@ bool wallet_remote_ann_sigs_load(struct wallet *w, u64 id,
 	assert(res == SQLITE_ROW);
 
 	if (sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
-		if (!sqlite3_column_signature(stmt, 0, remote_ann_node_sig)) {
+		if (!sqlite3_column_signature(stmt, 0, *remote_ann_node_sig)) {
 			db_stmt_done(stmt);
 			return false;
 		}
 	} else
-		remote_ann_node_sig = NULL;
+		*remote_ann_node_sig = NULL;
 
 	if (sqlite3_column_type(stmt, 1) != SQLITE_NULL) {
-		if (!sqlite3_column_signature(stmt, 1, remote_ann_bitcoin_sig)) {
+		if (!sqlite3_column_signature(stmt, 1, *remote_ann_bitcoin_sig)) {
 			db_stmt_done(stmt);
 			return false;
 		}
 	} else
-		remote_ann_bitcoin_sig = NULL;
+		*remote_ann_bitcoin_sig = NULL;
 
 	db_stmt_done(stmt);
 	return true;

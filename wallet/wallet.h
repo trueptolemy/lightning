@@ -1078,6 +1078,6 @@ const struct forwarding *wallet_forwarded_payments_get(struct wallet *w,
  * @remote_ann_bitcoin_sig: location to load remote_ann_bitcoin_sig to
  */
 bool wallet_remote_ann_sigs_load(struct wallet *w, u64 id,
-						         secp256k1_ecdsa_signature *remote_ann_node_sig,
-						         secp256k1_ecdsa_signature *remote_ann_bitcoin_sig);
+						         secp256k1_ecdsa_signature **remote_ann_node_sig,
+						         secp256k1_ecdsa_signature **remote_ann_bitcoin_sig);
 #endif /* LIGHTNING_WALLET_WALLET_H */
