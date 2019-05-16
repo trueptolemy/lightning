@@ -1345,7 +1345,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     l1.start()
 
     l1.daemon.wait_for_log('WIRE_CHANNEL_GOT_ANNOUNCEMENT')
-#    l2.daemon.wait_for_log(r'dev_disconnect: \-ANNOUNCEMENT_SIGNATURES*2')
+    l2.daemon.wait_for_log(r'dev_disconnect: \-ANNOUNCEMENT_SIGNATURES*2')
     assert not l1.daemon.is_in_log('=WIRE_ANNOUNCEMENT_SIGNATURES')
     billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
     assert billboard == ['CHANNELD_NORMAL:Funding transaction locked.']
