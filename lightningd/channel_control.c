@@ -387,6 +387,9 @@ void peer_start_channeld(struct channel *channel,
 		return;
 	}
 
+	if(remote_ann_node_sig == NULL && remote_ann_bitcoin_sig == NULL)
+		log_debug(channel->log, "load sigs with NULL");
+
 	initmsg = towire_channel_init(tmpctx,
 				      &get_chainparams(ld)->genesis_blockhash,
 				      &channel->funding_txid,
