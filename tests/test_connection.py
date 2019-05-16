@@ -1330,6 +1330,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
     disconnects = ['-WIRE_ANNOUNCEMENT_SIGNATURES*2', 'permfail']
     l1 = node_factory.get_node(disconnect=disconnects, may_reconnect=True)
     l2 = node_factory.get_node(may_reconnect=True)
+    l1.info['id'] = '0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518'
     l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
     l1.fund_channel(l2, 10**6)
 
