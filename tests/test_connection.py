@@ -1338,7 +1338,7 @@ def test_reenable_channel_with_sigs(node_factory, bitcoind):
 
     l1.daemon.wait_for_log('WIRE_CHANNEL_GOT_ANNOUNCEMENT')
     billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
-    assert billboard == ['CHANNELD_NORMAL:Funding transaction locked.']
+    assert billboard == ['CHANNELD_NORMAL:Funding transaction locked. Channel announced.']
 
     l1.stop()
     wait_for(lambda: [c['active'] for c in l2.rpc.listchannels()['channels']] == [False, False])
