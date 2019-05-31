@@ -192,7 +192,7 @@ class TailableProc(object):
         logging.debug("Did not find '%s' in logs", regex)
         return None
 
-    def wait_for_logs(self, regexs, timeout=TIMEOUT):
+    def wait_for_logs(self, regexs, timeout=TIMEOUT, loop_callback=None):
         """Look for `regexs` in the logs.
 
         We tail the stdout of the process and look for each regex in `regexs`,
@@ -216,6 +216,9 @@ class TailableProc(object):
             elif not self.running:
                 raise ValueError('Process died while waiting for logs')
 
+            if loop_callback:
+                loop_callback()
+
             with self.logs_cond:
                 if pos >= len(self.logs):
                     self.logs_cond.wait(1)
@@ -231,12 +234,12 @@ class TailableProc(object):
                     return self.logs[pos]
                 pos += 1
 
-    def wait_for_log(self, regex, timeout=TIMEOUT):
+    def wait_for_log(self, regex, timeout=TIMEOUT, loop_callback=None):
         """Look for `regex` in the logs.
 
         Convenience wrapper for the common case of only seeking a single entry.
         """
-        return self.wait_for_logs([regex], timeout)
+        return self.wait_for_logs([regex], timeout, loop_callback)
 
 
 class SimpleBitcoinProxy:
