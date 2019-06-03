@@ -16,24 +16,24 @@ struct timerel;
 
 /* We can have a single log book, with multiple logs in it: it's freed by
  * the last struct log itself. */
-struct log_book *new_log_book(size_t max_mem,
+struct log_book *new_log_book(struct lightningd *ld, size_t max_mem,
 			      enum log_level printlevel);
 
 /* With different entry points */
 struct log *new_log(const tal_t *ctx, struct log_book *record, const char *fmt, ...) PRINTF_FMT(3,4);
 
-#define log_debug(log, ...) log_((log), LOG_DBG, __VA_ARGS__)
-#define log_info(log, ...) log_((log), LOG_INFORM, __VA_ARGS__)
-#define log_unusual(log, ...) log_((log), LOG_UNUSUAL, __VA_ARGS__)
-#define log_broken(log, ...) log_((log), LOG_BROKEN, __VA_ARGS__)
+#define log_debug(log, ...) log_((log), LOG_DBG, true, __VA_ARGS__)
+#define log_info(log, ...) log_((log), LOG_INFORM, true, __VA_ARGS__)
+#define log_unusual(log, ...) log_((log), LOG_UNUSUAL, true, __VA_ARGS__)
+#define log_broken(log, ...) log_((log), LOG_BROKEN, true, __VA_ARGS__)
 
 void log_io(struct log *log, enum log_level dir, const char *comment,
 	    const void *data, size_t len);
 
-void log_(struct log *log, enum log_level level, const char *fmt, ...)
+void log_(struct log *log, enum log_level level, bool notifer, const char *fmt, ...)
 	PRINTF_FMT(3,4);
 void log_add(struct log *log, const char *fmt, ...) PRINTF_FMT(2,3);
-void logv(struct log *log, enum log_level level, const char *fmt, va_list ap);
+void logv(struct log *log, enum log_level level, bool notifer, const char *fmt, va_list ap);
 void logv_add(struct log *log, const char *fmt, va_list ap);
 
 enum log_level get_log_level(struct log_book *lr);

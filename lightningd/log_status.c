@@ -9,7 +9,7 @@ bool log_status_msg(struct log *log, const u8 *msg)
 
 	if (fromwire_status_log(msg, msg, &level, &entry)) {
 		if (level != LOG_IO_IN && level != LOG_IO_OUT) {
-			log_(log, level, "%s", entry);
+			log_(log, level, true, "%s", entry);
 			return true;
 		}
 	} else if (fromwire_status_io(msg, msg, &level, &who, &data)) {

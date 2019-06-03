@@ -57,6 +57,11 @@ struct log_book {
 	struct timeabs init_time;
 
 	struct list_head log;
+	/* Although log_book will copy log entries to parent log_book(almost all
+	 * parent log_book is the log_book belongs to lightningd), a pointer
+	 * to lightningd is directly and timely.
+	 */
+	struct lightningd *ld;
 };
 
 struct log {
@@ -135,7 +140,7 @@ static size_t prune_log(struct log_book *log)
 	return deleted;
 }
 
-struct log_book *new_log_book(size_t max_mem,
+struct log_book *new_log_book(struct lightningd *ld, size_t max_mem,
 			      enum log_level printlevel)
 {
 	struct log_book *lr = tal_linkable(tal(NULL, struct log_book));
@@ -147,6 +152,7 @@ struct log_book *new_log_book(size_t max_mem,
 	lr->print = log_to_stdout;
 	lr->print_level = printlevel;
 	lr->init_time = time_now();
+	lr->ld = ld;
 	list_head_init(&lr->log);
 
 	return lr;
@@ -259,7 +265,8 @@ static void maybe_print(const struct log *log, const struct log_entry *l,
 			       l->io, tal_bytelen(l->io), log->lr->print_arg);
 }
 
-void logv(struct log *log, enum log_level level, const char *fmt, va_list ap)
+void logv(struct log *log, enum log_level level, bool nitifer,
+			const char *fmt, va_list ap)
 {
 	int save_errno = errno;
 	struct log_entry *l = new_log_entry(log, level);
@@ -276,6 +283,12 @@ void logv(struct log *log, enum log_level level, const char *fmt, va_list ap)
 	maybe_print(log, l, 0);
 
 	add_entry(log, l);
+
+	if(notifer) {
+		if(level == LOG_UNUSUAL)
+			notify_unusual_event(log->lr->ld, log, l);
+	}
+
 	errno = save_errno;
 }
 
@@ -328,12 +341,13 @@ void logv_add(struct log *log, const char *fmt, va_list ap)
 	maybe_print(log, l, oldlen);
 }
 
-void log_(struct log *log, enum log_level level, const char *fmt, ...)
+void log_(struct log *log, enum log_level level, bool notifer,
+			const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	logv(log, level, fmt, ap);
+	logv(log, level, notifer, fmt, ap);
 	va_end(ap);
 }
 
@@ -569,7 +583,7 @@ void log_backtrace_print(const char *fmt, ...)
 		return;
 
 	va_start(ap, fmt);
-	logv(crashlog, LOG_BROKEN, fmt, ap);
+	logv(crashlog, LOG_BROKEN, false, fmt, ap);
 	va_end(ap);
 }
 
@@ -642,7 +656,7 @@ void fatal(const char *fmt, ...)
 		exit(1);
 
 	va_start(ap, fmt);
-	logv(crashlog, LOG_BROKEN, fmt, ap);
+	logv(crashlog, LOG_BROKEN, true, fmt, ap);
 	va_end(ap);
 	abort();
 }

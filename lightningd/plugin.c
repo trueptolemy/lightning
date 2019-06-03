@@ -211,7 +211,7 @@ static void plugin_log_handle(struct plugin *plugin, const jsmntok_t *paramstok)
 		return;
 	}
 
-	log_(plugin->log, level, "%.*s", msgtok->end - msgtok->start,
+	log_(plugin->log, level, true, "%.*s", msgtok->end - msgtok->start,
 	     plugin->buffer + msgtok->start);
 }
 
