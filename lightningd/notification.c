@@ -4,6 +4,7 @@
 const char *notification_topics[] = {
 	"connect",
 	"disconnect",
+	"unusual_event"
 };
 
 bool notifications_have_topic(const char *topic)
@@ -30,6 +31,19 @@ void notify_disconnect(struct lightningd *ld, struct node_id *nodeid)
 	struct jsonrpc_notification *n =
 	    jsonrpc_notification_start(NULL, notification_topics[1]);
 	json_add_node_id(n->stream, "id", nodeid);
+	jsonrpc_notification_end(n);
+	plugins_notify(ld->plugins, take(n));
+}
+
+void notify_unusual_event(struct lightningd *ld, struct log *log,
+		    struct log_entry *l)
+{
+	struct jsonrpc_notification *n =
+	    jsonrpc_notification_start(NULL, notification_topics[2]);
+	struct timerel diff = time_between(l->time, log->lr->init_time);
+	json_add_time(n->stream, "time", diff.ts);
+	json_add_string(n->stream, "source", l->prefix);
+	json_add_string(n->stream, "log", l->log);
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }
