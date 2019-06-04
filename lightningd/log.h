@@ -14,21 +14,7 @@ struct json_stream;
 struct lightningd;
 struct timerel;
 
-struct log_entry {
-	struct list_node list;
-	struct timeabs time;
-	enum log_level level;
-	unsigned int skipped;
-	const char *prefix;
-	char *log;
-	/* Iff LOG_IO */
-	const u8 *io;
-};
-
-struct log {
-	struct log_book *lr;
-	const char *prefix;
-};
+struct log_entry;
 
 /* We can have a single log book, with multiple logs in it: it's freed by
  * the last struct log itself. */

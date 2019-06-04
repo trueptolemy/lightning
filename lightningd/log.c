@@ -32,6 +32,17 @@
 /* Once we're up and running, this is set up. */
 struct log *crashlog;
 
+struct log_entry {
+	struct list_node list;
+	struct timeabs time;
+	enum log_level level;
+	unsigned int skipped;
+	const char *prefix;
+	char *log;
+	/* Iff LOG_IO */
+	const u8 *io;
+};
+
 struct log_book {
 	size_t mem_used;
 	size_t max_mem;
@@ -52,6 +63,11 @@ struct log_book {
 	 * to lightningd is directly and timely.
 	 */
 	struct lightningd *ld;
+};
+
+struct log {
+	struct log_book *lr;
+	const char *prefix;
 };
 
 static void log_to_file(const char *prefix,
