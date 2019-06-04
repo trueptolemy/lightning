@@ -31,7 +31,7 @@ void log_io(struct log *log, enum log_level dir, const char *comment,
 	    const void *data, size_t len);
 
 void log_(struct log *log, enum log_level level, bool notifer, const char *fmt, ...)
-	PRINTF_FMT(3,4);
+	PRINTF_FMT(4,4);
 void log_add(struct log *log, const char *fmt, ...) PRINTF_FMT(2,3);
 void logv(struct log *log, enum log_level level, bool notifer, const char *fmt, va_list ap);
 void logv_add(struct log *log, const char *fmt, va_list ap);
