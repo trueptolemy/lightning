@@ -321,10 +321,10 @@ def test_unusual_event_notification(node_factory):
 #    l1.daemon.logsearch_start = 0
 #    l1.daemon.wait_for_log('plugin-unusual_event.py initialized')
 
-    loged = l1.rpc.pretendunusual("Test unusual event notification")
-    assert loged == True
+    l1.rpc.pretendunusual("Test unusual event notification")
+
 #    assert not l1.daemon.is_in_log('plugin-unusual_event.py Test unusual event notification')
-    assert 1==2
+
     l1.daemon.logsearch_start = 0
     l1.daemon.wait_for_log('plugin-unusual_event.py Received unusual log:')
     l1.daemon.wait_for_log('plugin-unusual_event.py time: *')
