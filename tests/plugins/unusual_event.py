@@ -11,9 +11,12 @@ def init(configuration, options, plugin):
     plugin.log("initialized")
 
 
-@plugin.subscribe("disconnect")
-def notify_unusual(plugin, writes):
-    plugin.log("Received unusual log: {} from {} at {}".format(log, source, time))
+@plugin.subscribe("unusual_event")
+def notify_unusual(plugin, unusual_event):
+    plugin.log("Received unusual log:")
+    plugin.log("time: {}".format(unusual_event[0]))
+    plugin.log("source: {}".format(unusual_event[1]))
+    plugin.log("log: {}".format(unusual_event[2]))
 
-plugin.log("test unusual event notification", 'unusual')
+plugin.log("Test unusual event notification", 'unusual')
 plugin.run()
