@@ -14,6 +14,8 @@ struct json_stream;
 struct lightningd;
 struct timerel;
 
+struct log_entry;
+
 /* We can have a single log book, with multiple logs in it: it's freed by
  * the last struct log itself. */
 struct log_book *new_log_book(struct lightningd *ld, size_t max_mem,
