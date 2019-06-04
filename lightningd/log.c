@@ -265,7 +265,7 @@ static void maybe_print(const struct log *log, const struct log_entry *l,
 			       l->io, tal_bytelen(l->io), log->lr->print_arg);
 }
 
-void logv(struct log *log, enum log_level level, bool nitifer,
+void logv(struct log *log, enum log_level level, bool notifer,
 			const char *fmt, va_list ap)
 {
 	int save_errno = errno;
