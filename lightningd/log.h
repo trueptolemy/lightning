@@ -26,6 +26,28 @@ struct log_entry {
 	const u8 *io;
 };
 
+struct log_book {
+	size_t mem_used;
+	size_t max_mem;
+	void (*print)(const char *prefix,
+		      enum log_level level,
+		      bool continued,
+		      const struct timeabs *time,
+		      const char *str,
+		      const u8 *io, size_t io_len,
+		      void *arg);
+	void *print_arg;
+	enum log_level print_level;
+	struct timeabs init_time;
+
+	struct list_head log;
+	/* Although log_book will copy log entries to parent log_book(almost all
+	 * parent log_book is the log_book belongs to lightningd), a pointer
+	 * to lightningd is more directly.
+	 */
+	struct lightningd *ld;
+};
+
 struct log {
 	struct log_book *lr;
 	const char *prefix;
