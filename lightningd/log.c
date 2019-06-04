@@ -21,6 +21,7 @@
 #include <inttypes.h>
 #include <lightningd/jsonrpc.h>
 #include <lightningd/lightningd.h>
+#include <lightningd/notification.h>
 #include <lightningd/options.h>
 #include <signal.h>
 #include <stdio.h>
