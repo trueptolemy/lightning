@@ -18,5 +18,6 @@ def notify_unusual(plugin, unusual_event):
     plugin.log("source: {}".format(unusual_event[1]))
     plugin.log("log: {}".format(unusual_event[2]))
 
+
 plugin.log("Test unusual event notification", 'unusual')
 plugin.run()
