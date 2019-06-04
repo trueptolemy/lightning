@@ -4,7 +4,6 @@
 #include <ccan/array_size/array_size.h>
 #include <ccan/err/err.h>
 #include <ccan/io/io.h>
-#include <ccan/list/list.h>
 #include <ccan/opt/opt.h>
 #include <ccan/read_write_all/read_write_all.h>
 #include <ccan/str/hex/hex.h>
@@ -32,17 +31,6 @@
 /* Once we're up and running, this is set up. */
 struct log *crashlog;
 
-struct log_entry {
-	struct list_node list;
-	struct timeabs time;
-	enum log_level level;
-	unsigned int skipped;
-	const char *prefix;
-	char *log;
-	/* Iff LOG_IO */
-	const u8 *io;
-};
-
 struct log_book {
 	size_t mem_used;
 	size_t max_mem;
@@ -60,7 +48,7 @@ struct log_book {
 	struct list_head log;
 	/* Although log_book will copy log entries to parent log_book(almost all
 	 * parent log_book is the log_book belongs to lightningd), a pointer
-	 * to lightningd is directly and timely.
+	 * to lightningd is more directly.
 	 */
 	struct lightningd *ld;
 };

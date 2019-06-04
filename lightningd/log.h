@@ -1,6 +1,7 @@
 #ifndef LIGHTNING_LIGHTNINGD_LOG_H
 #define LIGHTNING_LIGHTNINGD_LOG_H
 #include "config.h"
+#include <ccan/list/list.h>
 #include <ccan/tal/tal.h>
 #include <ccan/time/time.h>
 #include <ccan/typesafe_cb/typesafe_cb.h>
@@ -14,7 +15,21 @@ struct json_stream;
 struct lightningd;
 struct timerel;
 
-struct log_entry;
+struct log_entry {
+	struct list_node list;
+	struct timeabs time;
+	enum log_level level;
+	unsigned int skipped;
+	const char *prefix;
+	char *log;
+	/* Iff LOG_IO */
+	const u8 *io;
+};
+
+struct log {
+	struct log_book *lr;
+	const char *prefix;
+};
 
 /* We can have a single log book, with multiple logs in it: it's freed by
  * the last struct log itself. */
