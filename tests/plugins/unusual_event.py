@@ -23,7 +23,7 @@ def notify_unusual(plugin, unusual_event):
 def pretend_unusual(event, plugin):
     """Log an unusual level entry
     """
-    plugin.log("{}".format(event), 'unusual')
+    plugin.log("{}".format(event), 'warn')
     assert 1==2
     return True
 
