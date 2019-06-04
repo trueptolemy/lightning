@@ -41,9 +41,11 @@ void notify_unusual_event(struct lightningd *ld, struct log *log,
 	struct jsonrpc_notification *n =
 	    jsonrpc_notification_start(NULL, notification_topics[2]);
 	struct timerel diff = time_between(l->time, log->lr->init_time);
+	json_object_start(n->stream, "unusual_event");
 	json_add_time(n->stream, "time", diff.ts);
 	json_add_string(n->stream, "source", l->prefix);
 	json_add_string(n->stream, "log", l->log);
+	json_object_end(n->stream); /* .unusual_event */
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }
