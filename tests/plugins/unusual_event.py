@@ -14,9 +14,9 @@ def init(configuration, options, plugin):
 @plugin.subscribe("unusual_event")
 def notify_unusual(plugin, unusual_event):
     plugin.log("Received unusual log:")
-    plugin.log("time: {}".format(unusual_event[0]))
-    plugin.log("source: {}".format(unusual_event[1]))
-    plugin.log("log: {}".format(unusual_event[2]))
+    plugin.log("time: {}".format(unusual_event['time']))
+    plugin.log("source: {}".format(unusual_event['source']))
+    plugin.log("log: {}".format(unusual_event['log']))
 
 
 @plugin.method('pretendunusual')
