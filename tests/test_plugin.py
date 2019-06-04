@@ -107,7 +107,9 @@ def test_plugin_disable(node_factory):
         n.rpc.hello(name='Sun')
 
 
-def test_plugin_notifications(node_factory):
+def test_plugin_connect_notifications(node_factory):
+    """ test 'connect' and 'disconnect' notifications
+    """
     l1, l2 = node_factory.get_nodes(2, opts={'plugin': 'contrib/plugins/helloworld.py'})
 
     l1.connect(l2)
@@ -310,3 +312,11 @@ def test_openchannel_hook(node_factory, bitcoind):
     l1.connect(l2)
     with pytest.raises(RpcError, match=r"I don't like odd amounts"):
         l1.rpc.fundchannel(l2.info['id'], 100001)
+
+
+def test_unusual_event_notification(node_factory):
+    """ test 'unusual_event' notifications
+    """
+    l1 = node_factory.get_node(options={'plugin': 'tests/plugins/unusual_event.py'})
+
+    l1.daemon.wait_for_log('Received connect event')
