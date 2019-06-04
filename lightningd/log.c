@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <lightningd/json.h>
 #include <lightningd/jsonrpc.h>
 #include <lightningd/lightningd.h>
 #include <lightningd/notification.h>
@@ -638,17 +639,6 @@ static void add_skipped(struct log_info *info)
 		json_object_end(info->response);
 		info->num_skipped = 0;
 	}
-}
-
-static void json_add_time(struct json_stream *result, const char *fieldname,
-			  struct timespec ts)
-{
-	char timebuf[100];
-
-	snprintf(timebuf, sizeof(timebuf), "%lu.%09u",
-		(unsigned long)ts.tv_sec,
-		(unsigned)ts.tv_nsec);
-	json_add_string(result, fieldname, timebuf);
 }
 
 static void log_to_json(unsigned int skipped,

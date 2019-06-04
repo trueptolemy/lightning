@@ -1,5 +1,6 @@
 #include "lightningd/notification.h"
 #include <ccan/array_size/array_size.h>
+#include <lightningd/json.h>
 
 const char *notification_topics[] = {
 	"connect",
