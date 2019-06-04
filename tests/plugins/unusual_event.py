@@ -23,6 +23,7 @@ def notify_unusual(plugin, unusual_event):
 def pretend_unusual(plugin):
     """Log an unusual level entry
     """
+    assert 1==2
     plugin.log("Test unusual event notification", 'unusual')
 
 
