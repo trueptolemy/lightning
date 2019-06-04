@@ -81,7 +81,7 @@ static void copy_to_parent_log(const char *prefix,
 	else if (continued)
 		log_add(parent_log, "%s ... %s", prefix, str);
 	else
-		log_(parent_log, level, "%s %s", false, prefix, str);
+		log_(parent_log, level, false, "%s %s", prefix, str);
 }
 
 static void peer_update_features(struct peer *peer,
