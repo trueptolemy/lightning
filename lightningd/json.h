@@ -189,6 +189,6 @@ void json_add_timeabs(struct json_stream *result, const char *fieldname,
 
 /* used in log.c and notification.c*/
 void json_add_time(struct json_stream *result, const char *fieldname,
-			  struct timespec ts)
+			  struct timespec ts);
 
 #endif /* LIGHTNING_LIGHTNINGD_JSON_H */
