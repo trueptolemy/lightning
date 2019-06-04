@@ -4,7 +4,7 @@ static void wallet_test_fatal(const char *fmt, ...);
 #define db_fatal wallet_test_fatal
 #include "test_utils.h"
 
-static void db_log_(struct log *log UNUSED, enum log_level level UNUSED, const char *fmt UNUSED, ...)
+static void db_log_(struct log *log UNUSED, enum log_level level UNUSED, bool notifer UNUSED, const char *fmt UNUSED, ...)
 {
 }
 #define log_ db_log_
