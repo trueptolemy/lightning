@@ -53,11 +53,6 @@ struct log_book {
 	struct lightningd *ld;
 };
 
-struct log {
-	struct log_book *lr;
-	const char *prefix;
-};
-
 static void log_to_file(const char *prefix,
 			enum log_level level,
 			bool continued,
