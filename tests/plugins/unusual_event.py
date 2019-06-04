@@ -24,6 +24,6 @@ def pretend_unusual(event, plugin):
     """Log an unusual level entry
     """
     plugin.log("{}".format(event), 'unusual')
-
+    return True
 
 plugin.run()
