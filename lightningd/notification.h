@@ -3,6 +3,7 @@
 #include "config.h"
 #include <lightningd/jsonrpc.h>
 #include <lightningd/lightningd.h>
+#include <lightningd/log.h>
 #include <lightningd/plugin.h>
 
 bool notifications_have_topic(const char *topic);
