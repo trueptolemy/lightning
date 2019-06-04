@@ -318,9 +318,10 @@ def test_unusual_event_notification(node_factory):
     """ test 'unusual_event' notifications
     """
     l1 = node_factory.get_node(options={'plugin': 'tests/plugins/unusual_event.py'})
+    l1.rpc.pretend_unusual()
 
-    l1.daemon.wait_for_log('Test unusual event notification')
-    l1.daemon.wait_for_log('Received unusual log:')
-    l1.daemon.wait_for_log('time: ')
-    l1.daemon.wait_for_log('source: ')
-    l1.daemon.wait_for_log('log: ')
+    l1.daemon.wait_for_log('plugin-unusual_event.py Test unusual event notification')
+    l1.daemon.wait_for_log('plugin-unusual_event.py Received unusual log:')
+    l1.daemon.wait_for_log('plugin-unusual_event.py time: *')
+    l1.daemon.wait_for_log('plugin-unusual_event.py source: *')
+    l1.daemon.wait_for_log('plugin-unusual_event.py log: Test unusual event notification')
