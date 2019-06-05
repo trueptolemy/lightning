@@ -323,7 +323,7 @@ def test_warning_notification(node_factory):
     event = "Test warning(unusual event) notification"
     l1.rpc.call('pretendbad', {'event': event, 'level': 'warn'})
     time.sleep(1)
-    l1.daemon.logsearch_start = 0
+
     # ensure an unusual log_entry was produced by 'pretendunusual' method
     l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning(unusual event) notification')
     # now wait for notification
