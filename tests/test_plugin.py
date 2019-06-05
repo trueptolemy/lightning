@@ -337,9 +337,9 @@ def test_warning_notification(node_factory):
     event = "Test warning(broken event) notification"
     l1.rpc.call('pretendbad', {'event': event, 'level': 'error'})
     time.sleep(1)
-    l1.daemon.is_in_log('plugin-pretend_badlog.py Test warning(brokrn event) notification')
-
     l1.daemon.logsearch_start = 0
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning(brokrn event) notification')
+
     l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning(brokrn log):')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py level: error')
     l1.daemon.wait_for_logs(['plugin-pretend_badlog.py time: *']*2)
