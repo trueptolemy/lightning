@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""This plugin is used to check that unusual_event calls are working correctly.
+"""This plugin is used to check that warning(unusual/broken level log) calls are working correctly.
 """
 from lightning import Plugin
 
@@ -11,19 +11,21 @@ def init(configuration, options, plugin):
     plugin.log("initialized")
 
 
-@plugin.subscribe("unusual_event")
-def notify_unusual(plugin, unusual_event):
-    plugin.log("Received unusual log:")
-    plugin.log("time: {}".format(unusual_event['time']))
-    plugin.log("source: {}".format(unusual_event['source']))
-    plugin.log("log: {}".format(unusual_event['log']))
+@plugin.subscribe("warning")
+def notify_warning(plugin, warning):
+    plugin.log("Received warning(unusual log):")
+    plugin.log("level: {}".format(warning['level']))
+    plugin.log("time: {}".format(warning['time']))
+    plugin.log("source: {}".format(warning['source']))
+    plugin.log("log: {}".format(warning['log']))
 
 
 @plugin.method('pretendunusual')
-def pretend_unusual(event, plugin):
-    """Log an unusual level entry
+def pretend_bad(event, level, plugin):
+    """Log an 'unusual' level entry.
+    And in plugin, we use 'warn' instead of 'unusual'
     """
-    plugin.log("{}".format(event), 'warn')
+    plugin.log("{}".format(event), level)
 
 
 plugin.run()
