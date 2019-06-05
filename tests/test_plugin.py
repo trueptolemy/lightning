@@ -314,19 +314,33 @@ def test_openchannel_hook(node_factory, bitcoind):
         l1.rpc.fundchannel(l2.info['id'], 100001)
 '''
 
-def test_unusual_event_notification(node_factory):
-    """ test 'unusual_event' notifications
+def test_warning_notification(node_factory):
+    """ test 'warning' notifications
     """
-    l1 = node_factory.get_node(options={'plugin': 'tests/plugins/unusual_event.py'})
-#    l1.daemon.logsearch_start = 0
-#    l1.daemon.wait_for_log('plugin-unusual_event.py initialized')
+    l1 = node_factory.get_node(options={'plugin': 'tests/plugins/pretend_badlog.py'})
 
-    l1.rpc.pretendunusual("Test unusual event notification")
+    # 1. test 'warn' level
+    l1.rpc.pretendbad("Test warning(unusual event) notification", 'warn')
 
-    l1.daemon.wait_for_log('plugin-unusual_event.py Test unusual event notification')
+    # ensure an unusual log_entry was produced by 'pretendunusual' method
+    assert l1.daemon.is_in_log('plugin-pretend_badlog.py Test warning(unusual event) notification')
 
     l1.daemon.logsearch_start = 0
-    l1.daemon.wait_for_log('plugin-unusual_event.py Received unusual log:')
-    l1.daemon.wait_for_log('plugin-unusual_event.py time: *')
-    l1.daemon.wait_for_log('plugin-unusual_event.py source: *')
-    l1.daemon.wait_for_log('plugin-unusual_event.py log: Test unusual event notification')
+    # now wait for notification
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning(unusual log):')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py level: warn')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py time: *')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py source:  plugin-pretend_badlog.py')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning(unusual event) notification')
+
+    # 2. test 'error' level, like above
+    l1.rpc.pretendbad("Test warning(broken event) notification", 'error')
+    l1.daemon.is_in_log('plugin-pretend_badlog.py Test warning(brokrn event) notification')
+
+    l1.daemon.logsearch_start = 0
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning(brokrn log):')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py level: error')
+    l1.daemon.wait_for_logs(['plugin-pretend_badlog.py time: *']*2)
+    l1.daemon.wait_for_logs(['plugin-pretend_badlog.py source:  plugin-pretend_badlog.py']*2)
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning(brokrn event) notification')
+
