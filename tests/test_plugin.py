@@ -320,7 +320,7 @@ def test_warning_notification(node_factory):
     l1 = node_factory.get_node(options={'plugin': 'tests/plugins/pretend_badlog.py'})
 
     # 1. test 'warn' level
-    l1.rpc.pretendbad("Test warning(unusual event) notification", 'warn')
+    l1.rpc.pretendbad(["Test warning(unusual event) notification", 'warn'])
 
     # ensure an unusual log_entry was produced by 'pretendunusual' method
     assert l1.daemon.is_in_log('plugin-pretend_badlog.py Test warning(unusual event) notification')
