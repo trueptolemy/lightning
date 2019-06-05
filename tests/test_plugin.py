@@ -330,7 +330,7 @@ def test_warning_notification(node_factory):
     l1.daemon.wait_for_log('plugin-pretend_badlog.py level: warn')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py time: *')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py source: plugin-pretend_badlog.py')
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning notification for unusual event ')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning notification for unusual event')
 
     # 2. test 'error' level, steps like above
     event = "Test warning notification for brokrn event"
