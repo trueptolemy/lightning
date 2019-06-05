@@ -5,7 +5,7 @@
 const char *notification_topics[] = {
 	"connect",
 	"disconnect",
-	"unusual_event"
+	"warning"
 };
 
 bool notifications_have_topic(const char *topic)
