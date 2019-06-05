@@ -36,17 +36,27 @@ void notify_disconnect(struct lightningd *ld, struct node_id *nodeid)
 	plugins_notify(ld->plugins, take(n));
 }
 
-void notify_unusual_event(struct lightningd *ld, struct log *log,
+/*'warning' is based on LOG_UNUSUAL/LOG_BROKEN level log
+ *(in plugin module, they're 'warn'/'error' level). */
+void notify_warning(struct lightningd *ld, struct log *log,
 		    struct log_entry *l)
 {
 	struct jsonrpc_notification *n =
 	    jsonrpc_notification_start(NULL, notification_topics[2]);
 	struct timerel diff = time_between(l->time, log->lr->init_time);
-	json_object_start(n->stream, "unusual_event");
+	json_object_start(n->stream, "warning");
+	/* Choose "BROKEN"/"UNUSUAL" to keep consistent with the habit
+	 * of plugin. But this may confuses the users who want to 'getlog'
+	 * with the level indicated by notifications. It is the duty of a
+	 * plugin to eliminate this misunderstanding.
+	 */
+	json_add_string(n->stream, "level",
+			level == LOG_BROKEN ? "error"
+			: "warn");
 	json_add_time(n->stream, "time", diff.ts);
 	json_add_string(n->stream, "source", l->prefix);
 	json_add_string(n->stream, "log", l->log);
-	json_object_end(n->stream); /* .unusual_event */
+	json_object_end(n->stream); /* .warning */
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }

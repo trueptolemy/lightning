@@ -248,7 +248,7 @@ void logv(struct log *log, enum log_level level, bool notifer,
 	add_entry(log, l);
 
 	if(notifer) {
-		if(level == LOG_UNUSUAL)
+		if(level >= LOG_UNUSUAL)
 			notify_unusual_event(log->lr->ld, log, l);
 	}
 
