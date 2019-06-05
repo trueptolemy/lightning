@@ -321,7 +321,7 @@ def test_warning_notification(node_factory):
 
     # 1. test 'warn' level
     event = "Test warning notification(unusual event)"
-    l1.rpc.pretendbad({'event': event, 'level': 'warn'})
+    l1.rpc.call('pretendbad', {'event': event, 'level': 'warn'})
 
     # ensure an unusual log_entry was produced by 'pretendunusual' method
     assert l1.daemon.is_in_log('plugin-pretend_badlog.py Test warning notification\\(for unusual event\\)')
@@ -335,7 +335,7 @@ def test_warning_notification(node_factory):
 
     # 2. test 'error' level, steps like above
     event = "Test warning notification(broken event)"
-    l1.rpc.pretendbad({'event': event, 'level': 'error'})
+    l1.rpc.call('pretendbad', {'event': event, 'level': 'error'})
     assert l1.daemon.is_in_log('plugin-pretend_badlog.py Test warning notification\\(for brokrn event\\)')
 
     l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning')
