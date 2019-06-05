@@ -20,12 +20,13 @@ def notify_warning(plugin, warning):
     plugin.log("log: {}".format(warning['log']))
 
 
-@plugin.method("bad")
-def pretendbad(plugin, event):
-    """Log an 'unusual' level entry.
-    And in plugin, we use 'warn' instead of 'unusual'
+@plugin.method("pretendbad")
+def pretend_bad(event, level, plugin):
+    """Log an specified level entry.
+    And in plugin, we use 'warn'/'error' instead of
+    'unusual'/'broken'
     """
-    plugin.log("{}".format(event), 'warn')
+    plugin.log("{}".format(event), level)
 
 
 plugin.run()
