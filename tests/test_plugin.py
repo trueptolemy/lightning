@@ -330,4 +330,3 @@ def test_unusual_event_notification(node_factory):
     l1.daemon.wait_for_log('plugin-unusual_event.py time: *')
     l1.daemon.wait_for_log('plugin-unusual_event.py source: *')
     l1.daemon.wait_for_log('plugin-unusual_event.py log: Test unusual event notification')
-    assert 1==2
