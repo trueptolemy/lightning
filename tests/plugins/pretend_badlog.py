@@ -21,7 +21,7 @@ def notify_warning(plugin, warning):
 
 
 @plugin.method("pretendbad")
-def pretend_bad(event, level, plugin):
+def pretend_bad(plugin, event, level):
     """Log an specified level entry.
     And in plugin, we use 'warn'/'error' instead of
     'unusual'/'broken'
