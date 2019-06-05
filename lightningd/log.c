@@ -32,6 +32,16 @@
 /* Once we're up and running, this is set up. */
 struct log *crashlog;
 
+char* time_iso_format(const struct timeabs *time)
+{
+	char iso8601_msec_fmt[sizeof("YYYY-mm-ddTHH:MM:SS.%03dZ")];
+	strftime(iso8601_msec_fmt, sizeof(iso8601_msec_fmt), "%FT%T.%%03dZ", gmtime(&time->ts.tv_sec));
+	char iso8601_s[sizeof("YYYY-mm-ddTHH:MM:SS.nnnZ")];
+	snprintf(iso8601_s, sizeof(iso8601_s), iso8601_msec_fmt, (int) time->ts.tv_nsec / 1000000);
+
+	return iso8601_s
+}
+
 static void log_to_file(const char *prefix,
 			enum log_level level,
 			bool continued,
@@ -41,10 +51,7 @@ static void log_to_file(const char *prefix,
 			size_t io_len,
 			FILE *logf)
 {
-	char iso8601_msec_fmt[sizeof("YYYY-mm-ddTHH:MM:SS.%03dZ")];
-	strftime(iso8601_msec_fmt, sizeof(iso8601_msec_fmt), "%FT%T.%%03dZ", gmtime(&time->ts.tv_sec));
-	char iso8601_s[sizeof("YYYY-mm-ddTHH:MM:SS.nnnZ")];
-	snprintf(iso8601_s, sizeof(iso8601_s), iso8601_msec_fmt, (int) time->ts.tv_nsec / 1000000);
+	char *iso8601_s = time_iso_format(time);
 
 	if (level == LOG_IO_IN || level == LOG_IO_OUT) {
 		const char *dir = level == LOG_IO_IN ? "[IN]" : "[OUT]";
