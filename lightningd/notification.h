@@ -12,6 +12,6 @@ void notify_connect(struct lightningd *ld, struct node_id *nodeid,
 		    struct wireaddr_internal *addr);
 void notify_disconnect(struct lightningd *ld, struct node_id *nodeid);
 
-void notify_unusual_event(struct lightningd *ld, struct log *log, struct log_entry *l);
+void notify_warning(struct lightningd *ld, struct log *log, struct log_entry *l);
 
 #endif /* LIGHTNING_LIGHTNINGD_NOTIFICATION_H */

@@ -344,3 +344,5 @@ def test_warning_notification(node_factory):
     l1.daemon.wait_for_logs(['plugin-pretend_badlog.py source:  plugin-pretend_badlog.py']*2)
     l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning(brokrn event) notification')
 
+    assert 1==2
+
