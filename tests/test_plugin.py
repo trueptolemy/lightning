@@ -338,10 +338,10 @@ def test_warning_notification(node_factory):
 
     l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning notification for brokrn event')
 
-    l1.daemon.wait_for_logs(['plugin-pretend_badlog.py Received warning notification']*2)
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning notification')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py level: error')
-    l1.daemon.wait_for_logs(['plugin-pretend_badlog.py time: *']*2)
-    l1.daemon.wait_for_logs(['plugin-pretend_badlog.py source: plugin-pretend_badlog.py']*2)
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py time: *')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py source: plugin-pretend_badlog.py')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning notification for brokrn event')
 
     assert 1==2
