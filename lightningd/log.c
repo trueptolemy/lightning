@@ -249,7 +249,7 @@ void logv(struct log *log, enum log_level level, bool notifer,
 
 	if(notifer) {
 		if(level >= LOG_UNUSUAL)
-			notify_warning(log->lr->ld, log, l);
+			notify_warning(log->lr->ld, l);
 	}
 
 	errno = save_errno;

@@ -38,12 +38,10 @@ void notify_disconnect(struct lightningd *ld, struct node_id *nodeid)
 
 /*'warning' is based on LOG_UNUSUAL/LOG_BROKEN level log
  *(in plugin module, they're 'warn'/'error' level). */
-void notify_warning(struct lightningd *ld, struct log *log,
-		    struct log_entry *l)
+void notify_warning(struct lightningd *ld, struct log_entry *l)
 {
 	struct jsonrpc_notification *n =
 	    jsonrpc_notification_start(NULL, notification_topics[2]);
-	struct timerel diff = time_between(l->time, log->lr->init_time);
 	json_object_start(n->stream, "warning");
 	/* Choose "BROKEN"/"UNUSUAL" to keep consistent with the habit
 	 * of plugin. But this may confuses the users who want to 'getlog'
@@ -53,7 +51,7 @@ void notify_warning(struct lightningd *ld, struct log *log,
 	json_add_string(n->stream, "level",
 			l->level == LOG_BROKEN ? "error"
 			: "warn");
-	json_add_time(n->stream, "time", diff.ts);
+	json_add_time(n->stream, "time", l->time.ts);
 	json_add_string(n->stream, "source", l->prefix);
 	json_add_string(n->stream, "log", l->log);
 	json_object_end(n->stream); /* .warning */
