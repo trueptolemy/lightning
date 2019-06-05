@@ -271,7 +271,7 @@ def test_invoice_payment_hook(node_factory):
     l2.daemon.wait_for_log('label=label2')
     l2.daemon.wait_for_log('msat=')
     l2.daemon.wait_for_log('preimage=' + '0' * 64)
-
+'''
 
 def test_openchannel_hook(node_factory, bitcoind):
     """ l2 uses the reject_odd_funding_amounts plugin to reject some openings.
@@ -312,7 +312,7 @@ def test_openchannel_hook(node_factory, bitcoind):
     l1.connect(l2)
     with pytest.raises(RpcError, match=r"I don't like odd amounts"):
         l1.rpc.fundchannel(l2.info['id'], 100001)
-'''
+
 
 def test_warning_notification(node_factory):
     """ test 'warning' notifications
