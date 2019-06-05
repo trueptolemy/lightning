@@ -324,25 +324,25 @@ def test_warning_notification(node_factory):
     l1.rpc.call('pretendbad', {'event': event, 'level': 'warn'})
 
     # ensure an unusual log_entry was produced by 'pretendunusual' method
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning\(unusual event\) notification')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning\\(unusual event\\) notification')
     # now wait for notification
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning\(unusual log\):')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning\\(unusual log\\):')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py level: warn')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py time: *')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py source: plugin-pretend_badlog.py')
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning\(unusual event\) notification')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning\\(unusual event\\) notification')
 
     # 2. test 'error' level, steps like above
     event = "Test warning(broken event) notification"
     l1.rpc.call('pretendbad', {'event': event, 'level': 'error'})
 
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning\(brokrn event\) notification')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning\\(brokrn event\\) notification')
 
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning\(brokrn log\):')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning\\(brokrn log\\):')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py level: error')
     l1.daemon.wait_for_logs(['plugin-pretend_badlog.py time: *']*2)
     l1.daemon.wait_for_logs(['plugin-pretend_badlog.py source: plugin-pretend_badlog.py']*2)
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning\(brokrn event\) notification')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning\\(brokrn event\\) notification')
 
     assert 1==2
 
