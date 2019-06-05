@@ -51,7 +51,7 @@ void notify_warning(struct lightningd *ld, struct log *log,
 	 * plugin to eliminate this misunderstanding.
 	 */
 	json_add_string(n->stream, "level",
-			level == LOG_BROKEN ? "error"
+			l->level == LOG_BROKEN ? "error"
 			: "warn");
 	json_add_time(n->stream, "time", diff.ts);
 	json_add_string(n->stream, "source", l->prefix);
