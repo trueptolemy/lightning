@@ -13,7 +13,7 @@ def init(configuration, options, plugin):
 
 @plugin.subscribe("warning")
 def notify_warning(plugin, warning):
-    plugin.log("Received warning(unusual log):")
+    plugin.log("Received warning notification")
     plugin.log("level: {}".format(warning['level']))
     plugin.log("time: {}".format(warning['time']))
     plugin.log("source: {}".format(warning['source']))

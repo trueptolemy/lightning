@@ -320,29 +320,29 @@ def test_warning_notification(node_factory):
     l1 = node_factory.get_node(options={'plugin': 'tests/plugins/pretend_badlog.py'})
 
     # 1. test 'warn' level
-    event = "Test warning(unusual event) notification"
+    event = "Test warning notification for unusual event"
     l1.rpc.call('pretendbad', {'event': event, 'level': 'warn'})
 
     # ensure an unusual log_entry was produced by 'pretendunusual' method
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning\\(unusual event\\) notification')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning notification for unusual event')
     # now wait for notification
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning\\(unusual log\\):')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning notification')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py level: warn')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py time: *')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py source: plugin-pretend_badlog.py')
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning\\(unusual event\\) notification')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning notification for unusual event ')
 
     # 2. test 'error' level, steps like above
-    event = "Test warning(broken event) notification"
+    event = "Test warning notification for brokrn event"
     l1.rpc.call('pretendbad', {'event': event, 'level': 'error'})
 
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning\\(brokrn event\\) notification')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py Test warning notification for brokrn event')
 
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py Received warning\\(brokrn log\\):')
+    l1.daemon.wait_for_logs(['plugin-pretend_badlog.py Received warning notification']*2)
     l1.daemon.wait_for_log('plugin-pretend_badlog.py level: error')
     l1.daemon.wait_for_logs(['plugin-pretend_badlog.py time: *']*2)
     l1.daemon.wait_for_logs(['plugin-pretend_badlog.py source: plugin-pretend_badlog.py']*2)
-    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning\\(brokrn event\\) notification')
+    l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning notification for brokrn event')
 
     assert 1==2
 
