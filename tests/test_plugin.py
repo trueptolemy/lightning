@@ -494,7 +494,8 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     l1.rpc.waitsendpay(payment_hash13)
 
     stats = l2.rpc.listforwards()
-    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'offered', 'dbforward': stats[0]})
+    ok = l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'offered', 'dbforward': stats[0]})
+    assert ok == True
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'settleded', 'dbforward': stats[0]})
 '''
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash14, 'status': 'offered', 'dbforward': stats[1]})
