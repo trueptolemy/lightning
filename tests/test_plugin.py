@@ -493,21 +493,6 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     l1.rpc.sendpay(route, payment_hash13)
     l1.rpc.waitsendpay(payment_hash13)
 
-    stats = l2.rpc.listforwards()
-
-    ok = l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'offered', 'dbforward': stats['forwards'][0]})
-    assert ok == True
-    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'settleded', 'dbforward': stats[0]})
-'''
-    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash14, 'status': 'offered', 'dbforward': stats[1]})
-    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash14, 'status': 'failed', 'dbforward': stats[1]})
-    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'offered', 'dbforward': stats[2]})
-    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'local_failed', 'dbforward': stats[2]})
-'''
-
-
-
-'''
     # status: offered -> failed
     route = l1.rpc.getroute(l4.info['id'], amount, 1)['route']
     payment_hash14 = "F" * 64
@@ -552,4 +537,12 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
 
     bitcoind.generate_block(100)
     sync_blockheight(bitcoind, [l2])
-'''
+
+    stats = l2.rpc.listforwards()
+
+    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'offered', 'dbforward': stats['forwards'][0]})
+    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'settleded', 'dbforward': stats['forwards'][0]})
+    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash14, 'status': 'offered', 'dbforward': stats['forwards'][1]})
+    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash14, 'status': 'failed', 'dbforward': stats['forwards'][1]})
+    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'offered', 'dbforward': stats['forwards'][2]})
+    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'local_failed', 'dbforward': stats['forwards'][2]})
