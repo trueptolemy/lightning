@@ -11,7 +11,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 def test_option_passthrough(node_factory):
     """ Ensure that registering options works.
 
@@ -462,7 +462,7 @@ def test_warning_notification(node_factory):
     l1.daemon.wait_for_log('plugin-pretend_badlog.py time: *')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py source: plugin-pretend_badlog.py')
     l1.daemon.wait_for_log('plugin-pretend_badlog.py log: Test warning notification\\(for broken event\\)')
-
+'''
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_forward_event_notification(node_factory, bitcoind, executor):
@@ -502,8 +502,9 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     # status: offered -> local_failed
     payment_hash15 = l5.rpc.invoice(amount, 'onchain_timeout', 'desc')['payment_hash']
     route = l1.rpc.getroute(l5.info['id'], amount, 1)['route']
-    route[0]['msatoshi'] -= 1
-    route[0]['msatoshi'] -= 1
+    fee = amount * 10 // 1000000 + 1
+    route[0]['msatoshi'] = amount + fee -1
+    route[0]['msatoshi'] = amount - 1
 
     executor.submit(l1.rpc.sendpay, route, payment_hash15)
 
