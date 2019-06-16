@@ -6,13 +6,15 @@ from lightning import Plugin
 plugin = Plugin()
 
 
-def check(record, dbforward):
+def check(forward, dbforward):
+    record = forward
     if record['status'] == 'offered':
         if dbforward['status'] == 'local_failed':
             record['failcode'] = dbforward['failcode']
             record['failreason'] = dbforward['failreason']
         elif dbforward['status'] != 'offered':
             record['resolved_time'] = dbforward['resolved_time']
+    record['status'] = dbforward['status']
     if record == dbforward:
         return True
     else:
