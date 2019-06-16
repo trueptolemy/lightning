@@ -524,7 +524,7 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     l2.daemon.wait_for_log(' to ONCHAIN')
     l5.daemon.wait_for_log(' to ONCHAIN')
 
-    time.sleep(3)
+    time.sleep(10)
     l2.daemon.wait_for_log('Propose handling THEIR_UNILATERAL/OUR_HTLC by OUR_HTLC_TIMEOUT_TO_US .* after 6 blocks')
     bitcoind.generate_block(6)
 
