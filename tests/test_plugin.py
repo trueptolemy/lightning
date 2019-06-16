@@ -495,7 +495,7 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
 
     # status: offered -> failed
     route = l1.rpc.getroute(l4.info['id'], amount, 1)['route']
-    payment_hash14 = "F" * 64
+    payment_hash14 = "f" * 64
     with pytest.raises(RpcError):
         l1.rpc.sendpay(route, payment_hash14)
         l1.rpc.waitsendpay(payment_hash14)
