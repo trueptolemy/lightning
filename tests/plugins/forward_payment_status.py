@@ -25,7 +25,7 @@ def init(configuration, options, plugin):
 
 
 @plugin.subscribe("forward_event")
-def notify_warning(plugin, forward):
+def notify_warning(plugin, forward_payment):
     plugin.log("receive a forward recored with {}".format(forward['status']))
     plugin.forward_list.append(forward)
 
