@@ -35,6 +35,7 @@ def record_lookup(payment_hash, status, dbforward, plugin):
     plugin.log("recordcheck: payment_hash: {}, status: {}".format(payment_hash, status))
     for forward in plugin.forward_list:
         if forward['payment_hash'] == payment_hash and forward['status'] == status:
+            plugin.log("record exists")
             check_result = check(forward, dbforward)
             return check_result
     plugin.log("no record")
