@@ -32,6 +32,7 @@ def notify_warning(plugin, forward_payment):
 
 @plugin.method('recordcheck')
 def record_lookup(payment_hash, status, dbforward, plugin):
+    plugin.log("recordcheck: payment_hash: {}, status: {}".format(payment_hash, status))
     for forward in plugin.forward_list:
         if forward['payment_hash'] == payment_hash and forward['status'] == status:
             check_result = check(forward, dbforward)
