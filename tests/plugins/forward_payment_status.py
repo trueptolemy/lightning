@@ -26,6 +26,7 @@ def init(configuration, options, plugin):
 
 @plugin.subscribe("forward_event")
 def notify_warning(plugin, forward):
+    plugin.log("receive a recore with {}".format(forward['status']))
     plugin.forward_list.append(forward)
 
 
