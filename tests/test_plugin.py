@@ -534,96 +534,6 @@ def test_forward_local_failed_stats(node_factory, bitcoind, executor):
     l1.wait_channel_active(c25)
 
     wait_for(lambda: len(l1.rpc.listchannels()['channels']) == 10)
-
-    """1. When Msater resolves the reply about the next peer infor(sent
-       by Gossipd), and need handle unknown next peer failure in
-       channel_resolve_reply();
-
-       For this case, we ask l1 pay to l3 through l2 but close the channel
-       between l2 and l3 after getroute(), the payment will fail in l2
-       because of WIRE_UNKNOWN_NEXT_PEER;
-    """
-
-    payment_hash = l3.rpc.invoice(amount, "first", "desc")['payment_hash']
-    route = l1.rpc.getroute(l3.info['id'], amount, 1)['route']
-
-    l2.rpc.close(c23, True, 0)
-
-    with pytest.raises(RpcError):
-        l1.rpc.sendpay(route, payment_hash)
-        l1.rpc.waitsendpay(payment_hash)
-
-    """2. When Master handle the forward process with the htlc_in and
-       the id of next hop, it tries to drive a new htlc_out but fails
-       in forward_htlc();
-
-       For this case, we ask l1 pay to 14 through with no fee, so the
-       payment will fail in l2 becase of WIRE_FEE_INSUFFICIENT;
-    """
-
-    payment_hash = l4.rpc.invoice(amount, "third", "desc")['payment_hash']
-    fee = amount * 10 // 1000000 + 1
-
-    route = [{'msatoshi': amount,
-              'id': l2.info['id'],
-              'delay': 12,
-              'channel': c12},
-             {'msatoshi': amount,
-              'id': l4.info['id'],
-              'delay': 6,
-              'channel': c24}]
-
-    with pytest.raises(RpcError):
-        l1.rpc.sendpay(route, payment_hash)
-        l1.rpc.waitsendpay(payment_hash)
-
-    """3. When we send htlc_out, Master asks Channeld to add a new htlc
-       into the outgoing channel but Channeld fails. Master need
-       handle and store this failure in rcvd_htlc_reply();
-
-       For this case, we ask l1 pay to l5 with 10**8 sat though the channel
-       (l2-->l5) with the max capacity of 10**4 msat , the payment will
-       fail in l2 because of CHANNEL_ERR_MAX_HTLC_VALUE_EXCEEDED;
-    """
-
-    payment_hash = l5.rpc.invoice(amount, "second", "desc")['payment_hash']
-    fee = amount * 10 // 1000000 + 1
-
-    route = [{'msatoshi': amount + fee,
-              'id': l2.info['id'],
-              'delay': 12,
-              'channel': c12},
-             {'msatoshi': amount,
-              'id': l5.info['id'],
-              'delay': 6,
-              'channel': c25}]
-
-    with pytest.raises(RpcError):
-        l1.rpc.sendpay(route, payment_hash)
-        l1.rpc.waitsendpay(payment_hash)
-
-    """4. When Channeld receives a new revoke message, if the state of
-       corresponding htlc is RCVD_ADD_ACK_REVOCATION, Master will tries
-       to resolve onionpacket and handle the failure before resolving
-       the next hop in peer_got_revoke();
-
-       For this case, we ask l6 pay to l4 though l1 and l2, but we replace
-       the second node_id in route with the wrong one, so the payment will
-       fail in l2 because of WIRE_INVALID_ONION_KEY;
-    """
-
-    payment_hash = l4.rpc.invoice(amount, 'fourth', 'desc')['payment_hash']
-    route = l6.rpc.getroute(l4.info['id'], amount, 1)['route']
-
-    mangled_nodeid = '0265b6ab5ec860cd257865d61ef0bbf5b3339c36cbda8b26b74e7f1dca490b6510'
-
-    # Replace id with a different pubkey, so onion encoded badly at l2 hop.
-    route[1]['id'] = mangled_nodeid
-
-    with pytest.raises(RpcError):
-        l6.rpc.sendpay(route, payment_hash)
-        l6.rpc.waitsendpay(payment_hash)
-
     """5. When Onchaind finds the htlc time out or missing htlc, Master
        need handle these failure as FORWARD_LOCAL_FAILED in if it's forward
        payment case.
@@ -688,7 +598,7 @@ def test_forward_local_failed_stats(node_factory, bitcoind, executor):
 def test_forward_event_notification(node_factory, bitcoind, executor):
     """ test 'forward_event' notifications
     """
-    amount = 10**5
+    amount = 10**8
     disconnects = ['-WIRE_UPDATE_FAIL_HTLC', 'permfail']
 
     l1, l2, l3 = node_factory.line_graph(3, opts=[
@@ -744,7 +654,6 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     l2.daemon.wait_for_log(' to ONCHAIN')
     l5.daemon.wait_for_log(' to ONCHAIN')
 
-    time.sleep(10)
     l2.daemon.wait_for_log('Propose handling THEIR_UNILATERAL/OUR_HTLC by OUR_HTLC_TIMEOUT_TO_US .* after 6 blocks')
     bitcoind.generate_block(6)
 
