@@ -26,7 +26,7 @@ def init(configuration, options, plugin):
 
 @plugin.subscribe("forward_event")
 def notify_warning(plugin, forward_payment):
-    plugin.log("receive a forward recored with {}".format(forward_payment['status']))
+    plugin.log("receive a forward recored, status: {}, payment_hash: {}".format(forward_payment['status'], forward_payment['payment_hash']))
     plugin.forward_list.append(forward_payment)
 
 
@@ -37,6 +37,7 @@ def record_lookup(payment_hash, status, dbforward, plugin):
         if forward['payment_hash'] == payment_hash and forward['status'] == status:
             check_result = check(forward, dbforward)
             return check_result
+    plugin.log("no record")
     return False
 
 
