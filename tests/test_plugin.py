@@ -538,7 +538,6 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     bitcoind.generate_block(100)
     sync_blockheight(bitcoind, [l2])
 '''
-    # Check all forward_event record
     stats = l2.rpc.listforwards()
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'offered', 'dbforward': stats[0]})
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'status': 'settleded', 'dbforward': stats[0]})
