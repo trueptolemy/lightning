@@ -501,10 +501,20 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
 
     # status: offered -> local_failed
     payment_hash15 = l5.rpc.invoice(amount, 'onchain_timeout', 'desc')['payment_hash']
-    route = l1.rpc.getroute(l5.info['id'], amount, 1)['route']
+   # route = l1.rpc.getroute(l5.info['id'], amount, 1)['route']
     fee = amount * 10 // 1000000 + 1
-    route[0]['msatoshi'] -= 1
-    route[1]['msatoshi'] -= 1
+#    route[0]['msatoshi'] -= 1
+#    route[1]['msatoshi'] -= 1
+    c12 = l1.get_channel_scid(l2)
+    c25 = l2.get_channel_scid(l5)
+    route = [{'msatoshi': amount + fee - 1,
+              'id': l2.info['id'],
+              'delay': 12,
+              'channel': c12},
+             {'msatoshi': amount - 1,
+              'id': l5.info['id'],
+              'delay': 5,
+              'channel': c25}]
 
     executor.submit(l1.rpc.sendpay, route, payment_hash15)
 
