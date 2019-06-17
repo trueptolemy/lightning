@@ -71,8 +71,7 @@ add_waitsendpay_waiter(struct lightningd *ld,
 }
 
 /* Outputs fields, not a separate object*/
-static void
-json_add_payment_fields(struct json_stream *response,
+void json_add_payment_fields(struct json_stream *response,
 			const struct wallet_payment *t)
 {
 	json_add_u64(response, "id", t->id);
@@ -140,10 +139,29 @@ json_add_routefail_info(struct json_stream *js,
 	json_add_num(js, "erring_direction", channel_dir);
 }
 
+void json_sendpay_fail_fields(struct json_stream *js,
+			const int pay_errcode,
+			const u8 *onionreply,
+			const struct routing_failure *fail,
+			const char *details)
+{
+	if (pay_errcode == PAY_UNPARSEABLE_ONION) {
+		json_add_hex_talarr(js, "onionreply", onionreply);
+	} else {
+		json_add_routefail_info(js,
+					fail->erring_index,
+					fail->failcode,
+					&fail->erring_node,
+					&fail->erring_channel,
+					fail->channel_dir);
+	}
+}
+
+
 /* onionreply used if pay_errcode == PAY_UNPARSEABLE_ONION */
 static struct command_result *
 sendpay_fail(struct command *cmd,
-	     int pay_errcode,
+	     const int pay_errcode,
 	     const u8 *onionreply,
 	     const struct routing_failure *fail,
 	     const char *details)
@@ -152,23 +170,19 @@ sendpay_fail(struct command *cmd,
 
 	if (pay_errcode == PAY_UNPARSEABLE_ONION) {
 		data = json_stream_fail(cmd, PAY_UNPARSEABLE_ONION,
-					"Malformed error reply");
-		json_add_hex_talarr(data, "onionreply", onionreply);
-		json_object_end(data);
-		return command_failed(cmd, data);
+					"Malformed error reply");	
+	} else {
+		assert(fail);
+		data = json_stream_fail(cmd, pay_errcode,
+					tal_fmt(tmpctx, "failed: %s (%s)",
+						onion_type_name(fail->failcode),
+						details));
 	}
-
-	assert(fail);
-	data = json_stream_fail(cmd, pay_errcode,
-				tal_fmt(tmpctx, "failed: %s (%s)",
-					onion_type_name(fail->failcode),
-					details));
-	json_add_routefail_info(data,
-				fail->erring_index,
-				fail->failcode,
-				&fail->erring_node,
-				&fail->erring_channel,
-				fail->channel_dir);
+	json_sendpay_fail_fields(data,
+						     pay_errcode,
+						     onionreply,
+						     fail,
+						     details);
 	json_object_end(data);
 	return command_failed(cmd, data);
 }
