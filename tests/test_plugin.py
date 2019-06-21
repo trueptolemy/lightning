@@ -542,3 +542,19 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash14, 'status': 'failed', 'dbforward': stats['forwards'][1]})
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'offered', 'dbforward': stats['forwards'][2]})
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'local_failed', 'dbforward': stats['forwards'][2]})
+
+
+def test_sendpay_result_notification(node_factory, bitcoind):
+    """ l2 uses the reject_odd_funding_amounts plugin to reject some openings.
+    """
+    amount = 10**8
+    opts = [{}, {'plugin': 'tests/plugins/sendpay_result.py'}]
+    l1, l2, l3 = node_factory.line_graph(3, fundchannel=False, opts=opts)
+
+    payment_hash13 = l3.rpc.invoice(amount, "first", "desc")['payment_hash']
+    route = l1.rpc.getroute(l3.info['id'], amount, 1)['route']
+
+    l1.rpc.sendpay(route, payment_hash13)
+    response = l1.rpc.waitsendpay(payment_hash13)
+
+    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'response': response})
