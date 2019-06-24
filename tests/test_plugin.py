@@ -557,4 +557,4 @@ def test_sendpay_result_notification(node_factory, bitcoind):
     l1.rpc.sendpay(route, payment_hash13)
     response = l1.rpc.waitsendpay(payment_hash13)
 
-    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'response': response})
+    assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'response': response})
