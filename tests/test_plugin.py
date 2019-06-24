@@ -559,9 +559,7 @@ def test_sendpay_result_notification(node_factory, bitcoind):
     l1.rpc.sendpay(route, payment_hash1)
     response1 = l1.rpc.waitsendpay(payment_hash1)
 
-    l3.stop()
-
-    wait_for(lambda: [c['active'] for c in l2.rpc.listchannels(chanid23)['channels']] == [False, False])
+    l2.rpc.close(chanid23, True, 0)
 
     l1.rpc.sendpay(route, payment_hash2)
     response2 = l1.rpc.waitsendpay(payment_hash2)
