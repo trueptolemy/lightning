@@ -549,7 +549,7 @@ def test_sendpay_result_notification(node_factory, bitcoind):
     """
     amount = 10**8
     opts = [{}, {'plugin': 'tests/plugins/sendpay_result.py'}, {}]
-    l1, l2, l3 = node_factory.line_graph(3, fundchannel=False, opts=opts)
+    l1, l2, l3 = node_factory.line_graph(3, opts=opts)
 
     payment_hash13 = l3.rpc.invoice(amount, "first", "desc")['payment_hash']
     route = l1.rpc.getroute(l3.info['id'], amount, 1)['route']
