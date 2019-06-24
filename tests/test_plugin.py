@@ -550,11 +550,21 @@ def test_sendpay_result_notification(node_factory, bitcoind):
     amount = 10**8
     opts = [{'plugin': 'tests/plugins/sendpay_result.py'}, {}, {}]
     l1, l2, l3 = node_factory.line_graph(3, opts=opts, wait_for_announce=True)
+    chanid23 = l2.get_channel_scid(l3)
 
-    payment_hash13 = l3.rpc.invoice(amount, "first", "desc")['payment_hash']
+    payment_hash1 = l3.rpc.invoice(amount, "first", "desc")['payment_hash']
+    payment_hash2 = l3.rpc.invoice(amount, "second", "desc")['payment_hash']
     route = l1.rpc.getroute(l3.info['id'], amount, 1)['route']
 
-    l1.rpc.sendpay(route, payment_hash13)
-    response = l1.rpc.waitsendpay(payment_hash13)
+    l1.rpc.sendpay(route, payment_hash1)
+    response1 = l1.rpc.waitsendpay(payment_hash1)
 
-    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash13, 'response': response})
+    l3.stop()
+
+    wait_for(lambda: [c['active'] for c in l2.rpc.listchannels(chanid23)['channels']] == [False, False])
+
+    l1.rpc.sendpay(route, payment_hash2)
+    response2 = l1.rpc.waitsendpay(payment_hash2)
+
+    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash1, 'response': response1})
+    assert not l1.rpc.call('recordcheck', {'payment_hash': payment_hash2, 'response': response2})
