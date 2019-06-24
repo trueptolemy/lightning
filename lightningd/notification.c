@@ -78,16 +78,22 @@ void notify_forward_event(struct lightningd *ld,
 	 * to pass in a bunch of parameters directly*/
 	struct forwarding *cur = tal(tmpctx, struct forwarding);
 	cur->channel_in = *in->key.channel->scid;
-	cur->channel_out = *out->key.channel->scid;
 	cur->msat_in = in->msat;
-	cur->msat_out = out->msat;
+	if (out) {
+		cur->channel_out = *out->key.channel->scid;
+		cur->msat_out = out->msat;
+		assert(amount_msat_sub(&cur->fee, in->msat, out->msat));
+	} else {
+		cur->channel_out.u64 = 0;
+		cur->msat_out = AMOUNT_MSAT(0);
+		cur->fee = AMOUNT_MSAT(0);
+	}
 	cur->payment_hash = tal(cur, struct sha256_double);
 	cur->payment_hash->sha = in->payment_hash;
 	cur->status = state;
 	cur->failcode = failcode;
 	cur->received_time = in->received_time;
 	cur->resolved_time = tal_steal(cur, resolved_time);
-	assert(amount_msat_sub(&cur->fee, in->msat, out->msat));
 
 	json_format_forwarding_object(n->stream, "forward_payment", cur);
 
