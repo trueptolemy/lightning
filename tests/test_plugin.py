@@ -548,7 +548,7 @@ def test_sendpay_result_notification(node_factory, bitcoind):
     """ l2 uses the reject_odd_funding_amounts plugin to reject some openings.
     """
     amount = 10**8
-    opts = [{'plugin': 'tests/plugins/sendpay_result.py'},{}, {}]
+    opts = [{'plugin': 'tests/plugins/sendpay_result.py'}, {}, {}]
     l1, l2, l3 = node_factory.line_graph(3, opts=opts, wait_for_announce=True)
 
     payment_hash13 = l3.rpc.invoice(amount, "first", "desc")['payment_hash']
