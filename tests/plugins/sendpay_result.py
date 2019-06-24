@@ -20,9 +20,9 @@ def init(configuration, options, plugin):
 
 
 @plugin.subscribe("sendpay_result")
-def notify_sendpay_result(plugin, result):
-    plugin.log("receive a sendpay_result recored, id: {}, payment_hash: {}".format(result['id'], result['payment_hash']))
-    plugin.result_list.append(result)
+def notify_sendpay_result(plugin, sendpay_result):
+    plugin.log("receive a sendpay_result recored, id: {}, payment_hash: {}".format(sendpay_result['id'], sendpay_result['payment_hash']))
+    plugin.result_list.append(sendpay_result)
 
 
 @plugin.method('recordcheck')
