@@ -547,7 +547,7 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
 def test_sendpay_result_notification(node_factory, bitcoind):
     """ l2 uses the reject_odd_funding_amounts plugin to reject some openings.
     """
-    amount = 10**8
+    amount = 10**5
     opts = [{}, {'plugin': 'tests/plugins/sendpay_result.py'}, {}]
     l1, l2, l3 = node_factory.line_graph(3, fundchannel=False, opts=opts)
 
