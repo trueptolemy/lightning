@@ -548,7 +548,7 @@ def test_sendpay_result_notification(node_factory, bitcoind):
     """ l2 uses the reject_odd_funding_amounts plugin to reject some openings.
     """
     amount = 10**8
-    opts = [{'plugin': 'tests/plugins/sendpay_result.py'}, {}, {}]
+    opts = [{'plugin': 'tests/plugins/sendpay_result.py'}, {}, {'may_reconnect': False}]
     l1, l2, l3 = node_factory.line_graph(3, opts=opts, wait_for_announce=True)
     chanid23 = l2.get_channel_scid(l3)
 
