@@ -195,6 +195,7 @@ static void plugin_send(struct plugin *plugin, struct json_stream *stream)
 {
 	tal_steal(plugin->js_arr, stream);
 	tal_arr_expand(&plugin->js_arr, stream);
+	log_debug(plugin->log, "send request or notification");
 	io_wake(plugin);
 }
 
