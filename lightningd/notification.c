@@ -102,6 +102,7 @@ void notify_sendpay_result(struct lightningd *ld,
 				  const struct routing_failure *fail,
 				  const char *details)
 {
+	log_debug(ld->log, "notify sendpay_result");
 	struct jsonrpc_notification *n =
 	    jsonrpc_notification_start(NULL, notification_topics[4]);
 	json_object_start(n->stream, "sendpay_result");
