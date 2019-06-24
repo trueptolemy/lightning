@@ -8,7 +8,8 @@ const char *notification_topics[] = {
 	"connect",
 	"disconnect",
 	"warning",
-	"forward_event"
+	"forward_event",
+	"sendpay_result"
 };
 
 bool notifications_have_topic(const char *topic)
@@ -90,6 +91,32 @@ void notify_forward_event(struct lightningd *ld,
 
 	json_format_forwarding_object(n->stream, "forward_payment", cur);
 
+	jsonrpc_notification_end(n);
+	plugins_notify(ld->plugins, take(n));
+}
+
+void notify_sendpay_result(struct lightningd *ld,
+				  const struct wallet_payment *payment,
+				  const int *pay_errcode,
+				  const u8 *onionreply,
+				  const struct routing_failure *fail,
+				  const char *details)
+{
+	struct jsonrpc_notification *n =
+	    jsonrpc_notification_start(NULL, notification_topics[4]);
+	json_object_start(n->stream, "sendpay_result");
+
+	if (payment->status == PAYMENT_COMPLETE)
+		json_add_payment_fields(n->stream, payment);
+	else {
+		json_sendpay_fail_fields(n->stream,
+							     payment,
+							     *pay_errcode,
+							     onionreply,
+							     fail,
+							     details);
+	}
+	json_object_end(n->stream); /* .sendpay_result */
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }
