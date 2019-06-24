@@ -140,14 +140,17 @@ json_add_routefail_info(struct json_stream *js,
 }
 
 void json_sendpay_fail_fields(struct json_stream *js,
+			const struct wallet_payment *payment,
 			const int pay_errcode,
 			const u8 *onionreply,
 			const struct routing_failure *fail,
 			const char *details)
 {
 	if (pay_errcode == PAY_UNPARSEABLE_ONION) {
+		json_add_payment_fields(js, payment);
 		json_add_hex_talarr(js, "onionreply", onionreply);
 	} else {
+		json_add_payment_fields(js, payment);
 		json_add_routefail_info(js,
 					fail->erring_index,
 					fail->failcode,
@@ -161,6 +164,7 @@ void json_sendpay_fail_fields(struct json_stream *js,
 /* onionreply used if pay_errcode == PAY_UNPARSEABLE_ONION */
 static struct command_result *
 sendpay_fail(struct command *cmd,
+	     const struct wallet_payment *payment,
 	     const int pay_errcode,
 	     const u8 *onionreply,
 	     const struct routing_failure *fail,
@@ -179,6 +183,7 @@ sendpay_fail(struct command *cmd,
 						details));
 	}
 	json_sendpay_fail_fields(data,
+						     payment,
 						     pay_errcode,
 						     onionreply,
 						     fail,
@@ -201,6 +206,7 @@ json_sendpay_in_progress(struct command *cmd,
 
 static void tell_waiters_failed(struct lightningd *ld,
 				const struct sha256 *payment_hash,
+				struct wallet_payment *payment,
 				int pay_errcode,
 				const u8 *onionreply,
 				const struct routing_failure *fail,
@@ -214,7 +220,8 @@ static void tell_waiters_failed(struct lightningd *ld,
 		if (!sha256_eq(payment_hash, &pc->payment_hash))
 			continue;
 
-		sendpay_fail(pc->cmd, pay_errcode, onionreply, fail, details);
+		sendpay_fail(pc->cmd, payment, pay_errcode,
+				     onionreply, fail, details);
 	}
 }
 
@@ -503,8 +510,8 @@ void payment_failed(struct lightningd *ld, const struct htlc_out *hout,
 				    failmsg,
 				    fail ? fail->channel_dir : 0);
 
-	tell_waiters_failed(ld, &hout->payment_hash, pay_errcode,
-			    hout->failuremsg, fail, failmsg);
+	tell_waiters_failed(ld, &hout->payment_hash, payment,
+			    pay_errcode, hout->failuremsg, fail, failmsg);
 }
 
 /* Wait for a payment. If cmd is deleted, then json_waitsendpay_on_resolve
@@ -560,7 +567,7 @@ static struct command_result *wait_payment(struct lightningd *ld,
 					    "Payment failure reason unknown");
 		} else if (failonionreply) {
 			/* failed to parse returned onion error */
-			return sendpay_fail(cmd, PAY_UNPARSEABLE_ONION,
+			return sendpay_fail(cmd, payment, PAY_UNPARSEABLE_ONION,
 					    failonionreply,
 					    NULL, faildetail);
 		} else {
@@ -574,6 +581,7 @@ static struct command_result *wait_payment(struct lightningd *ld,
 			fail->erring_channel = *failchannel;
 			fail->channel_dir = faildirection;
 			return sendpay_fail(cmd,
+					    payment,
 					    faildestperm
 					    ? PAY_DESTINATION_PERM_FAIL
 					    : PAY_TRY_OTHER_ROUTE,
@@ -710,7 +718,7 @@ send_payment(struct lightningd *ld,
 						 &route[0].channel_id,
 						 &channel->peer->id);
 
-		return sendpay_fail(cmd, PAY_TRY_OTHER_ROUTE, NULL,
+		return sendpay_fail(cmd, payment, PAY_TRY_OTHER_ROUTE, NULL,
 				    fail, "First peer not ready");
 	}
 
