@@ -562,7 +562,8 @@ def test_sendpay_result_notification(node_factory, bitcoind):
     l2.rpc.close(chanid23, True, 0)
 
     l1.rpc.sendpay(route, payment_hash2)
-    response2 = l1.rpc.waitsendpay(payment_hash2)
+    with pytest.raises(RpcError) as err:
+        l1.rpc.waitsendpay(payment_hash2)
 
     assert not l1.rpc.call('recordcheck', {'payment_hash': payment_hash1, 'response': response1})
-    assert not l1.rpc.call('recordcheck', {'payment_hash': payment_hash2, 'response': response2})
+    assert not l1.rpc.call('recordcheck', {'payment_hash': payment_hash2, 'response': err.value.error})
