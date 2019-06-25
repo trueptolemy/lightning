@@ -172,25 +172,26 @@ sendpay_fail(struct command *cmd,
 	     const char *details)
 {
 	struct json_stream *data;
+	char *errmsg;
+
+	if (pay_errcode == PAY_UNPARSEABLE_ONION)
+		errmsg = "Malformed error reply";
+	else {
+		assert(fail);
+		errmsg = tal_fmt(tmpctx, "failed: %s (%s)",
+			 onion_type_name(fail->failcode),
+			 details);
+	}
 
 	notify_sendpay_fail(cmd->ld,
 			  payment,
-			  &pay_errcode,
+			  pay_errcode,
 			  onionreply,
 			  fail,
-			  details);
+			  errmsg);
 
-	if (pay_errcode == PAY_UNPARSEABLE_ONION)
-		data = json_stream_fail(cmd, PAY_UNPARSEABLE_ONION,
-					"Malformed error reply");
-	else {
-		assert(fail);
-		data = json_stream_fail(cmd, pay_errcode,
-					tal_fmt(tmpctx, "failed: %s (%s)",
-						onion_type_name(fail->failcode),
-						details));
-	}
-
+	data = json_stream_fail(cmd, pay_errcode,
+			    errmsg);
 	json_sendpay_fail_fields(data,
 			     payment,
 			     pay_errcode,
@@ -518,7 +519,7 @@ void payment_failed(struct lightningd *ld, const struct htlc_out *hout,
 				    failmsg,
 				    fail ? fail->channel_dir : 0);
 
-	tell_waiters_failed(ld, payment, &hout->payment_hash,
+	tell_waiters_failed(ld, &hout->payment_hash, payment,
 			    pay_errcode, hout->failuremsg, fail, failmsg);
 }
 
