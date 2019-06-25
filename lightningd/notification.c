@@ -11,7 +11,8 @@ const char *notification_topics[] = {
 	"invoice_payment",
 	"channel_opened",
 	"forward_event",
-	"sendpay_success"
+	"sendpay_success",
+	"sendpay_failure"
 };
 
 bool notifications_have_topic(const char *topic)
@@ -144,6 +145,35 @@ void notify_sendpay_success(struct lightningd *ld,
 	json_add_payment_fields(n->stream, payment);
 
 	json_object_end(n->stream); /* .sendpay_success */
+	jsonrpc_notification_end(n);
+	plugins_notify(ld->plugins, take(n));
+}
+
+void notify_sendpay_failure(struct lightningd *ld,
+			 const struct wallet_payment *payment,
+			 int pay_errcode,
+			 const u8 *onionreply,
+			 const struct routing_failure *fail,
+			 char *errmsg)
+{
+	struct jsonrpc_notification *n =
+	    jsonrpc_notification_start(NULL, "sendpay_failure");
+	json_object_start(n->stream, "sendpay_failure");
+
+	/* In line with the format of json error returned
+	 * by sendpay_fail(). */
+	json_add_member(n->stream, "code", false, "%d", pay_errcode);
+	json_add_string(n->stream, "message", errmsg);
+
+	json_object_start(n->stream, "data");
+	json_sendpay_fail_fields(n->stream,
+				 payment,
+				 pay_errcode,
+				 onionreply,
+				 fail);
+
+	json_object_end(n->stream); /* .data */
+	json_object_end(n->stream); /* .sendpay_failure */
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }
