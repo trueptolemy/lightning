@@ -542,3 +542,28 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash14, 'status': 'failed', 'dbforward': stats['forwards'][1]})
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'offered', 'dbforward': stats['forwards'][2]})
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'local_failed', 'dbforward': stats['forwards'][2]})
+
+
+def test_sendpay_notifications(node_factory, bitcoind):
+    """ test 'sendpay_success' and 'sendpay_fail' notifications
+    """
+    amount = 10**8
+    opts = [{'plugin': 'tests/plugins/sendpay_notifications.py'}, {}, {'may_reconnect': False}]
+    l1, l2, l3 = node_factory.line_graph(3, opts=opts, wait_for_announce=True)
+    chanid23 = l2.get_channel_scid(l3)
+
+    payment_hash1 = l3.rpc.invoice(amount, "first", "desc")['payment_hash']
+    payment_hash2 = l3.rpc.invoice(amount, "second", "desc")['payment_hash']
+    route = l1.rpc.getroute(l3.info['id'], amount, 1)['route']
+
+    l1.rpc.sendpay(route, payment_hash1)
+    response1 = l1.rpc.waitsendpay(payment_hash1)
+
+    l2.rpc.close(chanid23, True, 0)
+
+    l1.rpc.sendpay(route, payment_hash2)
+    with pytest.raises(RpcError) as err:
+        l1.rpc.waitsendpay(payment_hash2)
+
+    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash1, 'response': response1})
+    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash2, 'response': err.value.error})
