@@ -11,7 +11,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 def test_option_passthrough(node_factory):
     """ Ensure that registering options works.
 
@@ -542,7 +542,7 @@ def test_forward_event_notification(node_factory, bitcoind, executor):
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash14, 'status': 'failed', 'dbforward': stats['forwards'][1]})
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'offered', 'dbforward': stats['forwards'][2]})
     assert l2.rpc.call('recordcheck', {'payment_hash': payment_hash15, 'status': 'local_failed', 'dbforward': stats['forwards'][2]})
-
+'''
 
 def test_sendpay_notifications(node_factory, bitcoind):
     """ test 'sendpay_success' and 'sendpay_fail' notifications
