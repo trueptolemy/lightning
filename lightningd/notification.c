@@ -1,6 +1,5 @@
 #include "lightningd/notification.h"
 #include <ccan/array_size/array_size.h>
-#include <gossipd/gen_gossip_wire.h>
 #include <lightningd/channel.h>
 #include <lightningd/json.h>
 #include <lightningd/peer_htlcs.h>
@@ -111,7 +110,7 @@ void notify_sendpay_success(struct lightningd *ld,
 	json_object_start(n->stream, "sendpay_success");
 
 	if (payment->status != PAYMENT_COMPLETE)
-		log_unusual(ld->plugins->log, "error payment status in"
+		log_unusual(ld->log, "error payment status in"
 			    " sengpay_success notification");
 
 	json_add_payment_fields(n->stream, payment);
@@ -126,31 +125,25 @@ void notify_sendpay_fail(struct lightningd *ld,
 			 int pay_errcode,
 			 const u8 *onionreply,
 			 const struct routing_failure *fail,
-			 const char *details)
+			 char *errmsg)
 {
 	struct jsonrpc_notification *n =
-	    jsonrpc_notification_start(NULL, notification_topics[4]);
+	    jsonrpc_notification_start(NULL, notification_topics[5]);
 	json_object_start(n->stream, "sendpay_fail");
 
 	if (payment->status != PAYMENT_FAILED)
-		log_unusual(ld->plugins->log, "error payment status in"
+		log_unusual(ld->log, "error payment status in"
 			    " sengpay_fail notification");
-
-	errmsg = pay_errcode == PAY_UNPARSEABLE_ONION ?
-	       "Malformed error reply" :
-	       tal_fmt(tmpctx, "failed: %s (%s)",
-		   onion_type_name(fail->failcode),
-		   details);
 
 	/* In line with the format of json error returned
 	 * by sendpay_fail(). */
-	json_add_member(js, "code", false, "%d", pay_errcode);
-	json_add_string(js, "message", errmsg);
+	json_add_member(n->stream, "code", false, "%d", pay_errcode);
+	json_add_string(n->stream, "message", errmsg);
 
-	json_object_start(js, "data");
+	json_object_start(n->stream, "data");
 	json_sendpay_fail_fields(n->stream,
 			     payment,
-			     *pay_errcode,
+			     pay_errcode,
 			     onionreply,
 			     fail);
 
