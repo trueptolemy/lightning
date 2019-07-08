@@ -87,20 +87,31 @@ static const struct plugin_command commands[] = { {
 	}
 };
 
+static const struct plugin_option options[] = { {
+		"autocleaninvoice-cycle",
+		"string",
+		"Perform cleanup of expired invoices every"
+		" given seconds, or do not autoclean if 0",
+		typesafe_cb_preargs(char *, void *, u64_option, &cycle_seconds, const char *),
+		&cycle_seconds
+	}, {
+		"autocleaninvoice-expired-by",
+		"string",
+		"If expired invoice autoclean enabled,"
+		" invoices that have expired for at least"
+		" this given seconds are cleaned",
+		typesafe_cb_preargs(char *, void *, u64_option, &expired_by, const char *),
+		&expired_by
+	}
+};
+
+static const struct plugin_subscription subscriptions[] = {};
+static const struct plugin_hook hooks[] = {};
+
 int main(int argc, char *argv[])
 {
 	setup_locale();
-	plugin_main(argv, init, commands, ARRAY_SIZE(commands),
-		    plugin_option("autocleaninvoice-cycle",
-				  "string",
-				  "Perform cleanup of expired invoices every"
-				  " given seconds, or do not autoclean if 0",
-				  u64_option, &cycle_seconds),
-		    plugin_option("autocleaninvoice-expired-by",
-				  "string",
-				  "If expired invoice autoclean enabled,"
-				  " invoices that have expired for at least"
-				  " this given seconds are cleaned",
-				  u64_option, &expired_by),
-		    NULL);
+	plugin_main(argv, init, options, ARRAY_SIZE(options),
+		    commands, ARRAY_SIZE(commands), subscriptions,
+		    ARRAY_SIZE(subscriptions), hooks, ARRAY_SIZE(hooks));
 }

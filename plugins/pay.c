@@ -1306,8 +1306,14 @@ static const struct plugin_command commands[] = { {
 	}
 };
 
+static const struct plugin_option options[] = {};
+static const struct plugin_subscription subscriptions[] = {};
+static const struct plugin_hook hooks[] = {};
+
 int main(int argc, char *argv[])
 {
 	setup_locale();
-	plugin_main(argv, init, commands, ARRAY_SIZE(commands), NULL);
+	plugin_main(argv, init, options, ARRAY_SIZE(options),
+		    commands, ARRAY_SIZE(commands), subscriptions,
+		    ARRAY_SIZE(subscriptions), hooks, ARRAY_SIZE(hooks));
 }

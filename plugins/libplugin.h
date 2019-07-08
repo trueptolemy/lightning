@@ -36,6 +36,20 @@ struct plugin_option {
 	void *arg;
 };
 
+struct plugin_subscription {
+	const char *name;
+	void (*handle)(struct command *cmd,
+		       const char *buf,
+		       const jsmntok_t *params);
+};
+
+struct plugin_hook {
+	const char *name;
+	struct command_result *(*handle)(struct command *cmd,
+					 const char *buf,
+					 const jsmntok_t *params);
+};
+
 /* Helper to create a zero or single-value JSON object; if @str is NULL,
  * object is empty. */
 struct json_out *json_out_obj(const tal_t *ctx,
@@ -146,8 +160,14 @@ char *u64_option(const char *arg, u64 *i);
 char *charp_option(const char *arg, char **p);
 
 /* The main plugin runner: append with 0 or more plugin_option(), then NULL. */
-void NORETURN LAST_ARG_NULL plugin_main(char *argv[],
+void NORETURN plugin_main(char *argv[],
 					void (*init)(struct plugin_conn *rpc),
+					const struct plugin_option *options,
+					size_t num_options,
 					const struct plugin_command *commands,
-					size_t num_commands, ...);
+					size_t num_commands,
+					const struct plugin_subscription *subscriptions,
+					size_t num_subscriptions,
+					const struct plugin_hook *hooks,
+					size_t num_hooks);
 #endif /* LIGHTNING_PLUGINS_LIBPLUGIN_H */

@@ -471,19 +471,24 @@ send_outreq_(struct command *cmd,
 
 static struct command_result *
 handle_getmanifest(struct command *getmanifest_cmd,
+		   const struct plugin_option *options,
+		   size_t num_options,
 		   const struct plugin_command *commands,
 		   size_t num_commands,
-		   const struct plugin_option *opts)
+		   const struct plugin_subscription *subscriptions,
+		   size_t num_subscriptions,
+		   const struct plugin_hook *hooks,
+		   size_t num_hooks)
 {
 	struct json_out *params = json_out_new(tmpctx);
 
 	json_out_start(params, NULL, '{');
 	json_out_start(params, "options", '[');
-	for (size_t i = 0; i < tal_count(opts); i++) {
+	for (size_t i = 0; i < num_options; i++) {
 		json_out_start(params, NULL, '{');
-		json_out_addstr(params, "name", opts[i].name);
-		json_out_addstr(params, "type", opts[i].type);
-		json_out_addstr(params, "description", opts[i].description);
+		json_out_addstr(params, "name", options[i].name);
+		json_out_addstr(params, "type", options[i].type);
+		json_out_addstr(params, "description", options[i].description);
 		json_out_end(params, '}');
 	}
 	json_out_end(params, ']');
@@ -501,6 +506,21 @@ handle_getmanifest(struct command *getmanifest_cmd,
 		json_out_end(params, '}');
 	}
 	json_out_end(params, ']');
+
+	if(num_subscriptions) {
+		json_out_start(params, "subscriptions", '[');
+		for (size_t i = 0; i < num_subscriptions; i++)
+			json_out_addstr(params, NULL, subscriptions[i].name);
+		json_out_end(params, ']');
+	}
+	
+	if(num_hooks) {
+		json_out_start(params, "hooks", '[');
+		for (size_t i = 0; i < num_hooks; i++)
+			json_out_addstr(params, NULL, hooks[i].name);
+		json_out_end(params, ']');
+	}
+
 	json_out_end(params, '}');
 	json_out_finished(params);
 
@@ -510,7 +530,8 @@ handle_getmanifest(struct command *getmanifest_cmd,
 static struct command_result *handle_init(struct command *init_cmd,
 					  const char *buf,
 					  const jsmntok_t *params,
-					  const struct plugin_option *opts,
+					  const struct plugin_option *options,
+					  size_t num_options,
 					  void (*init)(struct plugin_conn *))
 {
 	const jsmntok_t *rpctok, *dirtok, *opttok, *t;
@@ -549,15 +570,15 @@ static struct command_result *handle_init(struct command *init_cmd,
 	opttok = json_get_member(buf, params, "options");
 	json_for_each_obj(i, t, opttok) {
 		char *opt = json_strdup(NULL, buf, t);
-		for (size_t i = 0; i < tal_count(opts); i++) {
+		for (size_t i = 0; i < num_options; i++) {
 			char *problem;
-			if (!streq(opts[i].name, opt))
+			if (!streq(options[i].name, opt))
 				continue;
-			problem = opts[i].handle(json_strdup(opt, buf, t+1),
-						 opts[i].arg);
+			problem = options[i].handle(json_strdup(opt, buf, t+1),
+						 options[i].arg);
 			if (problem)
 				plugin_err("option '%s': %s",
-					   opts[i].name, problem);
+					   options[i].name, problem);
 			break;
 		}
 		tal_free(opt);
@@ -589,11 +610,15 @@ char *charp_option(const char *arg, char **p)
 	return NULL;
 }
 
-static void handle_new_command(const tal_t *ctx,
+static void handle_new_request(const tal_t *ctx,
 			       struct plugin_conn *request_conn,
 			       struct plugin_conn *rpc_conn,
 			       const struct plugin_command *commands,
-			       size_t num_commands)
+			       size_t num_commands,
+			       const struct plugin_subscription *subscriptions,
+			       size_t num_subscriptions,
+			       const struct plugin_hook *hooks,
+			       size_t num_hooks)
 {
 	struct command *cmd;
 	const jsmntok_t *params;
@@ -603,6 +628,26 @@ static void handle_new_command(const tal_t *ctx,
 	for (size_t i = 0; i < num_commands; i++) {
 		if (streq(cmd->methodname, commands[i].name)) {
 			commands[i].handle(cmd, membuf_elems(&request_conn->mb),
+					   params);
+			membuf_consume(&request_conn->mb, reqlen);
+			return;
+		}
+	}
+
+	cmd = read_json_request(ctx, request_conn, rpc_conn, &params, &reqlen);
+	for (size_t i = 0; i < num_subscriptions; i++) {
+		if (streq(cmd->methodname, subscriptions[i].name)) {
+			subscriptions[i].handle(cmd, membuf_elems(&request_conn->mb),
+					   params);
+			membuf_consume(&request_conn->mb, reqlen);
+			return;
+		}
+	}
+
+	cmd = read_json_request(ctx, request_conn, rpc_conn, &params, &reqlen);
+	for (size_t i = 0; i < num_hooks; i++) {
+		if (streq(cmd->methodname, hooks[i].name)) {
+			hooks[i].handle(cmd, membuf_elems(&request_conn->mb),
 					   params);
 			membuf_consume(&request_conn->mb, reqlen);
 			return;
@@ -699,8 +744,14 @@ void plugin_log(enum log_level l, const char *fmt, ...)
 
 void plugin_main(char *argv[],
 		 void (*init)(struct plugin_conn *rpc),
+		 const struct plugin_option *options,
+		 size_t num_options,
 		 const struct plugin_command *commands,
-		 size_t num_commands, ...)
+		 size_t num_commands,
+		 const struct plugin_subscription *subscriptions,
+		 size_t num_subscriptions,
+		 const struct plugin_hook *hooks,
+		 size_t num_hooks)
 {
 	struct plugin_conn request_conn;
 	const tal_t *ctx = tal(NULL, char);
@@ -708,9 +759,6 @@ void plugin_main(char *argv[],
 	const jsmntok_t *params;
 	int reqlen;
 	struct pollfd fds[2];
-	struct plugin_option *opts = tal_arr(ctx, struct plugin_option, 0);
-	va_list ap;
-	const char *optname;
 
 	setup_locale();
 
@@ -731,25 +779,14 @@ void plugin_main(char *argv[],
 		    membuf_tal_realloc);
 	uintmap_init(&out_reqs);
 
-	va_start(ap, num_commands);
-	while ((optname = va_arg(ap, const char *)) != NULL) {
-		struct plugin_option o;
-		o.name = optname;
-		o.type = va_arg(ap, const char *);
-		o.description = va_arg(ap, const char *);
-		o.handle = va_arg(ap, char *(*)(const char *str, void *arg));
-		o.arg = va_arg(ap, void *);
-		tal_arr_expand(&opts, o);
-	}
-	va_end(ap);
-
 	cmd = read_json_request(tmpctx, &request_conn, NULL,
 				&params, &reqlen);
 	if (!streq(cmd->methodname, "getmanifest"))
 		plugin_err("Expected getmanifest not %s", cmd->methodname);
 
 	membuf_consume(&request_conn.mb, reqlen);
-	handle_getmanifest(cmd, commands, num_commands, opts);
+	handle_getmanifest(cmd, options, num_options, commands, num_commands,
+			   subscriptions, num_subscriptions, hooks, num_hooks);
 
 	cmd = read_json_request(tmpctx, &request_conn, &rpc_conn,
 				&params, &reqlen);
@@ -757,7 +794,7 @@ void plugin_main(char *argv[],
 		plugin_err("Expected init not %s", cmd->methodname);
 
 	handle_init(cmd, membuf_elems(&request_conn.mb),
-		    params, opts, init);
+		    params, options, num_options, init);
 	membuf_consume(&request_conn.mb, reqlen);
 
 	/* Set up fds for poll. */
@@ -775,8 +812,9 @@ void plugin_main(char *argv[],
 
 		/* If we already have some input, process now. */
 		if (membuf_num_elems(&request_conn.mb) != 0) {
-			handle_new_command(ctx, &request_conn, &rpc_conn,
-					   commands, num_commands);
+			handle_new_request(ctx, &request_conn, &rpc_conn,
+					   commands, num_commands, subscriptions,
+					   num_subscriptions, hooks, num_hooks);
 			continue;
 		}
 		if (membuf_num_elems(&rpc_conn.mb) != 0) {
@@ -802,8 +840,9 @@ void plugin_main(char *argv[],
 		poll(fds, 2, t);
 
 		if (fds[0].revents & POLLIN)
-			handle_new_command(ctx, &request_conn, &rpc_conn,
-					   commands, num_commands);
+			handle_new_request(ctx, &request_conn, &rpc_conn,
+					   commands, num_commands, subscriptions,
+					   num_subscriptions, hooks, num_hooks);
 		if (fds[1].revents & POLLIN)
 			handle_rpc_reply(&rpc_conn);
 	}
