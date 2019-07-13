@@ -700,7 +700,7 @@ struct plugin_timer *plugin_timer(struct plugin_conn *rpc, struct timerel t,
 	return timer;
 }
 
-static void plugin_logv(enum log_level l, const char *fmt, va_list ap)
+void plugin_logv(enum log_level l, const char *fmt, va_list ap)
 {
 	struct json_out *jout = json_out_new(tmpctx);
 

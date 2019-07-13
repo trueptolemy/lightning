@@ -146,6 +146,8 @@ struct plugin_timer *plugin_timer(struct plugin_conn *rpc,
 
 /* Log something */
 void PRINTF_FMT(2, 3) plugin_log(enum log_level l, const char *fmt, ...);
+void NORETURN plugin_err(const char *fmt, ...);
+void plugin_logv(enum log_level l, const char *fmt, va_list ap);
 
 /* Macro to define arguments */
 #define plugin_option(name, type, description, set, arg)			\
