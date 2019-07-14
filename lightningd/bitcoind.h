@@ -61,6 +61,11 @@ struct bitcoind {
 
 	/* Passthrough parameters for bitcoin-cli */
 	char *rpcuser, *rpcpass, *rpcconnect, *rpcport;
+
+	/* FIXME: This flag is temporary, and it can be integrated
+	 * when we consider "catch up with bitcoind". */
+	/* A simply flag whether bitcoin plugin is ok. */
+	bool ask_plugin;
 };
 
 struct bitcoind *new_bitcoind(const tal_t *ctx,

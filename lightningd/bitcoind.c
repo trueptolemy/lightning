@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <lightningd/chaintopology.h>
+#include <lightningd/plugin_hook.h>
 
 /* Bitcoind's web server has a default of 4 threads, with queue depth 16.
  * It will *fail* rather than queue beyond that, so we must not stress it!
@@ -347,19 +348,59 @@ struct estimatefee {
 	u32 *satoshi_per_kw;
 };
 
+struct estimate_fee_hook_payload {
+	struct bitcoind *bitcoind;
+	struct estimatefee *efee;
+	char *blockstr;
+	const char *estmode;
+};
+
+static void
+estimate_fee_hook_serialize(struct estimate_fee_hook_payload *payload,
+			  struct json_stream *stream)
+{
+	json_object_start(stream, "estimate_fee");
+	json_add_string(stream, "blockstr", payload->blockstr);
+	json_add_string(stream, "estmode", payload->estmode);
+	json_object_end(stream); /* .estimate_fee */
+}
+
+static bool estimate_fee_hook_deserialize(const char *buffer,
+					  const jsmntok_t *toks,
+					  u64 **feerate)
+{
+	const jsmntok_t *feeratetok;
+
+	/* No plugin registered on hook at all? */
+	if (!buffer)
+		return false;
+
+	feeratetok = json_get_member(buffer, toks, "feerate");
+
+	if (!feeratetok)
+		return false;
+
+	*feerate = tal(tmpctx, u64);
+	if (!json_to_bitcoin_amount(buffer, feeratetok, *feerate)){
+		*feerate = NULL;
+		fatal("Invalid invoice_payment_hook failure_code: %.*s",
+		      toks[0].end - toks[1].start, buffer);
+	}
+
+	return true;
+}
+
 static void do_one_estimatefee(struct bitcoind *bitcoind,
 			       struct estimatefee *efee);
 
-static bool process_estimatefee(struct bitcoin_cli *bcli)
+static void handle_estimatefee_result(struct bitcoind *bitcoind,
+				      struct estimatefee *efee,
+				      u64 *feerate,
+					  bool estimate_ok)
 {
-	u64 feerate;
-	struct estimatefee *efee = bcli->cb_arg;
-
-	/* FIXME: We could trawl recent blocks for median fee... */
-	if (!extract_feerate(bcli, bcli->output, bcli->output_bytes, &feerate)) {
-		log_unusual(bcli->bitcoind->log, "Unable to estimate %s/%u fee",
+	if (!estimate_ok) {
+		log_unusual(bitcoind->log, "Unable to estimate %s/%u fee",
 			    efee->estmode[efee->i], efee->blocks[efee->i]);
-
 #if DEVELOPER
 		/* This is needed to test for failed feerate estimates
 		 * in DEVELOPER mode */
@@ -369,7 +410,7 @@ static bool process_estimatefee(struct bitcoin_cli *bcli)
 		 * with the minimal fee even if the estimate didn't
 		 * work out. This is less disruptive than erring out
 		 * all the time. */
-		if (get_chainparams(bcli->bitcoind->ld)->testnet)
+		if (get_chainparams(bitcoind->ld)->testnet)
 			efee->satoshi_per_kw[efee->i] = FEERATE_FLOOR;
 		else
 			efee->satoshi_per_kw[efee->i] = 0;
@@ -377,16 +418,61 @@ static bool process_estimatefee(struct bitcoin_cli *bcli)
 	} else
 		/* Rate in satoshi per kw. */
 		efee->satoshi_per_kw[efee->i]
-			= feerate_from_style(feerate, FEERATE_PER_KBYTE);
+			= feerate_from_style(*feerate, FEERATE_PER_KBYTE);
 
 	efee->i++;
 	if (efee->i == tal_count(efee->satoshi_per_kw)) {
-		efee->cb(bcli->bitcoind, efee->satoshi_per_kw, efee->arg);
+		efee->cb(bitcoind, efee->satoshi_per_kw, efee->arg);
 		tal_free(efee);
 	} else {
 		/* Next */
-		do_one_estimatefee(bcli->bitcoind, efee);
+		do_one_estimatefee(bitcoind, efee);
 	}
+}
+
+static void
+estimate_fee_hook_cb(struct estimate_fee_hook_payload *payload,
+			const char *buffer,
+			const jsmntok_t *toks)
+{
+	u64 *feerate;
+
+	payload->bitcoind->ask_plugin =
+				estimate_fee_hook_deserialize(buffer,
+						  toks,
+						  &feerate);
+
+	/* FIXME: should between:
+	 *		db_begin_transaction(bitcoind->ld->wallet->db);
+	 *		...
+	 *		db_commit_transaction(bitcoind->ld->wallet->db) ;*/
+	if (payload->bitcoind->ask_plugin) {
+		handle_estimatefee_result(payload->bitcoind,
+					  payload->efee,
+					  feerate,
+					  true);
+		return;
+	}
+
+	tal_steal(tmpctx, payload);
+	do_one_estimatefee(payload->bitcoind, payload->efee);
+}
+
+REGISTER_PLUGIN_HOOK(estimate_fee, estimate_fee_hook_cb,
+		     struct estimate_fee_hook_payload *,
+		     estimate_fee_hook_serialize,
+		     struct estimate_fee_hook_payload *);
+
+static bool process_estimatefee(struct bitcoin_cli *bcli)
+{
+	u64 feerate;
+	struct estimatefee *efee = bcli->cb_arg;
+
+	/* FIXME: We could trawl recent blocks for median fee... */
+	bool ok = extract_feerate(bcli, bcli->output,
+				  bcli->output_bytes, &feerate);
+
+	handle_estimatefee_result(bcli->bitcoind, efee, &feerate, ok);
 	return true;
 }
 
@@ -394,13 +480,32 @@ static void do_one_estimatefee(struct bitcoind *bitcoind,
 			       struct estimatefee *efee)
 {
 	char blockstr[STR_MAX_CHARS(u32)];
+	struct estimate_fee_hook_payload *hook_payload;
 
 	snprintf(blockstr, sizeof(blockstr), "%u", efee->blocks[efee->i]);
-	start_bitcoin_cli(bitcoind, NULL, process_estimatefee, false,
-			  BITCOIND_LOW_PRIO,
-			  NULL, efee,
-			  "estimatesmartfee", blockstr, efee->estmode[efee->i],
-			  NULL);
+	if (!bitcoind->ask_plugin) {
+		start_bitcoin_cli(bitcoind, NULL, process_estimatefee, false,
+				  BITCOIND_LOW_PRIO,
+				  NULL, efee,
+				  "estimatesmartfee", blockstr, efee->estmode[efee->i],
+				  NULL);
+		return;
+	}
+	hook_payload = tal(efee, struct estimate_fee_hook_payload);
+	hook_payload->bitcoind = bitcoind;
+	hook_payload->efee = efee;
+	hook_payload->blockstr = tal_strndup(hook_payload, blockstr, sizeof(blockstr));
+	hook_payload->estmode = tal_strndup(hook_payload, efee->estmode[efee->i],
+					sizeof(efee->estmode[efee->i]));
+
+	log_debug(bitcoind->log, "Calling hook for fee estimate with"
+		  " blockstr: %s, estmode: %s",
+		  hook_payload->blockstr,
+		  hook_payload->estmode);
+
+	plugin_hook_call_estimate_fee(bitcoind->ld,
+				      hook_payload,
+				      hook_payload);
 }
 
 void bitcoind_estimate_fees_(struct bitcoind *bitcoind,
@@ -880,6 +985,9 @@ struct bitcoind *new_bitcoind(const tal_t *ctx,
 	bitcoind->rpcpass = NULL;
 	bitcoind->rpcconnect = NULL;
 	bitcoind->rpcport = NULL;
+	/* For the first time, try to estimate fee by hook.
+	 * If hook is unable, then we'll ask cli directly. */
+	bitcoind->ask_plugin = true;
 	tal_add_destructor(bitcoind, destroy_bitcoind);
 
 	return bitcoind;
