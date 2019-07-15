@@ -806,6 +806,82 @@ void bitcoind_getrawblock_(struct bitcoind *bitcoind,
 				   hook_payload);
 }
 
+struct getblockcount_hook_payload {
+	struct bitcoind *bitcoind;
+	void *cb;
+	void *cb_arg;
+};
+
+static void
+getblockcount_hook_serialize(struct getblockcount_hook_payload *payload,
+			  struct json_stream *stream)
+{
+	json_add_string(stream, NULL, "getblockcount");
+}
+
+static bool getblockcount_hook_deserialize(const char *buffer,
+					  const jsmntok_t *toks,
+					  u32 *count)
+{
+	const jsmntok_t *counttok;
+	char *p, *end;
+
+	/* No plugin registered on hook at all? */
+	if (!buffer)
+		return false;
+
+	counttok = json_get_member(buffer, toks, "blockcount");
+
+	if (!counttok)
+		return false;
+
+	p = tal_strndup(tmpctx, buffer + counttok->start,
+			counttok->end - counttok->start);
+	*count = strtol(p, &end, 10);
+
+	if (end == p || *end != '\n')
+		fatal("getblockcount hook: gave non-numeric blockcount %s", p);
+
+	return true;
+}
+
+static bool process_getblockcount(struct bitcoin_cli *bcli);
+
+static void
+getblockcount_hook_cb(struct getblockcount_hook_payload *payload,
+		  const char *buffer,
+		  const jsmntok_t *toks)
+{
+	u32 blockcount;
+
+	void (*cb)(struct bitcoind *bitcoind,
+		   u32 blockcount,
+		   void *arg) = payload->cb;
+
+	payload->bitcoind->ask_plugin =
+				getblockcount_hook_deserialize(buffer,
+						   toks,
+						   &blockcount);
+
+	if (payload->bitcoind->ask_plugin) {
+		cb(payload->bitcoind, blockcount, payload->cb_arg);
+		return;
+	}
+
+	tal_steal(tmpctx, payload);
+	log_debug(payload->bitcoind->log, "bitcoin-cli getblockcount");
+	start_bitcoin_cli(payload->bitcoind, NULL, process_getblockcount,
+			  false,
+			  BITCOIND_HIGH_PRIO,
+			  payload->cb, payload->cb_arg,
+			  "getblockcount", NULL);
+}
+
+REGISTER_PLUGIN_HOOK(getblockcount, getblockcount_hook_cb,
+		     struct getblockcount_hook_payload *,
+		     getblockcount_hook_serialize,
+		     struct getblockcount_hook_payload *);
+
 static bool process_getblockcount(struct bitcoin_cli *bcli)
 {
 	u32 blockcount;
@@ -830,10 +906,26 @@ void bitcoind_getblockcount_(struct bitcoind *bitcoind,
 					 void *arg),
 			      void *arg)
 {
-	start_bitcoin_cli(bitcoind, NULL, process_getblockcount, false,
-			  BITCOIND_HIGH_PRIO,
-			  cb, arg,
-			  "getblockcount", NULL);
+	struct getblockcount_hook_payload *hook_payload;
+
+	if(!bitcoind->ask_plugin) {
+		start_bitcoin_cli(bitcoind, NULL, process_getblockcount, false,
+				  BITCOIND_HIGH_PRIO,
+				  cb, arg,
+				  "getblockcount", NULL);
+		return;
+	}
+
+	hook_payload = tal(bitcoind, struct getblockcount_hook_payload);
+	hook_payload->bitcoind = bitcoind;
+	hook_payload->cb = cb;
+	hook_payload->cb_arg = arg;
+
+	log_debug(bitcoind->log, "Calling hook for getblockount");
+
+	plugin_hook_call_getblockcount(bitcoind->ld,
+				       hook_payload,
+				       hook_payload);
 }
 
 struct get_output {
