@@ -528,6 +528,105 @@ void bitcoind_estimate_fees_(struct bitcoind *bitcoind,
 	do_one_estimatefee(bitcoind, efee);
 }
 
+struct sendrawtx_hook_payload {
+	struct bitcoind *bitcoind;
+	const char *hextx;
+	void *cb;
+	void *cb_arg;
+};
+
+static void
+sendrawtx_hook_serialize(struct sendrawtx_hook_payload *payload,
+			  struct json_stream *stream)
+{
+	json_object_start(stream, "sendrawtx");
+	json_add_string(stream, "hextx", payload->hextx);
+	json_object_end(stream); /* .sendrawtx */
+}
+
+static bool sendrawtx_hook_deserialize(const char *buffer,
+					  const jsmntok_t *toks,
+					  const char **msg,
+					  int **exitstatus)
+{
+	const jsmntok_t *msgtok, *exitstatustok;
+
+	/* No plugin registered on hook at all? */
+	if (!buffer)
+		goto fail;
+
+	exitstatustok = json_get_member(buffer, toks, "exitstatus");
+
+	if (!exitstatustok)
+		goto fail;
+
+	*exitstatus = tal(tmpctx, int);
+	if (!json_to_int(buffer, exitstatustok, *exitstatus)){
+		*exitstatus = NULL;
+		fatal("Invalid sendrawtx_hook exitstatus: %.*s",
+		      exitstatustok->end - exitstatustok->start, buffer);
+	}
+
+	msgtok = json_get_member(buffer, toks, "message");
+
+	if (!msgtok) {
+		if (**exitstatus) {
+			*msg = NULL;
+			return true;
+		}
+		goto fail;
+	}
+
+	*msg = tal_strndup(tmpctx, buffer + msgtok->start,
+			      msgtok->end - msgtok->start);
+
+	return true;
+
+fail:
+	*msg = NULL;
+	*exitstatus = NULL;
+	return false;
+}
+
+static bool process_sendrawtx(struct bitcoin_cli *bcli);
+
+static void
+sendrawtx_hook_cb(struct sendrawtx_hook_payload *payload,
+		  const char *buffer,
+		  const jsmntok_t *toks)
+{
+	const char *msg;
+	int *exitstatus;
+	void (*cb)(struct bitcoind *bitcoind,
+		   int, const char *msg, void *) = payload->cb;
+
+	payload->bitcoind->ask_plugin =
+				sendrawtx_hook_deserialize(buffer,
+					       toks,
+					       &msg,
+					       &exitstatus);
+
+	if (payload->bitcoind->ask_plugin) {
+		log_debug(payload->bitcoind->log, "sendrawtx exit %u, gave %s",
+			  *exitstatus, msg);
+		cb(payload->bitcoind, *exitstatus, msg, payload->cb_arg);
+		return;
+	}
+
+	tal_steal(tmpctx, payload);
+	log_debug(payload->bitcoind->log, "bitcoin-cli sendrawtransaction: %s",
+		  payload->hextx);
+	start_bitcoin_cli(payload->bitcoind, NULL, process_sendrawtx, true,
+			  BITCOIND_HIGH_PRIO,
+			  payload->cb, payload->cb_arg,
+			  "sendrawtransaction", payload->hextx, NULL);
+}
+
+REGISTER_PLUGIN_HOOK(sendrawtx, sendrawtx_hook_cb,
+		     struct sendrawtx_hook_payload *,
+		     sendrawtx_hook_serialize,
+		     struct sendrawtx_hook_payload *);
+
 static bool process_sendrawtx(struct bitcoin_cli *bcli)
 {
 	void (*cb)(struct bitcoind *bitcoind,
@@ -548,11 +647,30 @@ void bitcoind_sendrawtx_(struct bitcoind *bitcoind,
 				    int exitstatus, const char *msg, void *),
 			 void *arg)
 {
+	struct sendrawtx_hook_payload *hook_payload;
+
 	log_debug(bitcoind->log, "sendrawtransaction: %s", hextx);
-	start_bitcoin_cli(bitcoind, NULL, process_sendrawtx, true,
-			  BITCOIND_HIGH_PRIO,
-			  cb, arg,
-			  "sendrawtransaction", hextx, NULL);
+	if(!bitcoind->ask_plugin) {
+		start_bitcoin_cli(bitcoind, NULL, process_sendrawtx, true,
+				  BITCOIND_HIGH_PRIO,
+				  cb, arg,
+				  "sendrawtransaction", hextx, NULL);
+		return;
+	}
+
+	hook_payload = tal(bitcoind, struct sendrawtx_hook_payload);
+	hook_payload->bitcoind = bitcoind;
+	hook_payload->hextx = hextx;
+	hook_payload->cb = cb;
+	hook_payload->cb_arg = arg;
+
+	log_debug(bitcoind->log, "Calling hook for sendrawtx with"
+		  " hextx: %s",
+		  hook_payload->hextx);
+
+	plugin_hook_call_sendrawtx(bitcoind->ld,
+				   hook_payload,
+				   hook_payload);
 }
 
 static bool process_rawblock(struct bitcoin_cli *bcli)
