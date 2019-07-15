@@ -673,6 +673,88 @@ void bitcoind_sendrawtx_(struct bitcoind *bitcoind,
 				   hook_payload);
 }
 
+struct getrawblock_hook_payload {
+	struct bitcoind *bitcoind;
+	const char *hexblockid;
+	void *cb;
+	void *cb_arg;
+};
+
+static void
+getrawblock_hook_serialize(struct getrawblock_hook_payload *payload,
+			  struct json_stream *stream)
+{
+	json_object_start(stream, "getrawblock");
+	json_add_string(stream, "hexblockid", payload->hexblockid);
+	json_object_end(stream); /* .getrawblock */
+}
+
+static bool getrawblock_hook_deserialize(const char *buffer,
+					  const jsmntok_t *toks,
+					  struct bitcoin_block **blk)
+{
+	const jsmntok_t *blocktok;
+
+	/* No plugin registered on hook at all? */
+	if (!buffer)
+		goto fail;
+
+	blocktok = json_get_member(buffer, toks, "hexblock");
+
+	if (!blocktok)
+		goto fail;
+
+	*blk = bitcoin_block_from_hex(tmpctx, buffer + blocktok->start,
+				     blocktok->end - blocktok->start);
+	if (!*blk)
+		fatal("getrawblock hook: bad block '%.*s'?",
+		      blocktok->end - blocktok->start,
+		      buffer + blocktok->start);
+
+	return true;
+
+fail:
+	*blk = NULL;
+	return false;
+}
+
+static bool process_rawblock(struct bitcoin_cli *bcli);
+
+static void
+getrawblock_hook_cb(struct getrawblock_hook_payload *payload,
+		  const char *buffer,
+		  const jsmntok_t *toks)
+{
+	struct bitcoin_block *blk;
+
+	void (*cb)(struct bitcoind *bitcoind,
+		   struct bitcoin_block *blk, void *arg) = payload->cb;
+
+	payload->bitcoind->ask_plugin =
+				getrawblock_hook_deserialize(buffer,
+					         toks,
+					         &blk);
+
+	if (payload->bitcoind->ask_plugin) {
+		cb(payload->bitcoind, blk, payload->cb_arg);
+		return;
+	}
+
+	tal_steal(tmpctx, payload);
+	log_debug(payload->bitcoind->log, "bitcoin-cli getrawblock: %s",
+		  payload->hexblockid);
+	start_bitcoin_cli(payload->bitcoind, NULL, process_rawblock, false,
+			  BITCOIND_HIGH_PRIO,
+			  payload->cb, payload->cb_arg,
+			  "getblock", payload->hexblockid,
+			  "false", NULL);
+}
+
+REGISTER_PLUGIN_HOOK(getrawblock, getrawblock_hook_cb,
+		     struct getrawblock_hook_payload *,
+		     getrawblock_hook_serialize,
+		     struct getrawblock_hook_payload *);
+
 static bool process_rawblock(struct bitcoin_cli *bcli)
 {
 	struct bitcoin_block *blk;
@@ -697,13 +779,31 @@ void bitcoind_getrawblock_(struct bitcoind *bitcoind,
 				      void *arg),
 			   void *arg)
 {
+	struct getrawblock_hook_payload *hook_payload;
 	char hex[hex_str_size(sizeof(*blockid))];
 
 	bitcoin_blkid_to_hex(blockid, hex, sizeof(hex));
-	start_bitcoin_cli(bitcoind, NULL, process_rawblock, false,
+	if(!bitcoind->ask_plugin) {
+		start_bitcoin_cli(bitcoind, NULL, process_rawblock, false,
 			  BITCOIND_HIGH_PRIO,
 			  cb, arg,
 			  "getblock", hex, "false", NULL);
+		return;
+	}
+
+	hook_payload = tal(bitcoind, struct getrawblock_hook_payload);
+	hook_payload->bitcoind = bitcoind;
+	hook_payload->hexblockid = tal_strndup(hook_payload, hex, sizeof(hex));
+	hook_payload->cb = cb;
+	hook_payload->cb_arg = arg;
+
+	log_debug(bitcoind->log, "Calling hook for getrawblock with"
+		  " hexblockid: %s",
+		  hook_payload->hexblockid);
+
+	plugin_hook_call_getrawblock(bitcoind->ld,
+				   hook_payload,
+				   hook_payload);
 }
 
 static bool process_getblockcount(struct bitcoin_cli *bcli)
