@@ -938,6 +938,126 @@ struct get_output {
 	void *cbarg;
 };
 
+struct getblockhash_hook_payload {
+	struct bitcoind *bitcoind;
+	char *height;
+	void *cb;
+	void *cb_arg;
+};
+
+static void
+getblockhash_hook_serialize(struct getblockhash_hook_payload *payload,
+			  struct json_stream *stream)
+{
+	json_object_start(stream, "getblockhash");
+	json_add_string(stream, "height", payload->height);
+	json_object_end(stream); /* .getblockhash */
+}
+
+static bool getblockhash_hook_deserialize(const char *buffer,
+					  const jsmntok_t *toks,
+					  struct bitcoin_blkid **blkid,
+					  int **exitstatus)
+{
+	const jsmntok_t *blkidtok, *exitstatustok;
+
+	/* No plugin registered on hook at all? */
+	if (!buffer)
+		goto fail;
+
+	exitstatustok = json_get_member(buffer, toks, "exitstatus");
+
+	if (!exitstatustok)
+		goto fail;
+
+	*exitstatus = tal(tmpctx, int);
+	if (!json_to_int(buffer, exitstatustok, *exitstatus)){
+		*exitstatus = NULL;
+		*blkid = NULL
+		fatal("Invalid getblockhash_hook exitstatus: %.*s",
+		      exitstatustok->end - exitstatustok->start, buffer);
+	}
+
+	blkidtok = json_get_member(buffer, toks, "blockid");
+
+	if (!blkidtok){
+		if (**exitstatus) {
+			*blkid = NULL;
+			return true;
+		}
+		goto fail;
+	}
+
+	*blkid = tal(tmpctx, struct bitcoin_blkid);
+	if(!bitcoin_blkid_from_hex(buffer + blkidtok->start,
+				       blkidtok->end - blkidtok->start - 1,
+				       *blkid)) {
+		*blkid = NULL;
+		fatal("getblockhash hook: bad blockid '%.*s'",
+			      blkidtok->end - blkidtok->start,
+			      buffer + blkidtok->start);
+	}
+
+	return true;
+
+fail:
+	*blkid = NULL;
+	*exitstatus = NULL;
+	return false;
+}
+
+static bool process_getblockhash(struct bitcoin_cli *bcli);
+
+static void
+getblockhash_hook_cb(struct getblockhash_hook_payload *payload,
+		  const char *buffer,
+		  const jsmntok_t *toks)
+{
+	struct bitcoin_blkid *blkid;
+	int *exitstatus;
+
+	void (*cb)(struct bitcoind *bitcoind,
+		   const struct bitcoin_blkid *blkid,
+		   void *arg) = payload->cb;
+
+	payload->bitcoind->ask_plugin =
+				getblockhash_hook_deserialize(buffer,
+					         toks,
+					         &blkid,
+					         &exitstatus);
+
+	if (payload->bitcoind->ask_plugin) {
+		/* If it failed with error 8, call with NULL block. */
+		if (*exitstatus != 0) {
+			/* Other error means we have to retry. */
+			if (*exitstatus != 8) {
+				payload->bitcoind->ask_plugin = false;
+				goto plugin_fail;
+			}
+			cb(payload->bitcoind, NULL, payload->cb_arg);
+			return;
+		}
+		cb(payload->bitcoind, blkid, payload->cb_arg);
+		return;
+	}
+
+plugin_fail:
+
+	tal_steal(tmpctx, payload);
+	log_debug(payload->bitcoind->log, "bitcoin-cli getblockhash: %s",
+		  payload->height);
+	start_bitcoin_cli(payload->bitcoind, NULL, process_getblockhash,
+			  true,
+			  BITCOIND_HIGH_PRIO,
+			  payload->cb, payload->cb_arg,
+			  "getblockhash", payload->height, NULL);
+}
+
+REGISTER_PLUGIN_HOOK(getblockhash, getblockhash_hook_cb,
+		     struct getblockhash_hook_payload *,
+		     getblockhash_hook_serialize,
+		     struct getblockhash_hook_payload *);
+
 static void process_get_output(struct bitcoind *bitcoind, const struct bitcoin_tx_output *txout, void *arg)
 {
 	struct get_output *go = arg;
@@ -1163,12 +1283,32 @@ void bitcoind_getblockhash_(struct bitcoind *bitcoind,
 			    void *arg)
 {
 	char str[STR_MAX_CHARS(height)];
+	struct getblockhash_hook_payload *hook_payload;
 	snprintf(str, sizeof(str), "%u", height);
 
-	start_bitcoin_cli(bitcoind, NULL, process_getblockhash, true,
-			  BITCOIND_HIGH_PRIO,
-			  cb, arg,
-			  "getblockhash", str, NULL);
+	log_debug(bitcoind->log, "getblockhash: %s", str);
+
+	if(!bitcoind->ask_plugin) {
+		start_bitcoin_cli(bitcoind, NULL, process_getblockhash, true,
+				  BITCOIND_HIGH_PRIO,
+				  cb, arg,
+				  "getblockhash", str, NULL);
+		return;
+	}
+
+	hook_payload = tal(bitcoind, struct getblockhash_hook_payload);
+	hook_payload->bitcoind = bitcoind;
+	hook_payload->height = tal_strndup(hook_payload, str, sizeof(str));
+	hook_payload->cb = cb;
+	hook_payload->cb_arg = arg;
+
+	log_debug(bitcoind->log, "Calling hook for getblockhash with"
+		  " height: %s",
+		  hook_payload->height);
+
+	plugin_hook_call_getblockhash(bitcoind->ld,
+				   hook_payload,
+				   hook_payload);
 }
 
 void bitcoind_gettxout(struct bitcoind *bitcoind,
