@@ -22,6 +22,7 @@
 #include <lightningd/notification.h>
 #include <lightningd/options.h>
 #include <lightningd/plugin_hook.h>
+#include <lightningd/plugin_request.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -834,6 +835,30 @@ static bool plugin_hooks_add(struct plugin *plugin, const char *buffer,
 	return true;
 }
 
+static bool plugin_requests_add(struct plugin *plugin, const char *buffer,
+			     const jsmntok_t *resulttok)
+{
+	const jsmntok_t *requeststok = json_get_member(buffer, resulttok, "requests");
+	if (!requeststok)
+		return true;
+
+	for (int i = 0; i < requeststok->size; i++) {
+		char *name = json_strdup(NULL, plugin->buffer,
+					 json_get_arr(requeststok, i));
+		if (!plugin_request_register(plugin, name)) {
+			plugin_kill(plugin,
+				    "could not register request '%s', either the "
+				    "name doesn't exist or another plugin "
+				    "already registered it.",
+				    name);
+			tal_free(name);
+			return false;
+		}
+		tal_free(name);
+	}
+	return true;
+}
+
 static void plugin_manifest_timeout(struct plugin *plugin)
 {
 	log_broken(plugin->log, "The plugin failed to respond to \"getmanifest\" in time, terminating.");
@@ -868,10 +893,12 @@ static void plugin_manifest_cb(const char *buffer,
 	if (!plugin_opts_add(plugin, buffer, resulttok) ||
 	    !plugin_rpcmethods_add(plugin, buffer, resulttok) ||
 	    !plugin_subscriptions_add(plugin, buffer, resulttok) ||
-	    !plugin_hooks_add(plugin, buffer, resulttok))
+	    !plugin_hooks_add(plugin, buffer, resulttok) ||
+	    !plugin_requests_add(plugin, buffer, resulttok))
 		plugin_kill(
 		    plugin,
-		    "Failed to register options, methods, hooks, or subscriptions.");
+		    "Failed to register options, methods, hooks, requests,"
+		    " or subscriptions.");
 	/* Reset timer, it'd kill us otherwise. */
 	tal_free(plugin->timeout_timer);
 }
