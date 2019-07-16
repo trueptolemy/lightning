@@ -973,7 +973,7 @@ static bool getblockhash_hook_deserialize(const char *buffer,
 	*exitstatus = tal(tmpctx, int);
 	if (!json_to_int(buffer, exitstatustok, *exitstatus)){
 		*exitstatus = NULL;
-		*blkid = NULL
+		*blkid = NULL;
 		fatal("Invalid getblockhash_hook exitstatus: %.*s",
 		      exitstatustok->end - exitstatustok->start, buffer);
 	}
@@ -1057,6 +1057,139 @@ REGISTER_PLUGIN_HOOK(getblockhash, getblockhash_hook_cb,
 		     struct getblockhash_hook_payload *,
 		     getblockhash_hook_serialize,
 		     struct getblockhash_hook_payload *);
+
+struct getoutput_hook_payload {
+	struct bitcoind *bitcoind;
+	char *blocknum;
+	char *txnum;
+	char *outnum;
+	void *cb;
+	void *cb_arg;
+};
+
+static void
+getoutput_hook_serialize(struct getoutput_hook_payload *payload,
+			  struct json_stream *stream)
+{
+	json_object_start(stream, "getoutput");
+	json_add_string(stream, "blocknum", payload->blocknum);
+	json_add_string(stream, "txnum", payload->txnum);
+	json_add_string(stream, "outnum", payload->outnum);
+	json_object_end(stream); /* .getoutput */
+}
+
+/* This deserialize interface will aslo be used for gettxout_hook */
+static bool txoutput_hook_deserialize(const char *buffer,
+					  const jsmntok_t *toks,
+					  struct bitcoin_tx_output **out,
+					  int **exitstatus)
+{
+	const jsmntok_t *exitstatustok, *valuetok, *hextok;
+
+	/* No plugin registered on hook at all? */
+	if (!buffer)
+		goto fail;
+
+	exitstatustok = json_get_member(buffer, toks, "exitstatus");
+
+	if (!exitstatustok)
+		goto fail;
+
+	*exitstatus = tal(tmpctx, int);
+	if (!json_to_int(buffer, exitstatustok, *exitstatus)){
+		*out = NULL;
+		*exitstatus = NULL;
+		fatal("Invalid getoutput_hook exitstatus: %.*s",
+		      exitstatustok->end - exitstatustok->start,
+		      buffer + exitstatustok->start);
+	}
+
+	valuetok = json_get_member(buffer, toks, "value");
+	hextok = json_get_member(buffer, toks, "hexscriptPubKey");
+
+	if (!valuetok || !hextok) {
+		if(!**exitstatus) {
+			*out = NULL;
+			return true; /* not found */
+		}
+		goto fail;
+	}
+
+	*out = tal(tmpctx, struct bitcoin_tx_output);
+
+	if (!json_to_bitcoin_amount(buffer, valuetok, &(*out)->amount.satoshis)) { /* Raw: talking to getoutput_hook/gettxout_hook registers */
+		*out = NULL;
+		*exitstatus = NULL;
+		fatal("Invalid getoutput_hook: had bad value (%.*s)?",
+		      valuetok->end - valuetok->start,
+		      buffer + valuetok->start);
+	}
+
+	(*out)->script = tal_hexdata(out, buffer + hextok->start,
+				 hextok->end - hextok->start);
+	/* FIXME: change the content of fatal to (int)bcli->output_bytes, bcli->output */
+	if (!(*out)->script) {
+		*out = NULL;
+		*exitstatus = NULL;
+		fatal("Invalid getoutput_hook: scriptPubKey->hex invalid hex (%.*s)?",
+		      hextok->end - hextok->start,
+		      buffer + hextok->start);
+	}
+
+	return true;
+
+fail:
+	*out = NULL;
+	*exitstatus = NULL;
+	return false;
+}
+
+static bool process_getblockhash_for_txout(struct bitcoin_cli *bcli);
+
+static void
+getoutput_hook_cb(struct getoutput_hook_payload *payload,
+		  const char *buffer,
+		  const jsmntok_t *toks)
+{
+	struct bitcoin_tx_output *out;
+	int *exitstatus;
+
+	void (*cb)(struct bitcoind *bitcoind,
+		   const struct bitcoin_tx_output *output,
+		   void *arg) = payload->cb;
+
+	payload->bitcoind->ask_plugin =
+				txoutput_hook_deserialize(buffer,
+					         toks,
+					         &out,
+					         &exitstatus);
+	/* FIXME: whitespace after if */
+	if (payload->bitcoind->ask_plugin) {
+		/* As of at least v0.15.1.0, bitcoind returns "success" but an empty
+		   string on a spent gettxout */
+		if (!out) {
+			log_debug(payload->bitcoind->log, "getoutput_hook"
+				  ": not unspent output?");
+			cb(payload->bitcoind, NULL, payload->cb_arg);
+			return;
+		}
+		cb(payload->bitcoind, out, payload->cb_arg);
+		return;
+	}
+
+	tal_steal(tmpctx, payload);
+	log_debug(payload->bitcoind->log, "bitcoin-cli getblockhash for txoutput: %s",
+		  payload->blocknum);
+	start_bitcoin_cli(payload->bitcoind, NULL, process_getblockhash_for_txout,
+			  true, BITCOIND_LOW_PRIO, payload->cb, payload->cb_arg,
+			  "getblockhash", payload->blocknum,
+			  NULL);
+}
+
+REGISTER_PLUGIN_HOOK(getoutput, getoutput_hook_cb,
+		     struct getoutput_hook_payload *,
+		     getoutput_hook_serialize,
+		     struct getoutput_hook_payload *);
 
 static void process_get_output(struct bitcoind *bitcoind, const struct bitcoin_tx_output *txout, void *arg)
 {
@@ -1232,19 +1365,42 @@ void bitcoind_getoutput_(struct bitcoind *bitcoind,
 			 void *arg)
 {
 	struct get_output *go = tal(bitcoind, struct get_output);
+	struct getoutput_hook_payload *hook_payload;
 	go->blocknum = blocknum;
 	go->txnum = txnum;
 	go->outnum = outnum;
 	go->cbarg = arg;
 
-	/* We may not have topology ourselves that far back, so ask bitcoind */
-	start_bitcoin_cli(bitcoind, NULL, process_getblockhash_for_txout,
-			  true, BITCOIND_LOW_PRIO, cb, go,
-			  "getblockhash", take(tal_fmt(NULL, "%u", blocknum)),
-			  NULL);
+	if(!bitcoind->ask_plugin) {
+		/* We may not have topology ourselves that far back, so ask bitcoind */
+		start_bitcoin_cli(bitcoind, NULL, process_getblockhash_for_txout,
+				  true, BITCOIND_LOW_PRIO, cb, go,
+				  "getblockhash", take(tal_fmt(NULL, "%u", blocknum)),
+				  NULL);
+		/* Looks like a leak, but we free it in process_getblock */
+		notleak(go);
+		return;
+	}
 
-	/* Looks like a leak, but we free it in process_getblock */
 	notleak(go);
+
+	hook_payload = tal(bitcoind, struct getoutput_hook_payload);
+	hook_payload->bitcoind = bitcoind;
+	hook_payload->blocknum = tal_fmt(hook_payload, "%u", blocknum);
+	hook_payload->txnum = tal_fmt(hook_payload, "%u", txnum);
+	hook_payload->outnum = tal_fmt(hook_payload, "%u", outnum);
+	hook_payload->cb = cb;
+	hook_payload->cb_arg = go;
+
+	log_debug(bitcoind->log, "Calling hook for getoutput with"
+		  " blocknum: %s, txnum: %s, outnum: %s",
+		  hook_payload->blocknum,
+		  hook_payload->txnum,
+		  hook_payload->outnum);
+
+	plugin_hook_call_getoutput(bitcoind->ld,
+				   hook_payload,
+				   hook_payload);
 }
 
 static bool process_getblockhash(struct bitcoin_cli *bcli)
