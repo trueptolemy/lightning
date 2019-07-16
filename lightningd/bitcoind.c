@@ -1197,6 +1197,75 @@ static void process_get_output(struct bitcoind *bitcoind, const struct bitcoin_t
 	go->cb(bitcoind, txout, go->cbarg);
 }
 
+struct gettxout_hook_payload {
+	struct bitcoind *bitcoind;
+	const char *txid;
+	char *outnum;
+	void *cb;
+	void *cb_arg;
+};
+
+static void
+gettxout_hook_serialize(struct gettxout_hook_payload *payload,
+			  struct json_stream *stream)
+{
+	json_object_start(stream, "gettxout");
+	json_add_string(stream, "txid", payload->txid);
+	json_add_string(stream, "outnum", payload->outnum);
+	json_object_end(stream); /* .gettxout */
+}
+
+static bool process_gettxout(struct bitcoin_cli *bcli);
+
+static void
+gettxout_hook_cb(struct gettxout_hook_payload *payload,
+		  const char *buffer,
+		  const jsmntok_t *toks)
+{
+	struct bitcoin_tx_output *out;
+	int *exitstatus;
+
+	void (*cb)(struct bitcoind *bitcoind,
+		   const struct bitcoin_tx_output *output,
+		   void *arg) = payload->cb;
+
+	payload->bitcoind->ask_plugin =
+				txoutput_hook_deserialize(buffer,
+					         toks,
+					         &out,
+					         &exitstatus);
+	/* FIXME: whitespace after if */
+	if (payload->bitcoind->ask_plugin) {
+		/* As of at least v0.15.1.0, bitcoind returns "success" but an empty
+		   string on a spent gettxout */
+		if (!out) {
+			log_debug(payload->bitcoind->log, "gettxout_hook"
+				  ": not unspent output?");
+			cb(payload->bitcoind, NULL, payload->cb_arg);
+			return;
+		}
+		cb(payload->bitcoind, out, payload->cb_arg);
+		return;
+	}
+
+	tal_steal(tmpctx, payload);
+	log_debug(payload->bitcoind->log, "bitcoin-cli gettxout for"
+		  " txid: %s, outnum: %s",
+		  payload->txid,
+		  payload->outnum);
+	start_bitcoin_cli(payload->bitcoind, NULL,
+		  process_gettxout, true, BITCOIND_LOW_PRIO,
+		  payload->cb, payload->cb_arg, "gettxout",
+		  payload->txid,
+		  payload->outnum,
+		  NULL);
+}
+
+REGISTER_PLUGIN_HOOK(gettxout, gettxout_hook_cb,
+		     struct gettxout_hook_payload *,
+		     gettxout_hook_serialize,
+		     struct gettxout_hook_payload *);
+
 static bool process_gettxout(struct bitcoin_cli *bcli)
 {
 	void (*cb)(struct bitcoind *bitcoind,
@@ -1474,12 +1543,35 @@ void bitcoind_gettxout(struct bitcoind *bitcoind,
 				  void *arg),
 		       void *arg)
 {
-	start_bitcoin_cli(bitcoind, NULL,
+	struct gettxout_hook_payload *hook_payload;
+
+	if (!bitcoind->ask_plugin) {
+		start_bitcoin_cli(bitcoind, NULL,
 			  process_gettxout, true, BITCOIND_LOW_PRIO, cb, arg,
 			  "gettxout",
 			  take(type_to_string(NULL, struct bitcoin_txid, txid)),
 			  take(tal_fmt(NULL, "%u", outnum)),
 			  NULL);
+		return;
+	}
+
+	hook_payload = tal(bitcoind, struct gettxout_hook_payload);
+	hook_payload->bitcoind = bitcoind;
+	hook_payload->txid = type_to_string(hook_payload,
+						struct bitcoin_txid,
+						txid);
+	hook_payload->outnum = tal_fmt(hook_payload, "%u", outnum);
+	hook_payload->cb = cb;
+	hook_payload->cb_arg = arg;
+
+	log_debug(bitcoind->log, "Calling hook for gettxout with"
+		  " txid: %s, outnum: %s",
+		  hook_payload->txid,
+		  hook_payload->outnum);
+
+	plugin_hook_call_gettxout(bitcoind->ld,
+				   hook_payload,
+				   hook_payload);
 }
 
 static void destroy_bitcoind(struct bitcoind *bitcoind)
