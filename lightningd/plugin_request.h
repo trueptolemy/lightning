@@ -71,4 +71,6 @@ void plugin_request_call_(struct lightningd *ld, const struct plugin_request *re
 
 bool plugin_request_register(struct plugin *plugin, const char *method);
 
+bool check_plugin_request_consistency(void);
+
 #endif /* LIGHTNING_LIGHTNINGD_PLUGIN_REQUEST_H */

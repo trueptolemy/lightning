@@ -1089,6 +1089,8 @@ static void plugin_config(struct plugin *plugin)
 void plugins_config(struct plugins *plugins)
 {
 	struct plugin *p;
+
+	assert(check_plugin_request_consistency());
 	list_for_each(&plugins->plugins, p, list) {
 		plugin_config(p);
 	}

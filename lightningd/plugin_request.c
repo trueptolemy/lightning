@@ -43,6 +43,32 @@ static struct plugin_request **plugin_request_by_label(const tal_t *ctx,
 	return req;
 }
 
+static bool check_plugin_request_regist(struct plugin_request *req)
+{
+	if (req->plugin)
+		return true;
+	return false;
+}
+
+bool check_plugin_request_consistency(void)
+{
+	bool regist;
+	struct plugin_request **req;
+
+	for (size_t i = 0; i < ARRAY_SIZE(plugin_request_labels); i++) {
+		req = plugin_request_by_label(tmpctx, plugin_request_labels[i]);
+		if (tal_count(req) < 2)
+			continue;
+		regist = check_plugin_request_regist(req[0]);
+		for (size_t i = 1; i < tal_count(req) - 1; i++) {
+			regist ^= !check_plugin_request_regist(req[i]);
+			if (!regist)
+				return false;
+		}
+	}
+	return true;
+}
+
 /* Struct containing all the information needed to deserialize and
  * dispatch an eventual plugin_request response. */
 struct plugin_request_req {
