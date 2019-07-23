@@ -195,10 +195,11 @@ static void next_plugin_request(struct plugin_request_manager *manager,
 	send_plugin_request(req);
 
 	req->start = time_now();
-	req->reply_timer = new_reltimer(timers,
-					notleak(req),
-					time_from_sec(*req->reply_timeout),
-					plugin_request_timeout, req);
+	if (req->reply_timeout)
+		req->reply_timer = new_reltimer(timers,
+						notleak(req),
+						time_from_sec(*req->reply_timeout),
+						plugin_request_timeout, req);
 	manager->num_requests[prio]++;
 }
 
