@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Lightningd: add support for `signet` networks using the `--network=signet` or `--signet` startup option
+- Plugin: Add new type `request` to make `lightningd` request registrable and subscribed by plugins.
 
 ### Changed
 
