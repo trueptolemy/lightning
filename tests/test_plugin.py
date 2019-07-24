@@ -494,3 +494,11 @@ def test_invoice_payment_notification(node_factory):
     l2.daemon.wait_for_log(r"Received invoice_payment event for label {},"
                            " preimage {}, and amount of {}msat"
                            .format(label, preimage, msats))
+
+
+def test_getclientversion_plugin_request(node_factory):
+    plugin_path = 'tests/plugins/check_bitcoind_version.py'
+    l1 = node_factory.get_node(options={'plugin': plugin_path})
+
+    assert l1.daemon.is_in_log('plugin-check_bitcoind_version.py Receive getclientversion request: getclientversion')
+    assert l1.daemon.is_in_log('getclientversion request: Vaild client! *')
