@@ -783,6 +783,85 @@ void bitcoind_gettxout(struct bitcoind *bitcoind,
 			  NULL);
 }
 
+static bool extract_numeric_version(struct bitcoin_cli *bcli,
+			    const char *output, size_t output_bytes,
+			    u64 *version)
+{
+	const jsmntok_t *tokens, *versiontok;
+	bool valid;
+
+	tokens = json_parse_input(output, output, output_bytes, &valid);
+	if (!tokens)
+		fatal("%s: %s response",
+		      bcli_args(tmpctx, bcli),
+		      valid ? "partial" : "invalid");
+
+	if (tokens[0].type != JSMN_OBJECT) {
+		log_unusual(bcli->bitcoind->log,
+			    "%s: gave non-object (%.*s)?",
+			    bcli_args(tmpctx, bcli),
+			    (int)output_bytes, output);
+		return false;
+	}
+
+	versiontok = json_get_member(output, tokens, "version");
+	if (!versiontok)
+		return false;
+
+	return json_to_u64(output, versiontok, version);
+}
+
+/* Supported version is the prerequisite for normal runnning.
+ * So any error will call `fatal` and fail the `lightningd`.
+ */
+static bool process_getclientversion(struct bitcoin_cli *bcli)
+{
+	u64 version;
+	u64 min_version = bcli->bitcoind->chainparams->cli_min_supported_version;
+
+	if (*bcli->exitstatus != 0) {
+		/* bitcoin/src/rpc/protocol.h:
+		 * 	RPC_METHOD_NOT_FOUND = -32601
+		 */
+		if (*bcli->exitstatus != 32601)
+			fatal("%s exited with code %i: %.*s",
+			      bcli_args(tmpctx, bcli), *bcli->exitstatus,
+			      (int)bcli->output_bytes, bcli->output);
+		/* `bitcoind` remove `getinfo` API from 0.16(numeric version: 160000)
+		 * and add `getnetworkinfo`. */
+		/* Use `getinfo` for the version older than 0.16. */
+		start_bitcoin_cli(bcli->bitcoind, NULL, process_getclientversion, false,
+				  BITCOIND_HIGH_PRIO,
+				  NULL, NULL,
+				  "getinfo", NULL);
+		return true;
+	}
+
+	if (!extract_numeric_version(bcli, bcli->output,
+				     bcli->output_bytes,
+				     &version)) {
+		fatal("%s: Unable to getclientversion (%.*s)",
+		      bcli_args(tmpctx, bcli),
+		      (int)bcli->output_bytes,
+		      bcli->output);
+	}
+
+	if (version < min_version)
+		fatal("Unsupported client version? client version: %"PRIu64","
+		      " supported minimum version: %"PRIu64"",
+		      version, min_version);
+
+	return true;
+}
+
+void bitcoind_getclientversion(struct bitcoind *bitcoind)
+{
+	start_bitcoin_cli(bitcoind, NULL, process_getclientversion, true,
+			  BITCOIND_HIGH_PRIO,
+			  NULL, NULL,
+			  "getnetworkinfo", NULL);
+}
+
 static void destroy_bitcoind(struct bitcoind *bitcoind)
 {
 	/* Suppresses the callbacks from bcli_finished as we free conns. */
