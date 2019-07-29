@@ -820,13 +820,9 @@ static bool process_getclientversion(struct bitcoin_cli *bcli)
 	u64 min_version = bcli->bitcoind->chainparams->cli_min_supported_version;
 
 	if (*bcli->exitstatus != 0) {
-		/* bitcoin/src/rpc/protocol.h:
-		 * 	RPC_METHOD_NOT_FOUND = -32601
-		 */
-		if (*bcli->exitstatus != 32601)
-			fatal("%s exited with code %i: %.*s",
-			      bcli_args(tmpctx, bcli), *bcli->exitstatus,
-			      (int)bcli->output_bytes, bcli->output);
+		fatal("%s exited with code %i: %.*s",
+		      bcli_args(tmpctx, bcli), *bcli->exitstatus,
+		      (int)bcli->output_bytes, bcli->output);
 		/* `bitcoind` remove `getinfo` API from 0.16(numeric version: 160000)
 		 * and add `getnetworkinfo`. */
 		/* Use `getinfo` for the version older than 0.16. */
@@ -859,7 +855,7 @@ void bitcoind_getclientversion(struct bitcoind *bitcoind)
 	start_bitcoin_cli(bitcoind, NULL, process_getclientversion, true,
 			  BITCOIND_HIGH_PRIO,
 			  NULL, NULL,
-			  "getnetworkinfo", NULL);
+			  "getinfo", NULL);
 }
 
 static void destroy_bitcoind(struct bitcoind *bitcoind)
