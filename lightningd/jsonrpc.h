@@ -39,6 +39,9 @@ struct command {
 	enum command_mode mode;
 	/* Have we started a json stream already?  For debugging. */
 	struct json_stream *json_stream;
+
+	/* Only one filed between `jcon` and `in_jcon` is not NULL; */
+	struct internal_json_connection *in_jcon;
 };
 
 /**
@@ -57,6 +60,20 @@ struct json_command {
 	const char *description;
 	bool deprecated;
 	const char *verbose;
+	/* This flag indicates if the json_command will be exposed
+	 * to user in `help` and be called by `lightningd` to expand
+	 * rpcmethods of plugins.
+	 */
+	bool internal;
+};
+
+/* `lightningd` will register their interested topic. */
+struct json_internal_command {
+	const char *name;
+	/* Not null if any plugin supply the corresponding rpcmethod.
+	 * But only one plugin can register here at the same time. */
+	struct json_command *cmd;
+	void (*serialize_payload)(void *src, struct json_stream *dest);
 };
 
 struct jsonrpc_notification {
@@ -211,6 +228,8 @@ void jsonrpc_request_end(struct jsonrpc_request *request);
 
 AUTODATA_TYPE(json_command, struct json_command);
 
+AUTODATA_TYPE(json_internal_command, struct json_internal_command);
+
 #if DEVELOPER
 struct htable;
 struct jsonrpc;
@@ -218,5 +237,40 @@ struct jsonrpc;
 void jsonrpc_remove_memleak(struct htable *memtable,
 			    const struct jsonrpc *jsonrpc);
 #endif /* DEVELOPER */
+
+bool json_command_internal_call_(struct lightningd *ld, const char *name,
+				void *payload,
+				void (*response_cb)(void *arg, bool retry, char *output,
+						    size_t output_bytes),
+				void *response_cb_arg);
+
+#define json_command_internal_call(ld, name, payload, response_cb, response_cb_arg)                 \
+	json_command_internal_call_(ld, name, payload,                                              \
+				    typesafe_cb_cast(void (*)(void *, bool,                         \
+							      char*, size_t),                       \
+						     void (*)(typeof(response_cb_arg), bool,        \
+							      char *, size_t),                      \
+						     (response_cb)),                                \
+				    response_cb_arg)
+
+#define REGISTER_JSON_INTERNAL_COMMAND(name, serialize_payload, payload_type)                       \
+	struct json_internal_command name##_internal_command_gen = {                                \
+	    stringify(name),                                                                        \
+	    NULL, /* .cmd */                                                                        \
+	    typesafe_cb_cast(void (*)(void *, struct json_stream *),                                \
+			     void (*)(payload_type, struct json_stream *),                          \
+			     serialize_payload),                                                    \
+	};                                                                                          \
+	AUTODATA(json_internal_command, &name##_internal_command_gen);
+
+bool internal_command_register(struct json_command *cmd);
+
+struct internal_rpcmethod_calls;
+
+struct internal_rpcmethod_calls *new_internal_rpcmethod_calls(const tal_t *ctx, struct lightningd *ld);
+void internal_rpcmethod_registered(struct internal_rpcmethod_calls *call);
+void initial_internal_repcmethod_calls(struct internal_rpcmethod_calls *call);
+void internal_command_complete(struct command *cmd, const char *buffer,
+			       const jsmntok_t *toks);
 
 #endif /* LIGHTNING_LIGHTNINGD_JSONRPC_H */
