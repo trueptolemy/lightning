@@ -602,7 +602,10 @@ struct json_stream *json_stream_fail(struct command *cmd,
 /* We return struct command_result so command_fail return value has a natural
  * sink; we don't actually use the result. */
 static struct command_result *
-parse_request(struct json_connection *jcon, const jsmntok_t tok[])
+parse_request(struct json_connection *jcon, const jsmntok_t tok[],
+	      void (*cb)(void *arg, bool retry, const char *buffer,
+	      		 const jsmntok_t *toks),
+	      void *cb_arg)
 {
 	const jsmntok_t *method, *id, *params;
 	struct command *c;
@@ -639,6 +642,16 @@ parse_request(struct json_connection *jcon, const jsmntok_t tok[])
 			    json_tok_full(jcon->buffer, id),
 			    json_tok_full_len(id));
 	c->mode = CMD_NORMAL;
+
+	/* Internal call will set cb not NULL. */
+	if (cb) {
+		c->inter_cmd_cb = cb;
+		c->inter_cmd_cb_arg = cb_arg;
+	} else {
+		c->inter_cmd_cb = NULL;
+		c->inter_cmd_cb_arg = NULL;
+	}
+
 	list_add_tail(&jcon->commands, &c->list);
 	tal_add_destructor(c, destroy_command);
 
@@ -764,7 +777,7 @@ static struct io_plan *read_json(struct io_conn *conn,
 		goto read_more;
 	}
 
-	parse_request(jcon, toks);
+	parse_request(jcon, toks, NULL, NULL);
 
 	/* Remove first {}. */
 	memmove(jcon->buffer, jcon->buffer + toks[0].end,
@@ -1228,3 +1241,165 @@ void jsonrpc_remove_memleak(struct htable *memtable,
 	memleak_remove_strmap(memtable, &jsonrpc->usagemap);
 }
 #endif /* DEVELOPER */
+
+static struct json_internal_command *json_internal_command_by_name(const char *name)
+{
+	static struct json_internal_command **json_internal_command = NULL;
+	static size_t num_internal;
+	if (!json_internal_command)
+		json_internal_command = autodata_get(json_internal_command, &num_internal);
+
+	for (size_t i=0; i<num_internal; i++)
+		if (streq(json_internal_command[i]->name, name))
+			return json_internal_command[i];
+	return NULL;
+}
+
+bool internal_command_register(struct json_command *cmd)
+{
+	struct json_internal_command *inter_cmd = json_internal_command_by_name(cmd->name);
+	if (inter_cmd) {
+		inter_cmd->cmd = cmd;
+		return true;
+	}
+	return false;
+}
+
+static struct json_stream *json_internal_command(struct json_connection *jcon,
+				  struct json_internal_command *inter,
+				  void *payload)
+{
+	struct json_stream *stream = new_json_stream(jcon, NULL, jcon->log);
+	static u64 next_internal_command_id = 0;
+	json_object_start(stream, NULL);
+	json_add_string(stream, "jsonrpc", "2.0");
+	json_add_u64(stream, "id", next_internal_command_id++);
+	json_add_string(stream, "method", inter->name);
+	json_object_start(stream, "params");
+
+	inter->serialize_payload(payload, stream);
+
+	json_object_end(stream); /* closes '.params' */
+	json_object_end(stream); /* closes '.' */
+
+	return stream;
+}
+
+struct inter_command_connection *new_inter_command_connection(const tal_t *ctx)
+{
+	struct inter_command_connection *cmd_conn = tal(ctx, struct inter_command_connection);
+	cmd_conn->inter_jcon = NULL;
+	cmd_conn->wait_register = true;
+	return cmd_conn;
+}
+
+void initial_inter_command_connection(struct inter_command_connection *cmd_conn)
+{
+	cmd_conn->wait_register = false;
+}
+
+static struct json_connection *initial_inter_jcon(const tal_t *ctx, struct lightningd *ld)
+{
+	struct json_connection *jcon;
+
+	jcon = tal(ctx, struct json_connection);
+	/* For inter jcon, it doesn't have `conn`. */
+	jcon->conn = NULL;
+	jcon->ld = ld;
+	jcon->used = 0;
+	jcon->buffer = NULL;
+	/* Not be used for internal call. */
+	jcon->js_arr = NULL;
+	jcon->len_read = 0;
+	list_head_init(&jcon->commands);
+
+	jcon->log = new_log(ld->log_book, ld->log_book, "%sinter_jcon:",
+			    log_prefix(ld->log));
+
+	tal_add_destructor(jcon, destroy_jcon);
+
+	return jcon;
+}
+
+void config_inter_command_connection(struct inter_command_connection *cmd_conn,
+				     struct lightningd *ld)
+{
+	cmd_conn->inter_jcon = initial_inter_jcon(cmd_conn, ld);
+}
+
+bool json_command_internal_call(struct lightningd *ld, const char *name,
+				 void *payload, void *cb_arg)
+{
+	bool valid;
+
+	struct inter_command_connection *cmd_conn = ld->inter_cmd_conn;
+
+	struct json_internal_command *inter = json_internal_command_by_name(name);
+	if (!inter) {
+		log_broken(ld->log, "Unregistered internal command '%s'?", inter->name);
+		return false;
+	}
+
+	if (cmd_conn->wait_register) {
+		log_info(ld->log, "Internal command call: wait for checking if plugins"
+				  " supply internal rpcmethod.");
+		inter->response_cb(cb_arg, true, NULL, NULL);
+		return true;
+	}
+
+	if (!inter->plugin_support) {
+		inter->response_cb(cb_arg, false, NULL, NULL);
+		return true;
+	}
+
+	if (!inter->cmd) {
+		log_info(ld->log, "No '%s' rpcmethod registered",
+			    inter->name);
+		inter->plugin_support = false;
+		inter->response_cb(cb_arg, false, NULL, NULL);
+		return true;
+	}
+
+	if (!cmd_conn->inter_jcon) {
+		log_info(ld->log, "Internal command call: wait for rpc initial.");
+		inter->response_cb(cb_arg, true, NULL, NULL);
+		return true;
+	}
+
+	struct json_connection *jcon = cmd_conn->inter_jcon;
+	struct json_stream *stream = json_internal_command(jcon, inter, payload);
+	const char *buffer = json_stream_contents(stream, &jcon->len_read);
+	if (!buffer) {
+		log_broken(jcon->log, "Error in serialize process of internal command '%s'.",
+			    inter->name);
+		return false;
+	}
+
+	log_io(jcon->log, LOG_IO_IN, "",
+	       jcon->buffer + jcon->used,
+	       jcon->len_read);
+
+	jcon->buffer = tal_strndup(jcon, buffer, jcon->len_read);
+	/* In fact, 'used' is useless for ld->inter_jcon.
+	 * So just set it like we're full.
+	 */
+	jcon->used += jcon->len_read;
+	jsmntok_t *toks = json_parse_input(jcon->buffer, jcon->buffer,
+					   jcon->used, &valid);
+
+	/* For command internal call, we shouldn't meet partial 'read' case. */
+	if (!toks || !valid) {
+		log_broken(jcon->log, "Uninvalid json format for internal command '%s'.",
+			   inter->name);
+		return false;
+	}
+
+	parse_request(jcon, toks, inter->response_cb, cb_arg);
+
+	jcon->buffer = tal_free(jcon->buffer);
+	jcon->used = jcon->len_read = 0;
+	return true;
+}
+
+/* Dummy one. Will be removed when we have a 'real' one. */
+REGISTER_JSON_INTERNAL_COMMAND(hello, NULL, void *, NULL, void *);

@@ -224,6 +224,8 @@ struct lightningd {
 	bool pure_tor_setup;
 
 	struct plugins *plugins;
+	/* Manage rpc commands(supplied by plugins) internal call */
+	struct inter_command_connection *inter_cmd_conn;
 };
 
 /* Turning this on allows a tal allocation to return NULL, rather than aborting.

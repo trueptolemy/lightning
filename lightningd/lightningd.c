@@ -222,6 +222,9 @@ static struct lightningd *new_lightningd(const tal_t *ctx)
 	 */
 	ld->plugins = plugins_new(ld, ld->log_book, ld);
 
+	/* FIXME: comment. */
+	ld->inter_cmd_conn = new_inter_command_connection(ld);
+
 	/*~ This is set when a JSON RPC command comes in to shut us down. */
 	ld->stop_conn = NULL;
 

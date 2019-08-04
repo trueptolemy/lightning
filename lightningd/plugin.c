@@ -617,9 +617,14 @@ static void plugin_rpcmethod_cb(const char *buffer,
 				const jsmntok_t *idtok,
 				struct command *cmd)
 {
-	struct json_stream *response;
+	/* Internal rpcmethod call doesn't have 'writer', but it has 'cb'. */
+	if (cmd->inter_cmd_cb) {
+		cmd->inter_cmd_cb(cmd->inter_cmd_cb_arg, false, buffer, toks);
+		tal_free(cmd);
+		return;
+	}
 
-	response = json_stream_raw_for_cmd(cmd);
+	struct json_stream *response =  json_stream_raw_for_cmd(cmd);
 	json_stream_forward_change_id(response, buffer, toks, idtok, cmd->id);
 	command_raw_complete(cmd, response);
 }
@@ -675,7 +680,7 @@ static bool plugin_rpcmethod_add(struct plugin *plugin,
 				 const char *buffer,
 				 const jsmntok_t *meth)
 {
-	const jsmntok_t *nametok, *categorytok, *desctok, *longdesctok, *usagetok;
+	const jsmntok_t *nametok, *categorytok, *desctok, *longdesctok, *usagetok, *intertok;
 	struct json_command *cmd;
 	const char *usage;
 
@@ -684,6 +689,7 @@ static bool plugin_rpcmethod_add(struct plugin *plugin,
 	desctok = json_get_member(buffer, meth, "description");
 	longdesctok = json_get_member(buffer, meth, "long_description");
 	usagetok = json_get_member(buffer, meth, "usage");
+	intertok = json_get_member(buffer, meth, "internal");
 
 	if (!nametok || nametok->type != JSMN_STRING) {
 		plugin_kill(plugin,
@@ -743,6 +749,22 @@ static bool plugin_rpcmethod_add(struct plugin *plugin,
 			   cmd->name);
 		return false;
 	}
+
+	if (intertok)
+		json_to_bool(buffer, intertok, &cmd->internal);
+	else
+		cmd->internal = false;
+
+	if (cmd->internal) {
+		if (!internal_command_register(cmd)) {
+			log_broken(plugin->log,
+				   "Could not register internal rpcmethod '%s'."
+				   " Is this name correct?",
+				   cmd->name);
+			return false;
+		}
+	}
+
 	tal_arr_expand(&plugin->methods, cmd->name);
 	return true;
 }
@@ -853,8 +875,10 @@ static void plugin_manifest_cb(const char *buffer,
 	/* Check if all plugins have replied to getmanifest, and break
 	 * if they are */
 	plugin->plugins->pending_manifests--;
-	if (plugin->plugins->pending_manifests == 0)
+	if (plugin->plugins->pending_manifests == 0) {
 		io_break(plugin->plugins);
+		initial_inter_command_connection(plugin->plugins->ld->inter_cmd_conn);
+	}
 
 	resulttok = json_get_member(buffer, toks, "result");
 	if (!resulttok || resulttok->type != JSMN_OBJECT) {
@@ -1067,6 +1091,7 @@ void plugins_config(struct plugins *plugins)
 	list_for_each(&plugins->plugins, p, list) {
 		plugin_config(p);
 	}
+	config_inter_command_connection(plugins->ld->inter_cmd_conn, plugins->ld);
 }
 
 void json_add_opt_plugins(struct json_stream *response,
