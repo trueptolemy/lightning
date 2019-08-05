@@ -619,6 +619,88 @@ static void setup_sig_handlers(void)
 	}
 }
 
+/* Add the n'th arg to *args, incrementing n and keeping args of size n+1 */
+static void add_arg_ld(const char ***args, const char *arg)
+{
+	tal_arr_expand(args, arg);
+}
+
+static const char **gather_args_ld(const struct lightningd *ld,
+				const tal_t *ctx, const char *cmd, va_list ap)
+{
+	const char **args = tal_arr(ctx, const char *, 1);
+	const char *arg;
+
+	args[0] = ld->rpc_filename;
+
+	add_arg(&args, tal_fmt(args, "--lightning-dir=%s", ld->config_dir));
+
+	add_arg(&args, cmd);
+
+	while ((arg = va_arg(ap, const char *)) != NULL)
+		add_arg(&args, tal_strdup(args, arg));
+
+	add_arg(&args, NULL);
+	return args;
+}
+
+static const char **cmdarr_ld(const tal_t *ctx, const struct lightningd *ld,
+			   const char *cmd, ...)
+{
+	va_list ap;
+	const char **args;
+
+	va_start(ap, cmd);
+	args = gather_args_ld(ld, ctx, cmd, ap);
+	va_end(ap);
+	return args;
+}
+
+void try_internal_call(struct lightningd *ld)
+{
+	int from, status, ret;
+	pid_t child;
+	const char **cmd = cmdarr_ld(ld, ld, "getinfo", NULL);
+	bool printed = false;
+	char *errstr;
+
+	for (;;) {
+		child = pipecmdarr(NULL, &from, &from, cast_const2(char **,cmd));
+		if (child < 0) {
+			if (errno == ENOENT) {
+				fatal("lightning-cli not found. Is bitcoin-cli (part of Bitcoin Core) available in your PATH?");
+			}
+			fatal("%s exec failed: %s", cmd[0], strerror(errno));
+		}
+
+		char *output = grab_fd(cmd, from);
+
+		while ((ret = waitpid(child, &status, 0)) < 0 && errno == EINTR);
+		if (ret != child)
+			fatal("Waiting for %s: %s", cmd[0], strerror(errno));
+		if (!WIFEXITED(status))
+			fatal("Death of %s: signal %i",
+			      cmd[0], WTERMSIG(status));
+
+		if (WEXITSTATUS(status) == 0) {
+			fatal("internal call succeed");
+			break;
+		}
+
+		/* bitcoin/src/rpc/protocol.h:
+		 *	RPC_IN_WARMUP = -28, //!< Client still warming up
+		 */
+		if (WEXITSTATUS(status)) {
+			if (WEXITSTATUS(status) == 1) {
+			fatal("%s exited with code %i: %s",
+			      cmd[0], WEXITSTATUS(status), output);
+			}
+		}
+		sleep(1);
+	}
+	tal_free(cmd);
+}
+
 int main(int argc, char *argv[])
 {
 	struct lightningd *ld;
@@ -771,6 +853,7 @@ int main(int argc, char *argv[])
 	 *  over a UNIX domain socket specified by `ld->rpc_filename`. */
 	jsonrpc_listen(ld->jsonrpc, ld);
 
+	try_internal_call(ld->bitcoind);
 	/*~ Now that the rpc path exists, we can start the plugins and they
 	 * can start talking to us. */
 	plugins_config(ld->plugins);
