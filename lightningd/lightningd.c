@@ -633,14 +633,14 @@ static const char **gather_args_ld(const struct lightningd *ld,
 
 	args[0] = ld->rpc_filename;
 
-	add_arg(&args, tal_fmt(args, "--lightning-dir=%s", ld->config_dir));
+	add_arg_ld(&args, tal_fmt(args, "--lightning-dir=%s", ld->config_dir));
 
-	add_arg(&args, cmd);
+	add_arg_ld(&args, cmd);
 
 	while ((arg = va_arg(ap, const char *)) != NULL)
-		add_arg(&args, tal_strdup(args, arg));
+		add_arg_ld(&args, tal_strdup(args, arg));
 
-	add_arg(&args, NULL);
+	add_arg_ld(&args, NULL);
 	return args;
 }
 
@@ -656,7 +656,7 @@ static const char **cmdarr_ld(const tal_t *ctx, const struct lightningd *ld,
 	return args;
 }
 
-void try_internal_call(struct lightningd *ld)
+static void try_internal_call(struct lightningd *ld)
 {
 	int from, status, ret;
 	pid_t child;
