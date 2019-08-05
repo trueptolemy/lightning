@@ -661,8 +661,6 @@ static void try_internal_call(struct lightningd *ld)
 	int from, status, ret;
 	pid_t child;
 	const char **cmd = cmdarr_ld(ld, ld, "getinfo", NULL);
-	bool printed = false;
-	char *errstr;
 
 	for (;;) {
 		child = pipecmdarr(NULL, &from, &from, cast_const2(char **,cmd));
@@ -853,7 +851,7 @@ int main(int argc, char *argv[])
 	 *  over a UNIX domain socket specified by `ld->rpc_filename`. */
 	jsonrpc_listen(ld->jsonrpc, ld);
 
-	try_internal_call(ld->bitcoind);
+	try_internal_call(ld);
 	/*~ Now that the rpc path exists, we can start the plugins and they
 	 * can start talking to us. */
 	plugins_config(ld->plugins);
