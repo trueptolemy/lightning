@@ -633,7 +633,7 @@ static const char **gather_args_ld(const struct lightningd *ld,
 
 	args[0] = ld->rpc_filename;
 
-	add_arg_ld(&args, tal_fmt(args, "--lightning-dir=%s", ld->config_dir));
+	add_arg_ld(&args, tal_fmt(args, "-lightning-dir=%s", ld->config_dir));
 
 	add_arg_ld(&args, cmd);
 
