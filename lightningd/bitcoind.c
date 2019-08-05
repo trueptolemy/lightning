@@ -73,31 +73,6 @@ static const char **gather_args(const struct bitcoind *bitcoind,
 	return args;
 }
 
-/* Add the n'th arg to *args, incrementing n and keeping args of size n+1 */
-static void add_arg_ld(const char ***args, const char *arg)
-{
-	tal_arr_expand(args, arg);
-}
-
-static const char **gather_args_ld(const struct lightningd *ld,
-				const tal_t *ctx, const char *cmd, va_list ap)
-{
-	const char **args = tal_arr(ctx, const char *, 1);
-	const char *arg;
-
-	args[0] = ld->rpc_filename;
-
-	add_arg(&args, tal_fmt(args, "--lightning-dir=%s", ld->config_dir));
-
-	add_arg(&args, cmd);
-
-	while ((arg = va_arg(ap, const char *)) != NULL)
-		add_arg(&args, tal_strdup(args, arg));
-
-	add_arg(&args, NULL);
-	return args;
-}
-
 struct bitcoin_cli {
 	struct list_node list;
 	struct bitcoind *bitcoind;
