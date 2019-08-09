@@ -90,6 +90,8 @@ struct bitcoin_cli {
 	void *cb;
 	void *cb_arg;
 	struct bitcoin_cli **stopper;
+	const char *process_name;
+	void *internal_rpcmethod_payload;
 };
 
 static struct io_plan *read_more(struct io_conn *conn, struct bitcoin_cli *bcli)
@@ -183,7 +185,8 @@ static void bcli_finished(struct io_conn *conn UNUSED, struct bitcoin_cli *bcli)
 	int ret, status;
 	struct bitcoind *bitcoind = bcli->bitcoind;
 	enum bitcoind_prio prio = bcli->prio;
-	bool ok;
+	bool valid, ok;
+	const jsmntok_t *toks, *statustok;
 	u64 msec = time_to_msec(time_between(time_now(), bcli->start));
 
 	/* If it took over 10 seconds, that's rather strange. */
@@ -194,28 +197,68 @@ static void bcli_finished(struct io_conn *conn UNUSED, struct bitcoin_cli *bcli)
 
 	assert(bitcoind->num_requests[prio] > 0);
 
-	/* FIXME: If we waited for SIGCHILD, this could never hang! */
-	while ((ret = waitpid(bcli->pid, &status, 0)) < 0 && errno == EINTR);
-	if (ret != bcli->pid)
-		fatal("%s %s", bcli_args(tmpctx, bcli),
-		      ret == 0 ? "not exited?" : strerror(errno));
+	if (!bcli->internal_rpcmethod_payload) {
+		/* FIXME: If we waited for SIGCHILD, this could never hang! */
+		while ((ret = waitpid(bcli->pid, &status, 0)) < 0 && errno == EINTR);
+		if (ret != bcli->pid)
+			fatal("%s %s", bcli_args(tmpctx, bcli),
+			ret == 0 ? "not exited?" : strerror(errno));
 
-	if (!WIFEXITED(status))
-		fatal("%s died with signal %i",
-		      bcli_args(tmpctx, bcli),
-		      WTERMSIG(status));
+		if (!WIFEXITED(status))
+			fatal("%s died with signal %i",
+			bcli_args(tmpctx, bcli),
+			WTERMSIG(status));
 
-	if (!bcli->exitstatus) {
-		if (WEXITSTATUS(status) != 0) {
-			bcli_failure(bitcoind, bcli, WEXITSTATUS(status));
+		if (!bcli->exitstatus) {
+			if (WEXITSTATUS(status) != 0) {
+				bcli_failure(bitcoind, bcli, WEXITSTATUS(status));
+				bitcoind->num_requests[prio]--;
+				goto done;
+			}
+		} else
+			*bcli->exitstatus = WEXITSTATUS(status);
+
+		if (WEXITSTATUS(status) == 0)
+			bitcoind->error_count = 0;
+	} else {
+		toks = json_parse_input(bcli, bcli->output,
+					bcli->output_bytes, &valid);
+		if (!toks || !valid) {
 			bitcoind->num_requests[prio]--;
-			goto done;
+			goto retry_directly;
 		}
-	} else
-		*bcli->exitstatus = WEXITSTATUS(status);
 
-	if (WEXITSTATUS(status) == 0)
-		bitcoind->error_count = 0;
+		statustok = json_get_member(bcli->output, toks, "exitstatus");
+		/* No `exitstatus` field.
+		 * We don't ask plugin always return `exitstatus` except it's non-zero. */
+		if (!statustok) {
+			if (bcli->exitstatus)
+				*bcli->exitstatus = 0;
+			bitcoind->error_count = 0;
+		} else {
+			if (!json_to_int(bcli->output, statustok, &status)) {
+				log_unusual(bitcoind->log,
+					"bitcoin-cli: invalid 'exitstatus' "
+					"field of internal rpcmethod(%s), "
+					"retry to call bitcoin-cli directly.",
+					bcli->process_name);
+				bitcoind->num_requests[prio]--;
+				goto retry_directly;
+			}
+
+			/* Non-zero exitstatus is ok. */
+			if (bcli->exitstatus) {
+				*bcli->exitstatus = WEXITSTATUS(status);
+				if (*bcli->exitstatus == 0)
+					bitcoind->error_count = 0;
+			} else if (WEXITSTATUS(status) != 0) {
+				bcli_failure(bitcoind, bcli,
+					     WEXITSTATUS(status));
+				bitcoind->num_requests[prio]--;
+				goto done;
+			}
+		}
+	}
 
 	bitcoind->num_requests[bcli->prio]--;
 
@@ -234,6 +277,55 @@ static void bcli_finished(struct io_conn *conn UNUSED, struct bitcoin_cli *bcli)
 
 done:
 	next_bcli(bitcoind, prio);
+	return;
+retry_directly:
+	bcli->internal_rpcmethod_payload = tal_free(bcli->internal_rpcmethod_payload);
+	retry_bcli(bcli);
+}
+
+static void
+bcli_internal_rpcmethod_response_cb(struct bitcoin_cli *bcli, bool retry,
+				    char *output, size_t output_bytes)
+{
+	if (retry) {
+		log_debug(bcli->bitcoind->log,
+			 "bitcoin-cli: retry internal rpcmethod (%s)",
+			 bcli->process_name);
+		bcli->bitcoind->num_requests[bcli->prio]--;
+		new_reltimer(bcli->bitcoind->ld->timers, notleak(bcli),
+			     time_from_sec(1),
+			     retry_bcli, bcli);
+		return;
+	}
+
+	/* No rpcmethod registers this topic, or the response doesn't
+	 * have `result` object.
+	 * Now we will try access bitcoin-cli directly. */
+	if (!output) {
+		log_debug(bcli->bitcoind->log,
+			 "bitcoin-cli: no internal rpcmethod registered (%s), "
+			 "retry to call bitcoin-cli directly.",
+			 bcli->process_name);
+		goto retry_directly;
+	}
+
+	if (!output_bytes) {
+		log_unusual(bcli->bitcoind->log,
+			    "bitcoin-cli: invalid response for internal rpcmethod (%s), "
+			    "retry to call bitcoin-cli directly.",
+			    bcli->process_name);
+		goto retry_directly;
+	}
+
+	bcli->output_bytes = output_bytes;
+	bcli->output = tal_steal(bcli, output);
+	bcli_finished(NULL, bcli);
+	return;
+
+retry_directly:
+	bcli->bitcoind->num_requests[bcli->prio]--;
+	bcli->internal_rpcmethod_payload = tal_free(bcli->internal_rpcmethod_payload);
+	retry_bcli(bcli);
 }
 
 static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
@@ -247,6 +339,27 @@ static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
 	bcli = list_pop(&bitcoind->pending[prio], struct bitcoin_cli, list);
 	if (!bcli)
 		return;
+
+	if (bcli->internal_rpcmethod_payload) {
+		bcli->start = time_now();
+		bitcoind->num_requests[prio]++;
+		/* `json_command_internal_call` returns false only when the rpcmethod
+		 * is unavailable. It will also return true if we need to wait.
+		 * For retry case, we will wait 1 second and try again.
+		 */
+		if (json_command_internal_call(bcli->bitcoind->ld, bcli->process_name,
+					       bcli->internal_rpcmethod_payload,
+					       bcli_internal_rpcmethod_response_cb,
+					       notleak(bcli)))
+			return;
+
+		/* Internal rpcmethod meets error, now we try to access bitcoin-cli directly. */
+		bitcoind->num_requests[prio]--;
+		log_unusual(bcli->bitcoind->log,
+			    "bitcoin-cli: rpcmethod(%s) internal call failed, "
+			    "retry to call bitcoin-cli directly.",
+			    bcli->process_name);
+	}
 
 	bcli->pid = pipecmdarr(NULL, &bcli->fd, &bcli->fd,
 			       cast_const2(char **, bcli->args));
@@ -289,6 +402,8 @@ start_bitcoin_cli(struct bitcoind *bitcoind,
 		  bool (*process)(struct bitcoin_cli *),
 		  bool nonzero_exit_ok,
 		  enum bitcoind_prio prio,
+		  const char *process_name,
+		  void *internal_rpcmethod_payload,
 		  void *cb, void *cb_arg,
 		  char *cmd, ...)
 {
@@ -298,6 +413,8 @@ start_bitcoin_cli(struct bitcoind *bitcoind,
 	bcli->bitcoind = bitcoind;
 	bcli->process = process;
 	bcli->prio = prio;
+	bcli->process_name = process_name;
+	bcli->internal_rpcmethod_payload = tal_steal(bcli, internal_rpcmethod_payload);
 	bcli->cb = cb;
 	bcli->cb_arg = cb_arg;
 	if (ctx) {
@@ -410,8 +527,8 @@ static void do_one_estimatefee(struct bitcoind *bitcoind,
 
 	snprintf(blockstr, sizeof(blockstr), "%u", efee->blocks[efee->i]);
 	start_bitcoin_cli(bitcoind, NULL, process_estimatefee, false,
-			  BITCOIND_LOW_PRIO,
-			  NULL, efee,
+			  BITCOIND_LOW_PRIO, "estimatefee",
+			  NULL, NULL, efee,
 			  "estimatesmartfee", blockstr, efee->estmode[efee->i],
 			  NULL);
 }
@@ -458,8 +575,8 @@ void bitcoind_sendrawtx_(struct bitcoind *bitcoind,
 {
 	log_debug(bitcoind->log, "sendrawtransaction: %s", hextx);
 	start_bitcoin_cli(bitcoind, NULL, process_sendrawtx, true,
-			  BITCOIND_HIGH_PRIO,
-			  cb, arg,
+			  BITCOIND_HIGH_PRIO, "sendrawtx",
+			  NULL, cb, arg,
 			  "sendrawtransaction", hextx, NULL);
 }
 
@@ -492,8 +609,8 @@ void bitcoind_getrawblock_(struct bitcoind *bitcoind,
 
 	bitcoin_blkid_to_hex(blockid, hex, sizeof(hex));
 	start_bitcoin_cli(bitcoind, NULL, process_rawblock, false,
-			  BITCOIND_HIGH_PRIO,
-			  cb, arg,
+			  BITCOIND_HIGH_PRIO, "getblockbyheight",
+			  NULL, cb, arg,
 			  "getblock", hex, "false", NULL);
 }
 
@@ -522,8 +639,8 @@ void bitcoind_getblockcount_(struct bitcoind *bitcoind,
 			      void *arg)
 {
 	start_bitcoin_cli(bitcoind, NULL, process_getblockcount, false,
-			  BITCOIND_HIGH_PRIO,
-			  cb, arg,
+			  BITCOIND_HIGH_PRIO, "getblockheight",
+			  NULL, cb, arg,
 			  "getblockcount", NULL);
 }
 
@@ -694,8 +811,8 @@ static bool process_getblockhash_for_txout(struct bitcoin_cli *bcli)
 	blockhash = tal_strndup(NULL, bcli->output, bcli->output_bytes-1);
 
 	start_bitcoin_cli(bcli->bitcoind, NULL, process_getblock, true,
-			  BITCOIND_LOW_PRIO,
-			  cb, go,
+			  BITCOIND_LOW_PRIO, "gettxoutbyscid",
+			  NULL, cb, go,
 			  "getblock", take(blockhash), NULL);
 	return true;
 }
@@ -716,7 +833,7 @@ void bitcoind_getoutput_(struct bitcoind *bitcoind,
 
 	/* We may not have topology ourselves that far back, so ask bitcoind */
 	start_bitcoin_cli(bitcoind, NULL, process_getblockhash_for_txout,
-			  true, BITCOIND_LOW_PRIO, cb, go,
+			  true, BITCOIND_LOW_PRIO, "gettxoutbyscid", NULL, cb, go,
 			  "getblockhash", take(tal_fmt(NULL, "%u", blocknum)),
 			  NULL);
 
@@ -763,8 +880,8 @@ void bitcoind_getblockhash_(struct bitcoind *bitcoind,
 	snprintf(str, sizeof(str), "%u", height);
 
 	start_bitcoin_cli(bitcoind, NULL, process_getblockhash, true,
-			  BITCOIND_HIGH_PRIO,
-			  cb, arg,
+			  BITCOIND_HIGH_PRIO, "getblockbyheight",
+			  NULL, cb, arg,
 			  "getblockhash", str, NULL);
 }
 
@@ -776,8 +893,8 @@ void bitcoind_gettxout(struct bitcoind *bitcoind,
 		       void *arg)
 {
 	start_bitcoin_cli(bitcoind, NULL,
-			  process_gettxout, true, BITCOIND_LOW_PRIO, cb, arg,
-			  "gettxout",
+			  process_gettxout, true, BITCOIND_LOW_PRIO,
+			  "gettxoutbyscid", NULL, cb, arg, "gettxout",
 			  take(type_to_string(NULL, struct bitcoin_txid, txid)),
 			  take(tal_fmt(NULL, "%u", outnum)),
 			  NULL);
@@ -992,8 +1109,8 @@ void bitcoind_getclientversion(struct bitcoind *bitcoind)
 	/* `getnetworkinfo` was added in v0.14.0. The older version would
 	 * return non-zero exitstatus. */
 	start_bitcoin_cli(bitcoind, NULL, process_getclientversion, false,
-			  BITCOIND_HIGH_PRIO,
-			  NULL, NULL,
+			  BITCOIND_HIGH_PRIO, "getclientversion",
+			  NULL, NULL, NULL,
 			  "getnetworkinfo", NULL);
 }
 
