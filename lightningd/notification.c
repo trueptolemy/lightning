@@ -13,8 +13,26 @@ const char *notification_topics[] = {
 	"forward_event"
 };
 
+static struct notification *find_notification_by_topic(const char* topic)
+{
+	static struct notification **notilist = NULL;
+	static size_t num_notis;
+	if (!notilist)
+		notilist = autodata_get(notifications, &num_notis);
+
+	for (size_t i=0; i<num_notis; i++)
+		if (streq(notilist[i]->topic, topic))
+			return notilist[i];
+	return NULL;
+}
+
 bool notifications_have_topic(const char *topic)
 {
+	struct notification *noti = find_notification_by_topic(topic);
+	if (noti)
+		return true;
+
+	/* TODO: Remove this block after making all notifications registered. */
 	for (size_t i=0; i<ARRAY_SIZE(notification_topics); i++)
 		if (streq(topic, notification_topics[i]))
 			return true;
@@ -131,3 +149,21 @@ void notify_forward_event(struct lightningd *ld,
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }
+
+void notification_call(struct lightningd *ld, const char* topic,
+		       void *payload)
+{
+	struct notification *noti = find_notification_by_topic(topic);
+	if (noti == NULL)
+		fatal("Could not find notification topic %s", topic);
+
+	struct jsonrpc_notification *n
+		= jsonrpc_notification_start(NULL, noti->topic);
+	noti->serialize_payload(payload, n->stream);
+	jsonrpc_notification_end(n);
+	plugins_notify(ld->plugins, take(n));
+}
+
+/* TODO: It's a dummy notification. Will be removed when we have a 'real' one
+ * in this file. */
+REGISTER_JSON_INTERNAL_COMMAND(hello_notification, NULL, void *);
