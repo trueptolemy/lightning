@@ -1473,6 +1473,7 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 void internal_command_complete(struct command *cmd, const char *buffer,
 			       const jsmntok_t *toks)
 {
+	struct internal_json_connection *in_jcon = cmd->jcon;
 	const jsmntok_t *resulttok = json_get_member(buffer, toks, "result");
 
 	if (!resulttok) {
@@ -1489,11 +1490,11 @@ void internal_command_complete(struct command *cmd, const char *buffer,
 	 * So here we let `callback` just resolves `result` field. */
 	char *output = tal_strndup(cmd, buffer + resulttok->start,
 				   resulttok->end - resulttok->start);
-	cmd->in_jcon->response_cb(cmd->in_jcon->response_cb_arg, false,
-				  output, resulttok->end - resulttok->start);
+	in_jcon->response_cb(cmd->in_jcon->response_cb_arg, false,
+			     output, resulttok->end - resulttok->start);
 done:
-	tal_free(cmd->in_jcon);
 	tal_free(cmd);
+	tal_free(in_jcon);
 }
 
 /* Dummy one. Will be removed when we have a 'real' one in this file. */
