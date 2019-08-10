@@ -245,7 +245,7 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 				void *response_cb_arg,
 				char **err);
 
-#define json_command_internal_call(ld, name, payload, response_cb, response_cb_arg, char **err)     \
+#define json_command_internal_call(ld, name, payload, response_cb, response_cb_arg, err)            \
 	json_command_internal_call_(ld, name, payload,                                              \
 				    typesafe_cb_cast(void (*)(void *, bool,                         \
 							      char*, size_t),                       \
@@ -253,7 +253,7 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 							      char *, size_t),                      \
 						     (response_cb)),                                \
 				    response_cb_arg,                                                \
-				    char **err)
+				    err)
 
 #define REGISTER_JSON_INTERNAL_COMMAND(name, serialize_payload, payload_type)                       \
 	struct json_internal_command name##_internal_command_gen = {                                \
