@@ -1,7 +1,7 @@
 from fixtures import *  # noqa: F401,F403
 from utils import wait_for
 
-
+'''
 def test_db_dangling_peer_fix(node_factory):
     # This was taken from test_fail_unconfirmed() node.
     l1 = node_factory.get_node(dbfile='dangling-peer.sqlite3.xz')
@@ -77,3 +77,4 @@ def test_block_backfill(node_factory, bitcoind):
     l1.rpc.close(l2.info['id'])
     bitcoind.generate_block(1)
     wait_for(lambda: len(l3.rpc.listchannels()['channels']) == 0)
+'''
