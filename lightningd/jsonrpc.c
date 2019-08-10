@@ -1473,7 +1473,7 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 void internal_command_complete(struct command *cmd, const char *buffer,
 			       const jsmntok_t *toks)
 {
-	struct internal_json_connection *in_jcon = cmd->jcon;
+	struct internal_json_connection *in_jcon = cmd->in_jcon;
 	const jsmntok_t *resulttok = json_get_member(buffer, toks, "result");
 
 	if (!resulttok) {
