@@ -351,8 +351,7 @@ static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
 		if (json_command_internal_call(bcli->bitcoind->ld, bcli->process_name,
 					       bcli->internal_rpcmethod_payload,
 					       bcli_internal_rpcmethod_response_cb,
-					       notleak(bcli)),
-					       &err)
+					       notleak(bcli), &err))
 			return;
 		if (err)
 			fatal("%s", err);
