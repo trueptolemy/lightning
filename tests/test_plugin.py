@@ -679,7 +679,7 @@ def test_getclientversion_rpcmethod_internal_call(node_factory):
     plugin_path = os.path.join(os.getcwd(), 'tests/plugins/check_bitcoind_version.py')
     l1 = node_factory.get_node(options={'plugin': plugin_path})
 
-    if l1.daemon.is_in_log('bitcoin-cli: retry internal rpcmethod (getclientversion)'):
+    if l1.daemon.is_in_log('bitcoin-cli: retry internal rpcmethod \\(getclientversion\\)'):
         time.sleep(2)
 
     assert l1.daemon.is_in_log('plugin-check_bitcoind_version.py Receive getclientversion internal rpcmethod request')
