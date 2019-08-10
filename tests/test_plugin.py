@@ -675,7 +675,7 @@ def test_plugin_deprecated_relpath(node_factory):
                                                     'tests/plugins/millisatoshis.py')))
 '''
 
-def test_getclientversion_rpcmethod_internal_call(node_factory):
+def test_rpcmethod_internal_call(node_factory):
     plugin_path = os.path.join(os.getcwd(), 'tests/plugins/check_bitcoind_version.py')
     l1 = node_factory.get_node(options={'plugin': plugin_path})
 
