@@ -77,9 +77,9 @@ static const char **gather_args(const struct bitcoind *bitcoind,
 struct bitcoin_cli {
 	struct list_node list;
 	struct bitcoind *bitcoind;
-	int fd;
+	int *fd;
 	int *exitstatus;
-	pid_t pid;
+	pid_t *pid;
 	const char **args;
 	struct timeabs start;
 	enum bitcoind_prio prio;
@@ -199,8 +199,8 @@ static void bcli_finished(struct io_conn *conn UNUSED, struct bitcoin_cli *bcli)
 
 	if (!bcli->internal_rpcmethod_payload) {
 		/* FIXME: If we waited for SIGCHILD, this could never hang! */
-		while ((ret = waitpid(bcli->pid, &status, 0)) < 0 && errno == EINTR);
-		if (ret != bcli->pid)
+		while ((ret = waitpid(*bcli->pid, &status, 0)) < 0 && errno == EINTR);
+		if (ret != *bcli->pid)
 			fatal("%s %s", bcli_args(tmpctx, bcli),
 			ret == 0 ? "not exited?" : strerror(errno));
 
@@ -343,6 +343,8 @@ static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
 	if (bcli->internal_rpcmethod_payload) {
 		bcli->start = time_now();
 		bitcoind->num_requests[prio]++;
+		bcli->fd = NULL;
+		bcli->pid = NULL;
 		/* `json_command_internal_call` returns false only when the rpcmethod
 		 * is unavailable. It will also return true if we need to wait.
 		 * For retry case, we will wait 1 second and try again.
@@ -361,9 +363,11 @@ static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
 			    bcli->process_name);
 	}
 
-	bcli->pid = pipecmdarr(NULL, &bcli->fd, &bcli->fd,
+	bcli->fd = tal(bcli, int);
+	bcli->pid = tal(bcli, pid_t);
+	*bcli->pid = pipecmdarr(NULL, bcli->fd, bcli->fd,
 			       cast_const2(char **, bcli->args));
-	if (bcli->pid < 0)
+	if (*bcli->pid < 0)
 		fatal("%s exec failed: %s", bcli->args[0], strerror(errno));
 
 	bcli->start = time_now();
@@ -371,7 +375,7 @@ static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
 	bitcoind->num_requests[prio]++;
 
 	/* This lifetime is attached to bitcoind command fd */
-	conn = notleak(io_new_conn(bitcoind, bcli->fd, output_init, bcli));
+	conn = notleak(io_new_conn(bitcoind, *bcli->fd, output_init, bcli));
 	io_set_finish(conn, bcli_finished, bcli);
 }
 
