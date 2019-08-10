@@ -669,8 +669,14 @@ parse_request(struct json_connection *jcon, struct internal_json_connection *in_
 	/* Allocate the command off of the `jsonrpc` object and not
 	 * the connection since the command may outlive `conn`. */
 	c = tal(ld->jsonrpc, struct command);
-	c->jcon = jcon;
-	c->in_jcon = in_jcon;
+	if (jcon) {
+		c->jcon = jcon;
+		c->in_jcon = NULL
+	} else {
+		c->jcon = NULL;
+		c->in_jcon = in_jcon;
+	}
+
 	c->ld = ld;
 	c->pending = false;
 	c->json_stream = NULL;
