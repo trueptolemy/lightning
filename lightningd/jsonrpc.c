@@ -669,14 +669,8 @@ parse_request(struct json_connection *jcon, struct internal_json_connection *in_
 	/* Allocate the command off of the `jsonrpc` object and not
 	 * the connection since the command may outlive `conn`. */
 	c = tal(ld->jsonrpc, struct command);
-	if (jcon) {
-		c->jcon = jcon;
-		c->in_jcon = NULL;
-	} else {
-		c->jcon = NULL;
-		c->in_jcon = in_jcon;
-	}
-
+	c->jcon = jcon;
+	c->in_jcon = in_jcon;
 	c->ld = ld;
 	c->pending = false;
 	c->json_stream = NULL;
@@ -1364,7 +1358,7 @@ new_internal_json_connection(struct internal_rpcmethod_calls *call)
 {
 	struct internal_json_connection *in_jcon;
 
-	in_jcon = tal(call, struct internal_json_connection);
+	in_jcon = notleak(tal(call, struct internal_json_connection));
 	in_jcon->call = call;
 	in_jcon->used = 0;
 	in_jcon->buffer = NULL;
