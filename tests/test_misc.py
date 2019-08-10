@@ -450,7 +450,7 @@ def test_address(node_factory):
 
     l2 = node_factory.get_node()
     l2.rpc.connect(l1.info['id'], l1.daemon.opts['addr'])
-
+'''
 
 def test_listconfigs(node_factory, bitcoind):
     l1 = node_factory.get_node()
@@ -468,7 +468,7 @@ def test_listconfigs(node_factory, bitcoind):
         oneconfig = l1.rpc.listconfigs(config=c)
         assert(oneconfig[c] == configs[c])
 
-
+'''
 def test_multirpc(node_factory):
     """Test that we can do multiple RPC without waiting for response"""
     l1 = node_factory.get_node()
