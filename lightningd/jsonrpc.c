@@ -681,8 +681,10 @@ parse_request(struct json_connection *jcon, struct internal_json_connection *in_
 
 	if (jcon) {
 		list_add_tail(&jcon->commands, &c->list);
-	} else
+	} else {
+		list_node_init(&c->list);
 		in_jcon->cmd = c;
+	}
 
 	tal_add_destructor(c, destroy_command);
 
