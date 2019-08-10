@@ -671,7 +671,7 @@ parse_request(struct json_connection *jcon, struct internal_json_connection *in_
 	c = tal(ld->jsonrpc, struct command);
 	if (jcon) {
 		c->jcon = jcon;
-		c->in_jcon = NULL
+		c->in_jcon = NULL;
 	} else {
 		c->jcon = NULL;
 		c->in_jcon = in_jcon;
