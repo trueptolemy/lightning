@@ -332,6 +332,7 @@ static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
 {
 	struct bitcoin_cli *bcli;
 	struct io_conn *conn;
+	char *err;
 
 	if (bitcoind->num_requests[prio] >= BITCOIND_MAX_PARALLEL)
 		return;
@@ -350,10 +351,13 @@ static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
 		if (json_command_internal_call(bcli->bitcoind->ld, bcli->process_name,
 					       bcli->internal_rpcmethod_payload,
 					       bcli_internal_rpcmethod_response_cb,
-					       notleak(bcli)))
+					       notleak(bcli)),
+					       err)
 			return;
-
+		if (err)
+			fatal("%s", err);
 		/* Internal rpcmethod meets error, now we try to access bitcoin-cli directly. */
+		bcli->internal_rpcmethod_payload = tal_free(bcli->internal_rpcmethod_payload);
 		bitcoind->num_requests[prio]--;
 		log_unusual(bcli->bitcoind->log,
 			    "bitcoin-cli: rpcmethod(%s) internal call failed, "
