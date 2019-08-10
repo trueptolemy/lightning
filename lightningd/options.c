@@ -1168,7 +1168,7 @@ static void add_config(struct lightningd *ld,
 		} else if (opt->show) {
 			char *buf = tal_arr(name0, char, OPT_SHOW_LEN+1);
 			opt->show(buf, opt->u.carg);
-
+			log_debug(ld->log, "options: %.*s", OPT_SHOW_LEN+1, buf);
 			if (streq(buf, "true") || streq(buf, "false")
 			    || strspn(buf, "0123456789.") == strlen(buf)) {
 				/* Let pure numbers and true/false through as
