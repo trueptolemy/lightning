@@ -681,10 +681,8 @@ parse_request(struct json_connection *jcon, struct internal_json_connection *in_
 
 	if (jcon) {
 		list_add_tail(&jcon->commands, &c->list);
-	} else {
-		list_node_init(&c->list);
+	} else
 		in_jcon->cmd = c;
-	}
 
 	tal_add_destructor(c, destroy_command);
 
@@ -1358,7 +1356,7 @@ new_internal_json_connection(struct internal_rpcmethod_calls *call)
 {
 	struct internal_json_connection *in_jcon;
 
-	in_jcon = notleak(tal(call, struct internal_json_connection));
+	in_jcon = tal(call, struct internal_json_connection);
 	in_jcon->call = call;
 	in_jcon->used = 0;
 	in_jcon->buffer = NULL;
@@ -1475,7 +1473,6 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 void internal_command_complete(struct command *cmd, const char *buffer,
 			       const jsmntok_t *toks)
 {
-	struct internal_json_connection *in_jcon = cmd->in_jcon;
 	const jsmntok_t *resulttok = json_get_member(buffer, toks, "result");
 
 	if (!resulttok) {
@@ -1492,11 +1489,11 @@ void internal_command_complete(struct command *cmd, const char *buffer,
 	 * So here we let `callback` just resolves `result` field. */
 	char *output = tal_strndup(cmd, buffer + resulttok->start,
 				   resulttok->end - resulttok->start);
-	in_jcon->response_cb(cmd->in_jcon->response_cb_arg, false,
-			     output, resulttok->end - resulttok->start);
+	cmd->in_jcon->response_cb(cmd->in_jcon->response_cb_arg, false,
+				  output, resulttok->end - resulttok->start);
 done:
 	tal_free(cmd);
-	tal_free(in_jcon);
+	tal_free(cmd->in_jcon);
 }
 
 /* Dummy one. Will be removed when we have a 'real' one in this file. */
