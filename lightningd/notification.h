@@ -3,6 +3,7 @@
 #include "config.h"
 #include <bitcoin/short_channel_id.h>
 #include <bitcoin/tx.h>
+#include <ccan/autodata/autodata.h>
 #include <ccan/json_escape/json_escape.h>
 #include <ccan/time/time.h>
 #include <common/amount.h>
@@ -36,5 +37,32 @@ void notify_forward_event(struct lightningd *ld,
 			  enum forward_status state,
 			  enum onion_type failcode,
 			  struct timeabs *resolved_time);
+
+struct notification {
+	const char *topic;
+	void (*serialize_payload)(void *src, struct json_stream *dest);
+};
+
+AUTODATA_TYPE(notifications, struct notification);
+
+void notify_call_(struct lightningd *ld, const struct notification *noti, void *payload);
+
+#define NOTIFY_CALL_DEF(topic, payload_type)                                                        \
+	UNNEEDED static inline void notify_##topic(                                                 \
+	    struct lightningd *ld, payload_type payload)                                            \
+	{                                                                                           \
+		notify_call_(ld, &topic##_notification_gen, (void *)payload);                       \
+	}
+
+/* FIXME: Find a way to avoid back-to-back declaration and definition */
+#define REGISTER_NOTIFICATION(topic, serialize_payload, payload_type)                               \
+	struct notification topic##_notification_gen = {                                            \
+	    stringify(topic),                                                                       \
+	    typesafe_cb_cast(void (*)(void *, struct json_stream *),                                \
+			     void (*)(payload_type, struct json_stream *),                          \
+			     serialize_payload),                                                    \
+	};                                                                                          \
+	AUTODATA(notifications, &topic##_notification_gen);                                         \
+	NOTIFY_CALL_DEF(topic, payload_type);
 
 #endif /* LIGHTNING_LIGHTNINGD_NOTIFICATION_H */

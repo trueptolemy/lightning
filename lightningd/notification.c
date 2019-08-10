@@ -15,6 +15,16 @@ const char *notification_topics[] = {
 
 bool notifications_have_topic(const char *topic)
 {
+	static struct notification **notilist = NULL;
+	static size_t num_notis;
+	if (!notilist)
+		notilist = autodata_get(notifications, &num_notis);
+
+	for (size_t i=0; i<num_notis; i++)
+		if (streq(notilist[i]->topic, topic))
+			return true;
+
+	/* Remove this block after making all notifications registered. */
 	for (size_t i=0; i<ARRAY_SIZE(notification_topics); i++)
 		if (streq(topic, notification_topics[i]))
 			return true;
@@ -132,3 +142,16 @@ void notify_forward_event(struct lightningd *ld,
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }
+
+void notify_call_(struct lightningd *ld, const struct notification *noti,
+		  void *payload)
+{
+	struct jsonrpc_notification *n
+		= jsonrpc_notification_start(NULL, noti->topic);
+	noti->serialize_payload(payload, n->stream);
+	jsonrpc_notification_end(n);
+	plugins_notify(ld->plugins, take(n));
+}
+
+/* Dummy one. Will be removed when we have a 'real' one in this file. */
+REGISTER_JSON_INTERNAL_COMMAND(hello_notification, NULL, void *);
