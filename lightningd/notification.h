@@ -18,8 +18,6 @@
 
 bool notifications_have_topic(const char *topic);
 
-void notify_connect(struct lightningd *ld, struct node_id *nodeid,
-		    struct wireaddr_internal *addr);
 void notify_disconnect(struct lightningd *ld, struct node_id *nodeid);
 
 void notify_warning(struct lightningd *ld, struct log_entry *l);
@@ -64,5 +62,18 @@ void notify_call_(struct lightningd *ld, const struct notification *noti, void *
 	};                                                                                          \
 	AUTODATA(notifications, &topic##_notification_gen);                                         \
 	NOTIFY_CALL_DEF(topic, payload_type);
+
+struct connect_notification_payload {
+	struct node_id *nodeid;
+	struct wireaddr_internal *addr;
+};
+
+void connect_notification_serialize(
+			struct connect_notification_payload *payload,
+			struct json_stream *stream);
+
+REGISTER_NOTIFICATION(connect,
+		      connect_notification_serialize,
+		      struct connect_notification_payload *);
 
 #endif /* LIGHTNING_LIGHTNINGD_NOTIFICATION_H */
