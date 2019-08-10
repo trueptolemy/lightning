@@ -292,9 +292,9 @@ bcli_internal_rpcmethod_response_cb(struct bitcoin_cli *bcli, bool retry,
 			 "bitcoin-cli: retry internal rpcmethod (%s)",
 			 bcli->process_name);
 		bcli->bitcoind->num_requests[bcli->prio]--;
-		new_reltimer(bcli->bitcoind->ld->timers, notleak(bcli),
-			     time_from_sec(1),
-			     retry_bcli, bcli);
+		notleak(new_reltimer(bcli->bitcoind->ld->timers, bcli,
+				     time_from_sec(1),
+				     retry_bcli, bcli));
 		return;
 	}
 
