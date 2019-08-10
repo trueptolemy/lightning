@@ -1459,7 +1459,7 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 	/* For command internal call, we shouldn't meet partial 'read' case. */
 	if (!toks || !valid) {
 		*err = tal_fmt(response_cb_arg, "Uninvalid json format for internal command '%s'.",
-			       inter->name)
+			       inter->name);
 		log_unusual(in_jcon->log, "%s", *err);
 		return false;
 	}
