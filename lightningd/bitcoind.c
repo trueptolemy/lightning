@@ -352,7 +352,7 @@ static void next_bcli(struct bitcoind *bitcoind, enum bitcoind_prio prio)
 					       bcli->internal_rpcmethod_payload,
 					       bcli_internal_rpcmethod_response_cb,
 					       notleak(bcli)),
-					       err)
+					       &err)
 			return;
 		if (err)
 			fatal("%s", err);

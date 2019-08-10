@@ -1401,11 +1401,11 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 						    char *output,
 						    size_t output_bytes),
 				void *response_cb_arg,
-				char *err)
+				char **err)
 {
 	bool valid;
 
-	err = NULL;
+	*err = NULL;
 	struct json_internal_command *inter = json_internal_command_by_name(name);
 	if (!inter) {
 		log_unusual(ld->log, "Unregistered internal command '%s'?", inter->name);
@@ -1443,9 +1443,9 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 							   payload);
 	const char *buffer = json_stream_contents(stream, &in_jcon->used);
 	if (!buffer) {
-		err = tal_fmt(response_cb_arg, "Error in serialize process of internal command '%s'.",
-			      inter->name);
-		log_unusual(in_jcon->log, "%s", err);
+		*err = tal_fmt(response_cb_arg, "Error in serialize process of internal command '%s'.",
+			       inter->name);
+		log_unusual(in_jcon->log, "%s", *err);
 		return false;
 	}
 
@@ -1458,9 +1458,9 @@ bool json_command_internal_call_(struct lightningd *ld, const char *name,
 
 	/* For command internal call, we shouldn't meet partial 'read' case. */
 	if (!toks || !valid) {
-		err = tal_fmt(response_cb_arg, "Uninvalid json format for internal command '%s'.",
-			      inter->name)
-		log_unusual(in_jcon->log, "%s", err);
+		*err = tal_fmt(response_cb_arg, "Uninvalid json format for internal command '%s'.",
+			       inter->name)
+		log_unusual(in_jcon->log, "%s", *err);
 		return false;
 	}
 
