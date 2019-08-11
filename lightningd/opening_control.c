@@ -602,6 +602,7 @@ static void opening_fundee_finished(struct subd *openingd,
 	struct channel *channel;
 	u8 *remote_upfront_shutdown_script;
 	struct per_peer_state *pps;
+	struct channel_opened_notification_payload *payload;
 
 	log_debug(uc->log, "Got opening_fundee_finish_response");
 
@@ -668,8 +669,12 @@ static void opening_fundee_finished(struct subd *openingd,
 	channel_watch_funding(ld, channel);
 
 	/* Tell plugins about the success */
-	notify_channel_opened(ld, &channel->peer->id, &channel->funding,
-			   &channel->funding_txid, &channel->remote_funding_locked);
+	payload = tal(tmpctx, struct channel_opened_notification_payload);
+	payload->node_id = &channel->peer->id;
+	payload->funding_sat = &channel->funding;
+	payload->funding_txid = &channel->funding_txid;
+	payload->funding_locked = &channel->remote_funding_locked;
+	notification_call(ld, "channel_opened", payload);
 
 	/* On to normal operation! */
 	peer_start_channeld(channel, pps, funding_signed, false);
