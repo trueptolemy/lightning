@@ -18,9 +18,6 @@
 
 bool notifications_have_topic(const char *topic);
 
-void notify_invoice_payment(struct lightningd *ld, struct amount_msat amount,
-			    struct preimage preimage, const struct json_escape *label);
-
 void notify_channel_opened(struct lightningd *ld, struct node_id *node_id,
 			   struct amount_sat *funding_sat, struct bitcoin_txid *funding_txid,
 			   bool *funding_locked);
@@ -63,6 +60,12 @@ struct disconnect_notification_payload {
 
 struct warning_notification_payload {
 	struct log_entry *log_entry;
+};
+
+struct invoice_payment_notification_payload {
+	struct amount_msat *amount;
+	struct preimage *preimage;
+	const struct json_escape *label;
 };
 
 #endif /* LIGHTNING_LIGHTNINGD_NOTIFICATION_H */

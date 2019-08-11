@@ -5,7 +5,6 @@
 #include <lightningd/peer_htlcs.h>
 
 const char *notification_topics[] = {
-	"invoice_payment",
 	"channel_opened",
 	"forward_event"
 };
@@ -86,20 +85,21 @@ REGISTER_NOTIFICATION(warning,
 		      warning_notification_serialize,
 		      struct warning_notification_payload *);
 
-void notify_invoice_payment(struct lightningd *ld, struct amount_msat amount,
-			    struct preimage preimage, const struct json_escape *label)
+static void invoice_payment_notification_serialize(
+			struct invoice_payment_notification_payload *payload,
+			struct json_stream *stream)
 {
-	struct jsonrpc_notification *n =
-		jsonrpc_notification_start(NULL, "invoice_payment");
-	json_object_start(n->stream, "invoice_payment");
-	json_add_string(n->stream, "msat",
-			type_to_string(tmpctx, struct amount_msat, &amount));
-	json_add_hex(n->stream, "preimage", &preimage, sizeof(preimage));
-	json_add_escaped_string(n->stream, "label", label);
-	json_object_end(n->stream);
-	jsonrpc_notification_end(n);
-	plugins_notify(ld->plugins, take(n));
+	json_object_start(stream, "invoice_payment");
+	json_add_amount_msat_only(stream, "msat", *payload->amount);
+	json_add_hex(stream, "preimage", payload->preimage,
+		     sizeof(*payload->preimage));
+	json_add_escaped_string(stream, "label", payload->label);
+	json_object_end(stream);
 }
+
+REGISTER_NOTIFICATION(invoice_payment,
+		      invoice_payment_notification_serialize,
+		      struct invoice_payment_notification_payload *);
 
 void notify_channel_opened(struct lightningd *ld, struct node_id *node_id,
 			   struct amount_sat *funding_sat, struct bitcoin_txid *funding_txid,
