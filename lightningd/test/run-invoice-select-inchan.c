@@ -290,9 +290,6 @@ int node_id_cmp(const struct node_id *a UNNEEDED, const struct node_id *b UNNEED
 /* Generated stub for node_id_to_hexstr */
 char *node_id_to_hexstr(const tal_t *ctx UNNEEDED, const struct node_id *id UNNEEDED)
 { fprintf(stderr, "node_id_to_hexstr called!\n"); abort(); }
-/* Generated stub for notify_disconnect */
-void notify_disconnect(struct lightningd *ld UNNEEDED, struct node_id *nodeid UNNEEDED)
-{ fprintf(stderr, "notify_disconnect called!\n"); abort(); }
 /* Generated stub for notify_invoice_payment */
 void notify_invoice_payment(struct lightningd *ld UNNEEDED, struct amount_msat amount UNNEEDED,
 			    struct preimage preimage UNNEEDED, const struct json_escape *label UNNEEDED)

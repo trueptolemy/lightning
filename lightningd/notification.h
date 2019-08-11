@@ -18,8 +18,6 @@
 
 bool notifications_have_topic(const char *topic);
 
-void notify_disconnect(struct lightningd *ld, struct node_id *nodeid);
-
 void notify_warning(struct lightningd *ld, struct log_entry *l);
 
 void notify_invoice_payment(struct lightningd *ld, struct amount_msat amount,
@@ -59,6 +57,10 @@ void notification_call(struct lightningd *ld, const char* topic,
 struct connect_notification_payload {
 	struct node_id *nodeid;
 	struct wireaddr_internal *addr;
+};
+
+struct disconnect_notification_payload {
+	struct node_id *nodeid;
 };
 
 #endif /* LIGHTNING_LIGHTNINGD_NOTIFICATION_H */

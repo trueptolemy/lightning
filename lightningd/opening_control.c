@@ -96,12 +96,15 @@ struct funding_channel {
 static void uncommitted_channel_disconnect(struct uncommitted_channel *uc,
 					   const char *desc)
 {
+	struct disconnect_notification_payload *payload;
 	u8 *msg = towire_connectctl_peer_disconnected(tmpctx, &uc->peer->id);
 	log_info(uc->log, "%s", desc);
 	subd_send_msg(uc->peer->ld->connectd, msg);
 	if (uc->fc && uc->fc->cmd)
 		was_pending(command_fail(uc->fc->cmd, LIGHTNINGD, "%s", desc));
-	notify_disconnect(uc->peer->ld, &uc->peer->id);
+	payload = tal(tmpctx, struct disconnect_notification_payload);
+	payload->nodeid = &uc->peer->id;
+	notification_call(uc->peer->ld, "disconnect", payload);
 }
 
 void kill_uncommitted_channel(struct uncommitted_channel *uc,
