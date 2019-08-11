@@ -43,15 +43,6 @@ struct notification {
 
 AUTODATA_TYPE(notifications, struct notification);
 
-void notify_call_(struct lightningd *ld, const struct notification *noti, void *payload);
-
-#define NOTIFY_CALL_DEF(topic, payload_type)                                                        \
-	UNNEEDED static inline void notify_##topic(                                                 \
-	    struct lightningd *ld, payload_type payload)                                            \
-	{                                                                                           \
-		notify_call_(ld, &topic##_notification_gen, (void *)payload);                       \
-	}
-
 /* FIXME: Find a way to avoid back-to-back declaration and definition */
 #define REGISTER_NOTIFICATION(topic, serialize_payload, payload_type)                               \
 	struct notification topic##_notification_gen = {                                            \
@@ -60,20 +51,14 @@ void notify_call_(struct lightningd *ld, const struct notification *noti, void *
 			     void (*)(payload_type, struct json_stream *),                          \
 			     serialize_payload),                                                    \
 	};                                                                                          \
-	AUTODATA(notifications, &topic##_notification_gen);                                         \
-	NOTIFY_CALL_DEF(topic, payload_type);
+	AUTODATA(notifications, &topic##_notification_gen);
+
+void notification_call(struct lightningd *ld, const char* topic,
+		       void *payload);
 
 struct connect_notification_payload {
 	struct node_id *nodeid;
 	struct wireaddr_internal *addr;
 };
-
-void connect_notification_serialize(
-			struct connect_notification_payload *payload,
-			struct json_stream *stream);
-
-REGISTER_NOTIFICATION(connect,
-		      connect_notification_serialize,
-		      struct connect_notification_payload *);
 
 #endif /* LIGHTNING_LIGHTNINGD_NOTIFICATION_H */

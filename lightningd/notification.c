@@ -12,7 +12,7 @@ const char *notification_topics[] = {
 	"forward_event"
 };
 
-bool notifications_have_topic(const char *topic)
+static struct notification *find_notification_by_topic(const char* topic)
 {
 	static struct notification **notilist = NULL;
 	static size_t num_notis;
@@ -21,7 +21,16 @@ bool notifications_have_topic(const char *topic)
 
 	for (size_t i=0; i<num_notis; i++)
 		if (streq(notilist[i]->topic, topic))
-			return true;
+			return notilist[i];
+	return NULL;
+}
+
+
+bool notifications_have_topic(const char *topic)
+{
+	struct notification *noti = find_notification_by_topic(topic);
+	if (noti)
+		return true;
 
 	/* Remove this block after making all notifications registered. */
 	for (size_t i=0; i<ARRAY_SIZE(notification_topics); i++)
@@ -30,13 +39,17 @@ bool notifications_have_topic(const char *topic)
 	return false;
 }
 
-void connect_notification_serialize(
+static void connect_notification_serialize(
 			struct connect_notification_payload *payload,
 			struct json_stream *stream)
 {
 	json_add_node_id(stream, "id", payload->nodeid);
 	json_add_address_internal(stream, "address", payload->addr);
 }
+
+REGISTER_NOTIFICATION(connect,
+		      connect_notification_serialize,
+		      struct connect_notification_payload *);
 
 void notify_disconnect(struct lightningd *ld, struct node_id *nodeid)
 {
@@ -139,9 +152,11 @@ void notify_forward_event(struct lightningd *ld,
 	plugins_notify(ld->plugins, take(n));
 }
 
-void notify_call_(struct lightningd *ld, const struct notification *noti,
-		  void *payload)
+void notification_call(struct lightningd *ld, const char* topic,
+		       void *payload)
 {
+	struct notification *noti = find_notification_by_topic(topic);
+	assert(noti);
 	struct jsonrpc_notification *n
 		= jsonrpc_notification_start(NULL, noti->topic);
 	noti->serialize_payload(payload, n->stream);

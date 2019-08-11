@@ -900,7 +900,7 @@ peer_connected_hook_cb(struct peer_connected_hook_payload *payload,
 	noti_payload = tal(tmpctx, struct connect_notification_payload);
 	noti_payload->nodeid = &peer->id;
 	noti_payload->addr = &addr;
-	notify_connect(ld, noti_payload);
+	notification_call(ld, "connect", noti_payload);
 
 	/* No err, all good. */
 	error = NULL;
