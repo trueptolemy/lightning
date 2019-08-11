@@ -172,10 +172,15 @@ invoice_payment_hook_cb(struct invoice_payment_hook_payload *payload,
 	struct lightningd *ld = payload->ld;
 	struct invoice invoice;
 	enum onion_type failcode;
+	struct invoice_payment_notification_payload *noti_payload;
 
 	/* We notify here to benefit from the payload and because the hook callback is
 	 * called even if the hook is not registered. */
-	notify_invoice_payment(ld, payload->msat, payload->preimage, payload->label);
+	noti_payload = tal(tmpctx, struct invoice_payment_notification_payload);
+	noti_payload->amount = &payload->msat;
+	noti_payload->preimage = &payload->preimage;
+	noti_payload->label = payload->label;
+	notification_call(ld, "invoice_payment", noti_payload);
 
 	tal_del_destructor2(payload->hin, invoice_payload_remove_hin, payload);
 	/* We want to free this, whatever happens. */
