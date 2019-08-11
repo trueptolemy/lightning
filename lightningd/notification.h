@@ -18,10 +18,6 @@
 
 bool notifications_have_topic(const char *topic);
 
-void notify_channel_opened(struct lightningd *ld, struct node_id *node_id,
-			   struct amount_sat *funding_sat, struct bitcoin_txid *funding_txid,
-			   bool *funding_locked);
-
 void notify_forward_event(struct lightningd *ld,
 			  const struct htlc_in *in,
 			  const struct htlc_out *out,
@@ -66,6 +62,13 @@ struct invoice_payment_notification_payload {
 	struct amount_msat *amount;
 	struct preimage *preimage;
 	const struct json_escape *label;
+};
+
+struct channel_opened_notification_payload {
+	struct node_id *node_id;
+	struct amount_sat *funding_sat;
+	struct bitcoin_txid *funding_txid;
+	bool *funding_locked;
 };
 
 #endif /* LIGHTNING_LIGHTNINGD_NOTIFICATION_H */
