@@ -13,7 +13,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 def test_option_passthrough(node_factory, directory):
     """ Ensure that registering options works.
 
@@ -673,3 +673,4 @@ def test_plugin_deprecated_relpath(node_factory):
     assert l1.daemon.is_in_log('DEPRECATED WARNING.*plugin={}'
                                .format(os.path.join(os.getcwd(),
                                                     'tests/plugins/millisatoshis.py')))
+'''
