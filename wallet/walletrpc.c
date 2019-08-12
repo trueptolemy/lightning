@@ -1,7 +1,6 @@
 #include <bitcoin/address.h>
 #include <bitcoin/base58.h>
 #include <bitcoin/script.h>
-#include <ccan/cast/cast.h>
 #include <ccan/tal/str/str.h>
 #include <common/addr.h>
 #include <common/bech32.h>
@@ -185,7 +184,8 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 
 	struct bitcoin_tx_output *output = tal(outputs,
 					       struct bitcoin_tx_output);
-	output->script = tal_strdup(output, cast_const(u8 *, (*utx)->destination));
+	output->script = tal_dup_arr(output, u8, (*utx)->destination,
+				     sizeof((*utx)->destination), 0);
 	output->amount = (*utx)->wtx->amount;
 	tal_arr_expand(&outputs, output);
 
