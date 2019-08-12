@@ -693,8 +693,8 @@ def test_sendpay_notifications(node_factory, bitcoind):
     response1 = l1.rpc.waitsendpay(payment_hash1)
 
     l2.rpc.close(chanid23, 1)
+    time.sleep(1)
 
-    wait_for(lambda: l1.rpc.listpeers()['peers'] == [])
     l1.rpc.sendpay(route, payment_hash2)
     with pytest.raises(RpcError) as err:
         l1.rpc.waitsendpay(payment_hash2)
