@@ -17,7 +17,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "needs --dev-disconnect")
 def test_stop_pending_fundchannel(node_factory, executor):
     """Stop the daemon while waiting for an accept_channel
@@ -1435,3 +1435,4 @@ def test_dev_demux(node_factory):
 
     with pytest.raises(RpcError):
         l1.rpc.call('dev', {'subcommand': 'crash'})
+'''
