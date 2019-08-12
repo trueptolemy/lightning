@@ -1,6 +1,7 @@
 #include <bitcoin/address.h>
 #include <bitcoin/base58.h>
 #include <bitcoin/script.h>
+#include <ccan/cast/cast.h>
 #include <ccan/tal/str/str.h>
 #include <common/addr.h>
 #include <common/bech32.h>
@@ -163,7 +164,9 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	struct command_result *res;
 	u32 *minconf, maxheight;
 	struct pubkey *changekey;
+	struct bitcoin_tx_output **outputs;
 
+	outputs = tal_arr(tmpctx, struct bitcoin_tx_output *, 0);
 	*utx = tal(cmd, struct unreleased_tx);
 	(*utx)->wtx = tal(*utx, struct wallet_tx);
 	wtx_init(cmd, (*utx)->wtx, AMOUNT_SAT(-1ULL));
@@ -179,6 +182,12 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 
 	/* Destination is owned by cmd: change that to be owned by utx. */
 	tal_steal(*utx, (*utx)->destination);
+
+	struct bitcoin_tx_output *output = tal(outputs,
+					       struct bitcoin_tx_output);
+	output->script = cast_const(u8 *, (*utx)->destination);
+	output->amount = (*utx)->wtx->amount;
+	tal_arr_expand(&outputs, output);
 
 	if (!feerate_per_kw) {
 		res = param_feerate_estimate(cmd, &feerate_per_kw,
@@ -201,8 +210,8 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	} else
 		changekey = NULL;
 
-	(*utx)->tx = withdraw_tx(*utx, get_chainparams(cmd->ld), (*utx)->wtx->utxos,
-				 (*utx)->destination, (*utx)->wtx->amount,
+	(*utx)->tx = withdraw_tx(*utx, get_chainparams(cmd->ld),
+				 (*utx)->wtx->utxos, outputs,
 				 changekey, (*utx)->wtx->change,
 				 cmd->ld->wallet->bip32_base,
 				 &(*utx)->change_outnum);
