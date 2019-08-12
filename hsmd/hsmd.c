@@ -1529,7 +1529,7 @@ static struct io_plan *handle_sign_withdrawal_tx(struct io_conn *conn,
 
 	struct bitcoin_tx_output *output = tal(outputs,
 					       struct bitcoin_tx_output);
-	output->script = scriptpubkey;
+	output->script = tal_steal(output, scriptpubkey);
 	output->amount = satoshi_out;
 	tal_arr_expand(&outputs, output);
 	tx = withdraw_tx(tmpctx, c->chainparams,
