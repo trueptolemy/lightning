@@ -184,10 +184,6 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 
 	struct bitcoin_tx_output *output = tal(outputs,
 					       struct bitcoin_tx_output);
-	log_debug(cmd->ld->log, "origin script-bytelen: %zu", tal_bytelen((*utx)->destination));
-	log_debug(cmd->ld->log, "origin script-count: %zu", tal_count((*utx)->destination));
-	tal_arr_expand(&outputs, output);
-	log_debug(cmd->ld->log, "script length: %zu", tal_bytelen(output->script));
 	if (!feerate_per_kw) {
 		res = param_feerate_estimate(cmd, &feerate_per_kw,
 					     FEERATE_NORMAL);
@@ -217,6 +213,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	log_debug(cmd->ld->log, "origin amount: %s", type_to_string(tmpctx, struct amount_sat, &((*utx)->wtx->amount)));
 	log_debug(cmd->ld->log, "script: %s", tal_hex(tmpctx, outputs[0]));
 	log_debug(cmd->ld->log, "amount: %s", type_to_string(tmpctx, struct amount_sat, &(outputs[0]->amount)));
+	tal_arr_expand(&outputs, output);
 	(*utx)->tx = withdraw_tx(*utx, get_chainparams(cmd->ld),
 				 (*utx)->wtx->utxos, outputs,
 				 changekey, (*utx)->wtx->change,
