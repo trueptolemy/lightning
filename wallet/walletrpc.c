@@ -213,7 +213,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		changekey = NULL;
 	assert(outputs[0] != NULL);
 	assert(outputs[0]->script != NULL);
-	log_debug(cmd->ld->log, "script: %.*s", (int)tal_bytelen(outputs[0]->script), outputs[0]->script);
+	log_debug(cmd->ld->log, "script: %s", tal_hex(tmpctx, outputs[0]));
 	log_debug(cmd->ld->log, "amount: %s", type_to_string(tmpctx, struct amount_sat, &(outputs[0]->amount)));
 	(*utx)->tx = withdraw_tx(*utx, get_chainparams(cmd->ld),
 				 (*utx)->wtx->utxos, outputs,
