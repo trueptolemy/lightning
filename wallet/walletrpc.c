@@ -204,8 +204,6 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 			return command_fail(cmd, LIGHTNINGD, "Keys generation failure");
 	} else
 		changekey = NULL;
-	assert(outputs[0] != NULL);
-	assert(outputs[0]->script != NULL);
 	output->script = tal_dup_arr(output, u8, (*utx)->destination,
 				     tal_count((*utx)->destination), 0);
 	output->amount = (*utx)->wtx->amount;
