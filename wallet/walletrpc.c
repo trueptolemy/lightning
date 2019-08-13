@@ -224,6 +224,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 				 &(*utx)->change_outnum);
 	bitcoin_txid((*utx)->tx, &(*utx)->txid);
 
+	tal_free(output);
 	return NULL;
 }
 
