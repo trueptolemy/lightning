@@ -186,9 +186,6 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 					       struct bitcoin_tx_output);
 	log_debug(cmd->ld->log, "origin script-bytelen: %zu", tal_bytelen((*utx)->destination));
 	log_debug(cmd->ld->log, "origin script-count: %zu", tal_count((*utx)->destination));
-	output->script = tal_dup_arr(output, u8, (*utx)->destination,
-				     tal_count((*utx)->destination), 0);
-	output->amount = (*utx)->wtx->amount;
 	tal_arr_expand(&outputs, output);
 	log_debug(cmd->ld->log, "script length: %zu", tal_bytelen(output->script));
 	if (!feerate_per_kw) {
@@ -213,6 +210,9 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		changekey = NULL;
 	assert(outputs[0] != NULL);
 	assert(outputs[0]->script != NULL);
+	output->script = tal_dup_arr(output, u8, (*utx)->destination,
+				     tal_count((*utx)->destination), 0);
+	output->amount = (*utx)->wtx->amount;
 	log_debug(cmd->ld->log, "origin script: %s", tal_hex(tmpctx, (*utx)->destination));
 	log_debug(cmd->ld->log, "origin amount: %s", type_to_string(tmpctx, struct amount_sat, &((*utx)->wtx->amount)));
 	log_debug(cmd->ld->log, "script: %s", tal_hex(tmpctx, outputs[0]));
