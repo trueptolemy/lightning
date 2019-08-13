@@ -185,7 +185,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	struct bitcoin_tx_output *output = tal(outputs,
 					       struct bitcoin_tx_output);
 	output->script = tal_dup_arr(output, u8, (*utx)->destination,
-				     sizeof((*utx)->destination), 0);
+				     tal_count((*utx)->destination), 0);
 	output->amount = (*utx)->wtx->amount;
 	tal_arr_expand(&outputs, output);
 
