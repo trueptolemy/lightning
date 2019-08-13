@@ -207,11 +207,11 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	output->script = tal_dup_arr(output, u8, (*utx)->destination,
 				     tal_count((*utx)->destination), 0);
 	output->amount = (*utx)->wtx->amount;
+	tal_arr_expand(&outputs, output);
 	log_debug(cmd->ld->log, "origin script: %s", tal_hex(tmpctx, (*utx)->destination));
 	log_debug(cmd->ld->log, "origin amount: %s", type_to_string(tmpctx, struct amount_sat, &((*utx)->wtx->amount)));
 	log_debug(cmd->ld->log, "script: %s", tal_hex(tmpctx, outputs[0]));
 	log_debug(cmd->ld->log, "amount: %s", type_to_string(tmpctx, struct amount_sat, &(outputs[0]->amount)));
-	tal_arr_expand(&outputs, output);
 	(*utx)->tx = withdraw_tx(*utx, get_chainparams(cmd->ld),
 				 (*utx)->wtx->utxos, outputs,
 				 changekey, (*utx)->wtx->change,
