@@ -1475,6 +1475,7 @@ def test_no_fee_estimate(node_factory, bitcoind, executor):
     l1.rpc.withdraw(l2.rpc.newaddr()['bech32'], 10000, '1500perkb')
     l1.rpc.fundchannel(l2.info['id'], 10**6, '2000perkw', minconf=0)
 
+    assert 1==2
     # Make sure we clean up cahnnel for later attempt.
     l1.daemon.wait_for_log('sendrawtx exit 0')
     l1.rpc.dev_fail(l2.info['id'])
