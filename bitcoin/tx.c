@@ -23,7 +23,7 @@ int bitcoin_tx_add_output(struct bitcoin_tx *tx, const u8 *script,
 
 	assert(tx->wtx != NULL);
 	assert(script != NULL);
-	asser(tal_bytelen(script) != 0);
+	assert(tal_bytelen(script) != 0);
 	assert(amount != NULL);
 	int ret = wally_tx_output_init_alloc(amount->satoshis /* Raw: low-level helper */,
 				   script, tal_bytelen(script), &output);
