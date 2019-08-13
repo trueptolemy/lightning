@@ -144,4 +144,7 @@ void bitcoin_tx_input_get_txid(const struct bitcoin_tx *tx, int innum,
  */
 bool bitcoin_tx_check(const struct bitcoin_tx *tx);
 
+int bitcoin_tx_add_output_test(struct bitcoin_tx *tx, const u8 *script,
+			  struct amount_sat *amount)
+
 #endif /* LIGHTNING_BITCOIN_TX_H */

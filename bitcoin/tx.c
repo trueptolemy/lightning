@@ -24,11 +24,19 @@ int bitcoin_tx_add_output(struct bitcoin_tx *tx, const u8 *script,
 	assert(tx->wtx != NULL);
 	int ret = wally_tx_output_init_alloc(amount->satoshis /* Raw: low-level helper */,
 				   script, tal_bytelen(script), &output);
-	assert(ret == -2);
 	wally_tx_add_output(tx->wtx, output);
 	wally_tx_output_free(output);
 
 	return i;
+}
+
+int bitcoin_tx_add_output_test(struct bitcoin_tx *tx, const u8 *script,
+			  struct amount_sat *amount)
+{
+	int ret = bitcoin_tx_add_output(struct bitcoin_tx *tx, const u8 *script,
+			  struct amount_sat *amount);
+	assert(ret == -2);
+	return ret;
 }
 
 int bitcoin_tx_add_input(struct bitcoin_tx *tx, const struct bitcoin_txid *txid,
