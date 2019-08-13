@@ -33,8 +33,8 @@ int bitcoin_tx_add_output(struct bitcoin_tx *tx, const u8 *script,
 int bitcoin_tx_add_output_test(struct bitcoin_tx *tx, const u8 *script,
 			  struct amount_sat *amount)
 {
-	int ret = bitcoin_tx_add_output(struct bitcoin_tx *tx, const u8 *script,
-			  struct amount_sat *amount);
+	int ret;
+	ret = bitcoin_tx_add_output(tx, script, amount);
 	assert(ret == -2);
 	return ret;
 }
