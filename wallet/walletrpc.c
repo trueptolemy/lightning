@@ -188,7 +188,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 				     tal_count((*utx)->destination), 0);
 	output->amount = (*utx)->wtx->amount;
 	tal_arr_expand(&outputs, output);
-
+	log_debug(cmd->ld->log, "script length: %u", tal_bytelen(output->script));
 	if (!feerate_per_kw) {
 		res = param_feerate_estimate(cmd, &feerate_per_kw,
 					     FEERATE_NORMAL);
