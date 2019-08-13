@@ -212,6 +212,8 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	} else
 		changekey = NULL;
 
+	log_debug(cmd->ld->log, "script: %s", outputs[0]->script);
+	log_debug(smd->ld->log, "amount: %s", type_to_string(tmpctx, struct amount_sat, &(outputs[0]->amount)));
 	(*utx)->tx = withdraw_tx(*utx, get_chainparams(cmd->ld),
 				 (*utx)->wtx->utxos, outputs,
 				 changekey, (*utx)->wtx->change,

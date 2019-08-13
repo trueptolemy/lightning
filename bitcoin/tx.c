@@ -42,7 +42,7 @@ int bitcoin_tx_add_multi_outputs(struct bitcoin_tx *tx,
 {
 	for (size_t j = 0; j < tal_count(outputs); j++)
 		bitcoin_tx_add_output(tx, outputs[j]->script,
-				      &outputs[j]->amount);
+				      &(outputs[j]->amount));
 
 	return tx->wtx->num_outputs;
 }
