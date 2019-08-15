@@ -175,34 +175,20 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 			   p_opt_def("minconf", param_number, &minconf, 1),
 			   NULL))
 			return command_param_failed();
-	} else if (params->type == JSMN_ARRAY) {
-		if (param(cmd, buffer, params,
-			  p_req("outputs", param_array, &outputstok),
-			  p_opt("feerate", param_feerate, &feerate_per_kw),
-			  p_opt_def("minconf", param_number, &minconf, 1),
-			  NULL)) {
-
-		} else if (param(cmd, buffer, params,
-				 p_req("destination", param_bitcoin_address,
-				       &old_destination),
-				 p_req("satoshi", param_wtx, (*utx)->wtx),
-				 p_opt("feerate", param_feerate, &feerate_per_kw),
-				 p_opt_def("minconf", param_number, &minconf, 1),
-				 NULL)) {
-
-		} else
-			return command_param_failed();
-		
 	} else {
 		if (!param(cmd, buffer, params,
-			   p_req("outputs", param_tok, &outputstok),
-			   p_req("destination", param_bitcoin_address,
-				 &old_destination),
-			   p_req("satoshi", param_wtx, (*utx)->wtx),
+			   p_req("outputs", param_array, &outputstok),
 			   p_opt("feerate", param_feerate, &feerate_per_kw),
 			   p_opt_def("minconf", param_number, &minconf, 1),
 			   NULL))
-			return command_param_failed();
+			if (!param(cmd, buffer, params,
+				   p_req("destination", param_bitcoin_address,
+				         &old_destination),
+				   p_req("satoshi", param_wtx, (*utx)->wtx),
+				   p_opt("feerate", param_feerate, &feerate_per_kw),
+				   p_opt_def("minconf", param_number, &minconf, 1),
+				   NULL))
+				return command_param_failed();
 	}
 
 	if (!feerate_per_kw) {
