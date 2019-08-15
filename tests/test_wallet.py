@@ -28,15 +28,15 @@ def test_withdraw(node_factory, bitcoind):
     waddr = l1.bitcoin.rpc.getnewaddress()
     # Now attempt to withdraw some (making sure we collect multiple inputs)
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('not an address', amount)
+        l1.rpc.withdraw([{'destination': 'not an address', 'satoshi': amount}])
     with pytest.raises(RpcError):
-        l1.rpc.withdraw(waddr, 'not an amount')
+        l1.rpc.withdraw([{'destination': waddr, 'satoshi':'not an amount'}])
     with pytest.raises(RpcError):
-        l1.rpc.withdraw(waddr, -amount)
+        l1.rpc.withdraw([{'destination': waddr, 'satoshi': -amount}])
     with pytest.raises(RpcError, match=r'Cannot afford transaction'):
-        l1.rpc.withdraw(waddr, amount * 100)
+        l1.rpc.withdraw([{'destination': waddr, 'satoshi': amount * 100}])
 
-    out = l1.rpc.withdraw(waddr, 2 * amount)
+    out = l1.rpc.withdraw([{'destination': waddr, 'satoshi': 2 * amount}])
 
     # Make sure bitcoind received the withdrawal
     unspent = l1.bitcoin.rpc.listunspent(0)
@@ -50,7 +50,7 @@ def test_withdraw(node_factory, bitcoind):
     # Now send some money to l2.
     # lightningd uses P2SH-P2WPKH
     waddr = l2.rpc.newaddr('bech32')['bech32']
-    l1.rpc.withdraw(waddr, 2 * amount)
+    l1.rpc.withdraw([{'destination': waddr, 'satoshi': 2 * amount}])
     bitcoind.generate_block(1)
 
     # Make sure l2 received the withdrawal.
@@ -65,12 +65,12 @@ def test_withdraw(node_factory, bitcoind):
     # Address from: https://bc-2.jp/tools/bech32demo/index.html
     waddr = 'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080'
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('xx1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'xx1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx', 'satoshi': 2 * amount}])
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('tb1pw508d6qejxtdg4y5r3zarvary0c5xw7kdl9fad', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'tb1pw508d6qejxtdg4y5r3zarvary0c5xw7kdl9fad', 'satoshi': 2 * amount}])
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxxxxxx', 2 * amount)
-    l1.rpc.withdraw(waddr, 2 * amount)
+        l1.rpc.withdraw([{'destination': 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxxxxxx', 'satoshi': 2 * amount}])
+    l1.rpc.withdraw([{'destination': waddr, 'satoshi': 2 * amount}])
     bitcoind.generate_block(1)
     # Now make sure additional two of them were marked as spent
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=2')[0]['c'] == 6
@@ -79,12 +79,12 @@ def test_withdraw(node_factory, bitcoind):
     # Address from: https://bc-2.jp/tools/bech32demo/index.html
     waddr = 'bcrt1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qzf4jry'
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('xx1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'xx1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7', 'satoshi': 2 * amount}])
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qsm03tq', 2 * amount)
+        l1.rpc.withdraw([{'destination' :'tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qsm03tq', 'satoshi': 2 * amount}])
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qxxxxxx', 2 * amount)
-    l1.rpc.withdraw(waddr, 2 * amount)
+        l1.rpc.withdraw([{'destination': 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qxxxxxx', 'satoshi': 2 * amount}])
+    l1.rpc.withdraw([{'destination': waddr, 'satoshi': 2 * amount}])
     bitcoind.generate_block(1)
     # Now make sure additional two of them were marked as spent
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=2')[0]['c'] == 8
@@ -92,43 +92,44 @@ def test_withdraw(node_factory, bitcoind):
     # failure testing for invalid SegWit addresses, from BIP173
     # HRP character out of range
     with pytest.raises(RpcError):
-        l1.rpc.withdraw(' 1nwldj5', 2 * amount)
+        l1.rpc.withdraw([{'destination': ' 1nwldj5', 'satoshi': 2 * amount}])
     # overall max length exceeded
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('an84characterslonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1569pvx', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'an84characterslonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1569pvx',
+                        'satoshi': 2 * amount}])
     # No separator character
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('pzry9x0s0muk', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'pzry9x0s0muk', 'satoshi': 2 * amount}])
     # Empty HRP
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('1pzry9x0s0muk', 2 * amount)
+        l1.rpc.withdraw([{'destination': '1pzry9x0s0muk', 'satoshi': 2 * amount}])
     # Invalid witness version
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('BC13W508D6QEJXTDG4Y5R3ZARVARY0C5XW7KN40WF2', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'BC13W508D6QEJXTDG4Y5R3ZARVARY0C5XW7KN40WF2', 'satoshi': 2 * amount}])
     # Invalid program length for witness version 0 (per BIP141)
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('BC1QR508D6QEJXTDG4Y5R3ZARVARYV98GJ9P', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'BC1QR508D6QEJXTDG4Y5R3ZARVARYV98GJ9P', 'satoshi': 2 * amount}])
     # Mixed case
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sL5k7', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sL5k7', 'satoshi': 2 * amount}])
     # Non-zero padding in 8-to-5 conversion
     with pytest.raises(RpcError):
-        l1.rpc.withdraw('tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3pjxtptv', 2 * amount)
+        l1.rpc.withdraw([{'destination': 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3pjxtptv', 'satoshi': 2 * amount}])
 
     # Should have 6 outputs available.
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 6
 
     # Test withdrawal to self.
-    l1.rpc.withdraw(l1.rpc.newaddr('bech32')['bech32'], 'all', minconf=0)
+    l1.rpc.withdraw([{'destination': l1.rpc.newaddr('bech32')['bech32'], 'satoshi': 'all'}], minconf=0)
     bitcoind.generate_block(1)
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 1
 
-    l1.rpc.withdraw(waddr, 'all', minconf=0)
+    l1.rpc.withdraw([{'destination': waddr, 'satoshi': 'all'}], minconf=0)
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 0
 
     # This should fail, can't even afford fee.
     with pytest.raises(RpcError, match=r'Cannot afford transaction'):
-        l1.rpc.withdraw(waddr, 'all')
+        l1.rpc.withdraw([{'destination': waddr, 'satoshi': 'all'}])
 
 
 def test_minconf_withdraw(node_factory, bitcoind):
@@ -153,7 +154,7 @@ def test_minconf_withdraw(node_factory, bitcoind):
 
     wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 10)
     with pytest.raises(RpcError):
-        l1.rpc.withdraw(destination=addr, satoshi=10000, feerate='normal', minconf=9999999)
+        l1.rpc.withdraw([{'destination': addr, 'satoshi': 10000}], feerate='normal', minconf=9999999)
 
 
 def test_addfunds_from_block(node_factory, bitcoind):
@@ -177,7 +178,7 @@ def test_addfunds_from_block(node_factory, bitcoind):
 
     # Send all our money to a P2WPKH address this time.
     addr = l1.rpc.newaddr("bech32")['bech32']
-    l1.rpc.withdraw(addr, "all")
+    l1.rpc.withdraw([{'destination': addr, 'satoshi': "all"}])
     bitcoind.generate_block(1)
     time.sleep(1)
 
@@ -200,8 +201,8 @@ def test_txprepare(node_factory, bitcoind):
     bitcoind.generate_block(1)
     wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 10)
 
-    prep = l1.rpc.txprepare('bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                            Millisatoshi(amount * 3 * 1000))
+    prep = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
+                            'satoshi': Millisatoshi(amount * 3 * 1000)}])
     decode = bitcoind.rpc.decoderawtransaction(prep['unsigned_tx'])
     assert decode['txid'] == prep['txid']
     # 4 inputs, 2 outputs.
@@ -224,8 +225,8 @@ def test_txprepare(node_factory, bitcoind):
     assert decode['vout'][changenum]['scriptPubKey']['type'] == 'witness_v0_keyhash'
 
     # Now prepare one with no change.
-    prep2 = l1.rpc.txprepare('bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                             'all')
+    prep2 = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
+                             'satoshi': 'all'}])
     decode = bitcoind.rpc.decoderawtransaction(prep2['unsigned_tx'])
     assert decode['txid'] == prep2['txid']
     # 6 inputs, 1 outputs.
@@ -243,8 +244,8 @@ def test_txprepare(node_factory, bitcoind):
     assert discard['txid'] == prep['txid']
     assert discard['unsigned_tx'] == prep['unsigned_tx']
 
-    prep3 = l1.rpc.txprepare('bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                             'all')
+    prep3 = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
+                             'satoshi': 'all'}])
     decode = bitcoind.rpc.decoderawtransaction(prep3['unsigned_tx'])
     assert decode['txid'] == prep3['txid']
     # 4 inputs, 1 outputs.
@@ -264,8 +265,8 @@ def test_txprepare(node_factory, bitcoind):
     # Discard everything, we should now spend all inputs.
     l1.rpc.txdiscard(prep2['txid'])
     l1.rpc.txdiscard(prep3['txid'])
-    prep4 = l1.rpc.txprepare('bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                             'all')
+    prep4 = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
+                             'satoshi''all'}])
     decode = bitcoind.rpc.decoderawtransaction(prep4['unsigned_tx'])
     assert decode['txid'] == prep4['txid']
     # 10 inputs, 1 outputs.
@@ -292,8 +293,8 @@ def test_txsend(node_factory, bitcoind):
     bitcoind.generate_block(1)
     wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 10)
 
-    prep = l1.rpc.txprepare('bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                            Millisatoshi(amount * 3 * 1000))
+    prep = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
+                            'satoshi': Millisatoshi(amount * 3 * 1000)}])
     out = l1.rpc.txsend(prep['txid'])
 
     # Cannot discard after send!
@@ -336,8 +337,8 @@ def test_txprepare_restart(node_factory, bitcoind):
     bitcoind.generate_block(1)
     wait_for(lambda: [o['status'] for o in l1.rpc.listfunds()['outputs']] == ['confirmed'] * 10)
 
-    prep = l1.rpc.txprepare('bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                            'all')
+    prep = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
+                            'satoshi': 'all'}])
     decode = bitcoind.rpc.decoderawtransaction(prep['unsigned_tx'])
     assert decode['txid'] == prep['txid']
     # All 10 inputs
@@ -352,8 +353,8 @@ def test_txprepare_restart(node_factory, bitcoind):
     with pytest.raises(RpcError, match=r'not an unreleased txid'):
         l1.rpc.txdiscard(prep['txid'])
 
-    prep = l1.rpc.txprepare('bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                            'all')
+    prep = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
+                            'satoshi': 'all'}])
 
     decode = bitcoind.rpc.decoderawtransaction(prep['unsigned_tx'])
     assert decode['txid'] == prep['txid']
@@ -370,8 +371,8 @@ def test_txprepare_restart(node_factory, bitcoind):
     for i in decode['vin']:
         assert l1.daemon.is_in_log('wallet: reserved output {}/{} reset to available'.format(i['txid'], i['vout']))
 
-    prep = l1.rpc.txprepare('bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                            'all')
+    prep = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
+                            'satoshi': 'all'}])
     decode = bitcoind.rpc.decoderawtransaction(prep['unsigned_tx'])
     assert decode['txid'] == prep['txid']
     # All 10 inputs

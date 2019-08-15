@@ -1458,13 +1458,13 @@ def test_no_fee_estimate(node_factory, bitcoind, executor):
 
     # Can't withdraw either.
     with pytest.raises(RpcError, match=r'Cannot estimate fees'):
-        l1.rpc.withdraw(l2.rpc.newaddr()['bech32'], 'all')
+        l1.rpc.withdraw([{'destination': l2.rpc.newaddr()['bech32'], 'satoshi': 'all'}])
 
     # Can't use feerate names, either.
     with pytest.raises(RpcError, match=r'Cannot estimate fees'):
-        l1.rpc.withdraw(l2.rpc.newaddr()['bech32'], 'all', 'urgent')
-        l1.rpc.withdraw(l2.rpc.newaddr()['bech32'], 'all', 'normal')
-        l1.rpc.withdraw(l2.rpc.newaddr()['bech32'], 'all', 'slow')
+        l1.rpc.withdraw([{'destination': l2.rpc.newaddr()['bech32'], 'satoshi': 'all'}], 'urgent')
+        l1.rpc.withdraw([{'destination': l2.rpc.newaddr()['bech32'], 'satoshi': 'all'}], 'normal')
+        l1.rpc.withdraw([{'destination': l2.rpc.newaddr()['bech32'], 'satoshi': 'all'}], 'slow')
 
     with pytest.raises(RpcError, match=r'Cannot estimate fees'):
         l1.rpc.fundchannel(l2.info['id'], 10**6, 'urgent')
@@ -1472,7 +1472,7 @@ def test_no_fee_estimate(node_factory, bitcoind, executor):
         l1.rpc.fundchannel(l2.info['id'], 10**6, 'slow')
 
     # Can with manual feerate.
-    l1.rpc.withdraw(l2.rpc.newaddr()['bech32'], 10000, '1500perkb')
+    l1.rpc.withdraw([{'destination': l2.rpc.newaddr()['bech32'], 'satoshi': 10000}], '1500perkb')
     l1.rpc.fundchannel(l2.info['id'], 10**6, '2000perkw', minconf=0)
 
     # Make sure we clean up cahnnel for later attempt.
@@ -1515,7 +1515,7 @@ def test_no_fee_estimate(node_factory, bitcoind, executor):
     l1.rpc.fundchannel(l2.info['id'], 10**6, 'slow')
 
     # Can withdraw (use urgent feerate).
-    l1.rpc.withdraw(l2.rpc.newaddr()['bech32'], 'all', 'urgent')
+    l1.rpc.withdraw([{'destination': l2.rpc.newaddr()['bech32'], 'satoshi': 'all'}], 'urgent')
 
 
 @unittest.skipIf(not DEVELOPER, "needs --dev-disconnect")

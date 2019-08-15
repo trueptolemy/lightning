@@ -500,7 +500,7 @@ def test_onchain_unwatch(node_factory, bitcoind):
 
     # Now test unrelated onchain churn.
     # Daemon gets told about wallet; says it doesn't care.
-    l1.rpc.withdraw(l1.rpc.newaddr()['bech32'], 'all')
+    l1.rpc.withdraw([{'destination': l1.rpc.newaddr()['bech32'], 'satoshi': 'all'}])
     bitcoind.generate_block(1)
     l1.daemon.wait_for_log("but we don't care")
 
@@ -509,7 +509,7 @@ def test_onchain_unwatch(node_factory, bitcoind):
 
     # So these should not generate further messages
     for i in range(5):
-        l1.rpc.withdraw(l1.rpc.newaddr()['bech32'], 'all')
+        l1.rpc.withdraw([{'destination': l1.rpc.newaddr()['bech32'], 'satoshi': 'all'}])
         bitcoind.generate_block(1)
         # Make sure it digests the block
         sync_blockheight(bitcoind, [l1])
@@ -1483,7 +1483,7 @@ def test_permfail(node_factory, bitcoind):
         assert(addr == o['address'])
 
     addr = l1.bitcoin.rpc.getnewaddress()
-    l1.rpc.withdraw(addr, "all")
+    l1.rpc.withdraw([{'destination': addr, 'satoshi': "all"}])
 
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
