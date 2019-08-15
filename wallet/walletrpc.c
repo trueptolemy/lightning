@@ -167,28 +167,27 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	(*utx)->wtx = tal(*utx, struct wallet_tx);
 	wtx_init(cmd, (*utx)->wtx, AMOUNT_SAT(-1ULL));
 
-	/* For generating help, give new-style. */
-	if (!params || !deprecated_apis) {
-		if (!param(cmd, buffer, params,
-			   p_req("outputs", param_array, &outputstok),
-			   p_opt("feerate", param_feerate, &feerate_per_kw),
-			   p_opt_def("minconf", param_number, &minconf, 1),
-			   NULL))
+	if (!param(cmd, buffer, params,
+		   p_req("outputs", param_array, &outputstok),
+		   p_opt("feerate", param_feerate, &feerate_per_kw),
+		   p_opt_def("minconf", param_number, &minconf, 1),
+		   NULL)) {
+
+		/* For generating help, give new-style. */
+		if (!params || !deprecated_apis)
 			return command_param_failed();
-	} else {
+
+		/* For the old style: [destination] [satoshi] <feerate> <minconf> */
 		if (!param(cmd, buffer, params,
-			   p_req("outputs", param_array, &outputstok),
+			   p_req("destination", param_bitcoin_address,
+			         &old_destination),
+			   p_req("satoshi", param_wtx, (*utx)->wtx),
 			   p_opt("feerate", param_feerate, &feerate_per_kw),
 			   p_opt_def("minconf", param_number, &minconf, 1),
 			   NULL))
-			if (!param(cmd, buffer, params,
-				   p_req("destination", param_bitcoin_address,
-				         &old_destination),
-				   p_req("satoshi", param_wtx, (*utx)->wtx),
-				   p_opt("feerate", param_feerate, &feerate_per_kw),
-				   p_opt_def("minconf", param_number, &minconf, 1),
-				   NULL))
-				return command_param_failed();
+			/* If the parameters mixed the new style and the old style,
+			 * fail it. */
+			return command_param_failed();
 	}
 
 	if (!feerate_per_kw) {
