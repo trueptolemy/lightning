@@ -187,3 +187,14 @@ struct command_result *param_sat(struct command *cmd, const char *name,
 			    name, tok->end - tok->start, buffer + tok->start);
 }
 
+struct command_result *param_sat_or_all(struct command *cmd, const char *name,
+					const char *buffer, const jsmntok_t *tok,
+					struct amount_sat **sat)
+{
+	if (json_tok_streq(buffer, tok, "all")) {
+		*sat = tal(cmd, struct amount_sat);
+		**sat = AMOUNT_SAT(-1ULL);
+		return NULL;
+	}
+	return param_sat(cmd, name, buffer, tok, sat);
+}
