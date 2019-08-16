@@ -861,21 +861,20 @@ class LightningRpc(UnixDomainSocketRpc):
         }
         return self.call("waitsendpay", payload)
 
-    def withdraw(self, destination, satoshi, feerate=None, minconf=None):
+    def withdraw(self, outputs, feerate=None, minconf=None):
         """
         Send to {destination} address {satoshi} (or "all")
         amount via Bitcoin transaction. Only select outputs
         with {minconf} confirmations
         """
         payload = {
-            "destination": destination,
-            "satoshi": satoshi,
+            "outputs": outputs,
             "feerate": feerate,
             "minconf": minconf,
         }
         return self.call("withdraw", payload)
 
-    def txprepare(self, destination, satoshi, feerate=None, minconf=None):
+    def txprepare(self, outputs, feerate=None, minconf=None):
         """
         Prepare a bitcoin transaction which sends to {destination} address
         {satoshi} (or "all") amount via Bitcoin transaction. Only select outputs
@@ -885,8 +884,7 @@ class LightningRpc(UnixDomainSocketRpc):
         lightningd restarts.
         """
         payload = {
-            "destination": destination,
-            "satoshi": satoshi,
+            "outputs": outputs,
             "feerate": feerate,
             "minconf": minconf,
         }
