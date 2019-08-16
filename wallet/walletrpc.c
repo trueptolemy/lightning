@@ -223,7 +223,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		if (!param(cmd, buffer, t,
 			   p_req("destination", param_bitcoin_address,
 				 &destination),
-			   p_opt("satoshi", param_sat_or_all, &amount),
+			   p_req("satoshi", param_sat_or_all, &amount),
 			   NULL))
 			return command_param_failed();
 
