@@ -201,8 +201,8 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	/* Old style. */
 	if (old_destination) {
 		outputs = tal_arr(tmpctx, struct bitcoin_tx_output *, 1);
-		outputs[0]->script = tal_dup_arr(outputs[0], u8, old_destination,
-						 tal_count(old_destination), 0);
+		outputs[0]->script = tal_steal(outputs[i],
+					       cast_const(u8 *, old_destination));
 		outputs[0]->amount = (*utx)->wtx->amount;
 		out_len = tal_count(outputs[0]->script);
 
@@ -234,8 +234,8 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		out_len += tal_count(destination);
 		outputs[i] = tal(outputs, struct bitcoin_tx_output);
 		outputs[i]->amount = *amount;
-		outputs[i]->script = tal_dup_arr(outputs[i], u8, destination,
-						 tal_count(destination), 0);
+		outputs[i]->script = tal_steal(outputs[i],
+					       cast_const(u8 *, destination));
 
 		/* In fact, the maximum amount of bitcoin satoshi is 2.1e15.
 		 * It can't be equal to/bigger than 2^64.
