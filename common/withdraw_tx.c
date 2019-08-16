@@ -20,7 +20,7 @@ struct bitcoin_tx *withdraw_tx(const tal_t *ctx,
 	struct bitcoin_tx *tx;
 
 	tx = tx_spending_utxos(ctx, chainparams, utxos, bip32_base,
-			       !amount_sat_eq(change, AMOUNT_SAT(0)));
+			       !amount_sat_eq(change, AMOUNT_SAT(0)), 1);
 
 	bitcoin_tx_add_multi_outputs(tx, outputs);
 
