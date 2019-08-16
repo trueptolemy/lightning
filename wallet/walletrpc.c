@@ -201,12 +201,11 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	maxheight = minconf_to_maxheight(*minconf, cmd->ld);
 	/* Old style. */
 	if (old_destination) {
-		out_len = tal_count(old_destination);
-
 		outputs = tal_arr(tmpctx, struct bitcoin_tx_output *, 1);
 		outputs[0]->script = tal_steal(outputs[0],
 					       cast_const(u8 *, old_destination));
 		outputs[0]->amount = (*utx)->wtx->amount;
+		out_len = tal_count(outputs[0]->script);
 
 		goto create_tx;
 	}
