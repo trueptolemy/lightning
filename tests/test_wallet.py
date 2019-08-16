@@ -266,7 +266,7 @@ def test_txprepare(node_factory, bitcoind):
     l1.rpc.txdiscard(prep2['txid'])
     l1.rpc.txdiscard(prep3['txid'])
     prep4 = l1.rpc.txprepare([{'destination': 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
-                             'satoshi''all'}])
+                             'satoshi':'all'}])
     decode = bitcoind.rpc.decoderawtransaction(prep4['unsigned_tx'])
     assert decode['txid'] == prep4['txid']
     # 10 inputs, 1 outputs.
