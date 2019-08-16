@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <bitcoin/script.h>
 #include <common/key_derive.h>
 #include <common/utils.h>
