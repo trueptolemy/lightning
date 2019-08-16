@@ -4,6 +4,7 @@
 #include <bitcoin/script.h>
 #include <ccan/ptrint/ptrint.h>
 #include <common/permute_tx.h>
+#include <common/utils.h>
 #include <common/utxo.h>
 #include <string.h>
 #include <wally_bip32.h>
