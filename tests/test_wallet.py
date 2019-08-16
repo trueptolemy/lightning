@@ -456,7 +456,7 @@ def test_txprepare(node_factory, bitcoind):
             changenum = 1
     elif decode['vout'][1]['value'] == Decimal(amount * 3) / 10**8:
         if decode['vout'][0]['value'] == Decimal(amount * 3) / 10**8 * 0.4:
-	        outnum1 = 1
+            outnum1 = 1
             outnum2 = 0
             changenum = 2
         else:
