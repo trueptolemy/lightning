@@ -252,7 +252,8 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 			(*utx)->wtx->amount = AMOUNT_SAT(0);
 
 		outputs[i]->amount = *amount;
-		outputs[i]->script = tal_steal(outputs[i], cast_const(u8 *, destination));
+		outputs[i]->script = tal_dup_arr(outputs[i], u8, destination,
+						 tal_count(destination), 0);
 		if (!amount_sat_add(&(*utx)->wtx->amount, (*utx)->wtx->amount, *amount))
 			return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
 					    "outputs: The sum of first %zi satoshi"
