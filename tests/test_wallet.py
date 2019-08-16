@@ -151,6 +151,7 @@ def test_multiple_withdraw(node_factory, bitcoind):
 
     waddr1 = l1.bitcoin.rpc.getnewaddress()
     waddr2 = l1.bitcoin.rpc.getnewaddress()
+    assert waddr1 != waddr2
     # amount1 + amount2 = amount
     amount1 = 510000
     amount2 = 490000
