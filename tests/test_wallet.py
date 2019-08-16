@@ -443,12 +443,11 @@ def test_txprepare(node_factory, bitcoind):
     assert len(decode['vin']) == 4
     assert len(decode['vout']) == 3
 
-    assert decode['vout'][0]['value'] == 0 or decode['vout'][1]['value'] == 0 or decode['vout'][2]['value'] == 0
     # One output will be correct.
     for i in range(3):
-        if decode['vout'][i - 1]['value'] == Decimal(amount * 3) / 10**8 * 0.6:
+        if decode['vout'][i - 1]['value'] == Decimal('0.01500100'):
             outnum1 = i - 1
-        elif decode['vout'][i - 1]['value'] == Decimal(amount * 3) / 10**8 * 0.4:
+        elif decode['vout'][i - 1]['value'] == Decimal('0.01499900'):
             outnum2 = i - 1
         else:
             changenum = i - 1
