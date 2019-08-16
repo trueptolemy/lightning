@@ -1393,7 +1393,7 @@ def test_permfail_htlc_out(node_factory, bitcoind, executor):
     assert not l2.daemon.is_in_log('onchaind complete, forgetting peer')
     bitcoind.generate_block(1)
     wait_for(lambda: l2.rpc.listpeers()['peers'] == [])
-'''
+
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_permfail(node_factory, bitcoind):
@@ -1485,7 +1485,7 @@ def test_permfail(node_factory, bitcoind):
     addr = l1.bitcoin.rpc.getnewaddress()
     l1.rpc.withdraw([{'destination': addr, 'satoshi': "all"}])
 
-'''
+
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_shutdown(node_factory):
     # Fail, in that it will exit before cleanup.

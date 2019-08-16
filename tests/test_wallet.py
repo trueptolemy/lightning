@@ -7,7 +7,7 @@ from utils import only_one, wait_for
 import pytest
 import time
 
-'''
+
 def test_withdraw(node_factory, bitcoind):
     amount = 1000000
     # Don't get any funds from previous runs.
@@ -377,4 +377,3 @@ def test_txprepare_restart(node_factory, bitcoind):
     assert decode['txid'] == prep['txid']
     # All 10 inputs
     assert len(decode['vin']) == 10
-'''
