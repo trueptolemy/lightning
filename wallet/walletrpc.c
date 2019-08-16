@@ -177,6 +177,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		if (!params || !deprecated_apis)
 			return command_param_failed();
 
+		log_unusual(cmd->ld->log, "command fail");
 		/* For the old style: [destination] [satoshi] <feerate> <minconf> */
 		if (!param(cmd, buffer, params,
 			   p_req("destination", param_bitcoin_address,
