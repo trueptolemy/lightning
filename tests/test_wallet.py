@@ -151,10 +151,11 @@ def test_multiple_withdraw(node_factory, bitcoind):
 
     waddr1 = l1.bitcoin.rpc.getnewaddress()
     waddr2 = l1.bitcoin.rpc.getnewaddress()
-    assert waddr1 != waddr2
-    # amount1 + amount2 = amount
+    waddr3 = l1.bitcoin.rpc.getnewaddress()
+    # amount1 + amount2 + amount3 = amount
     amount1 = 510000
-    amount2 = 490000
+    amount2 = 320000
+    amount3 = 170000
     # Now attempt to withdraw some (making sure we collect multiple inputs)
     with pytest.raises(RpcError):
         l1.rpc.withdraw([{'destination': 'not an address', 'satoshi': amount},
@@ -170,7 +171,8 @@ def test_multiple_withdraw(node_factory, bitcoind):
                          {'destination': waddr2, 'satoshi': amount * 100}])
 
     out = l1.rpc.withdraw([{'destination': waddr1, 'satoshi': amount1 * 2},
-                           {'destination': waddr2, 'satoshi': amount2 * 2}])
+                           {'destination': waddr2, 'satoshi': amount2 * 2},
+                           {'destination': waddr3, 'satoshi': amount3 * 2}])
 
     # Make sure bitcoind received the withdrawal
     unspent = l1.bitcoin.rpc.listunspent(0)
@@ -184,8 +186,8 @@ def test_multiple_withdraw(node_factory, bitcoind):
 
     # Now send some money to l2.
     # lightningd uses P2SH-P2WPKH
-    waddr3 = l2.rpc.newaddr('bech32')['bech32']
-    l1.rpc.withdraw([{'destination': waddr3, 'satoshi': 2 * amount1},
+    waddr4 = l2.rpc.newaddr('bech32')['bech32']
+    l1.rpc.withdraw([{'destination': waddr4, 'satoshi': 2 * amount1},
                      {'destination': waddr1, 'satoshi': 2 * amount2}])
     bitcoind.generate_block(1)
 
@@ -199,35 +201,23 @@ def test_multiple_withdraw(node_factory, bitcoind):
 
     # Simple test for withdrawal to P2WPKH
     # Address from: https://bc-2.jp/tools/bech32demo/index.html
-    waddr4 = 'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080'
+    waddr5 = 'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080'
     with pytest.raises(RpcError):
         l1.rpc.withdraw([{'destination': 'xx1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx', 'satoshi': amount},
                          {'destination': waddr1, 'satoshi': amount}])
-    with pytest.raises(RpcError):
-        l1.rpc.withdraw([{'destination': 'tb1pw508d6qejxtdg4y5r3zarvary0c5xw7kdl9fad', 'satoshi': amount},
-                         {'destination': waddr1, 'satoshi': amount}])
-    with pytest.raises(RpcError):
-        l1.rpc.withdraw([{'destination': 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxxxxxx', 'satoshi': amount},
-                         {'destination': waddr1, 'satoshi': amount}])
     l1.rpc.withdraw([{'destination': waddr1, 'satoshi': amount},
-                     {'destination': waddr4, 'satoshi': amount}])
+                     {'destination': waddr5, 'satoshi': amount}])
     bitcoind.generate_block(1)
     # Now make sure additional two of them were marked as spent
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=2')[0]['c'] == 6
 
     # Simple test for withdrawal to P2WSH
     # Address from: https://bc-2.jp/tools/bech32demo/index.html
-    waddr5 = 'bcrt1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qzf4jry'
+    waddr6 = 'bcrt1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qzf4jry'
     with pytest.raises(RpcError):
         l1.rpc.withdraw([{'destination': 'xx1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7', 'satoshi': amount},
                          {'destination': waddr1, 'satoshi': amount}])
-    with pytest.raises(RpcError):
-        l1.rpc.withdraw([{'destination' :'tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qsm03tq', 'satoshi': amount},
-                         {'destination': waddr1, 'satoshi': amount}])
-    with pytest.raises(RpcError):
-        l1.rpc.withdraw([{'destination': 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qxxxxxx', 'satoshi': amount},
-                         {'destination': waddr1, 'satoshi': amount}])
-    l1.rpc.withdraw([{'destination': waddr5, 'satoshi': amount},
+    l1.rpc.withdraw([{'destination': waddr6, 'satoshi': amount},
                      {'destination': waddr1, 'satoshi': amount}])
     bitcoind.generate_block(1)
     # Now make sure additional two of them were marked as spent
@@ -281,12 +271,12 @@ def test_multiple_withdraw(node_factory, bitcoind):
     bitcoind.generate_block(1)
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 1
 
-    l1.rpc.withdraw([{'destination': waddr5, 'satoshi': 'all'}], minconf=0)
+    l1.rpc.withdraw([{'destination': waddr6, 'satoshi': 'all'}], minconf=0)
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 0
 
     # This should fail, can't even afford fee.
     with pytest.raises(RpcError, match=r'Cannot afford transaction'):
-        l1.rpc.withdraw([{'destination': waddr5, 'satoshi': 'all'}])
+        l1.rpc.withdraw([{'destination': waddr6, 'satoshi': 'all'}])
 
 
 def test_minconf_withdraw(node_factory, bitcoind):
