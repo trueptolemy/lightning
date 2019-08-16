@@ -150,7 +150,7 @@ def test_multiple_withdraw(node_factory, bitcoind):
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 10
 
     waddr1 = l1.bitcoin.rpc.getnewaddress()
-    waddr2 = l2.bitcoin.rpc.getnewaddress()
+    waddr2 = l1.bitcoin.rpc.getnewaddress()
     # amount1 + amount2 = amount
     amount1 = 510000
     amount2 = 490000
