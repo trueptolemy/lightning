@@ -250,7 +250,7 @@ def test_multiple_withdraw(node_factory, bitcoind):
                          {'destination': waddr1, 'satoshi': amount}])
     # Invalid witness version
     with pytest.raises(RpcError):
-        l1.rpc.withdraw([{'destination': 'BC13W508D6QEJXTDG4Y5R3ZARVARY0C5XW7KN40WF2', 'satoshi': amount}
+        l1.rpc.withdraw([{'destination': 'BC13W508D6QEJXTDG4Y5R3ZARVARY0C5XW7KN40WF2', 'satoshi': amount},
                          {'destination': waddr1, 'satoshi': amount}])
     # Invalid program length for witness version 0 (per BIP141)
     with pytest.raises(RpcError):
@@ -268,17 +268,22 @@ def test_multiple_withdraw(node_factory, bitcoind):
     # Should have 6 outputs available.
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 6
 
+    # Test withdrawal "all" with two outputs
+    with pytest.raises(RpcError):
+        l1.rpc.withdraw([{'destination': waddr1, 'satoshi': 'all'},
+                         {'destination': waddr2, 'satoshi': amount}])
+
     # Test withdrawal to self.
     l1.rpc.withdraw([{'destination': l1.rpc.newaddr('bech32')['bech32'], 'satoshi': 'all'}], minconf=0)
     bitcoind.generate_block(1)
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 1
 
-    l1.rpc.withdraw([{'destination': waddr, 'satoshi': 'all'}], minconf=0)
+    l1.rpc.withdraw([{'destination': waddr5, 'satoshi': 'all'}], minconf=0)
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=0')[0]['c'] == 0
 
     # This should fail, can't even afford fee.
     with pytest.raises(RpcError, match=r'Cannot afford transaction'):
-        l1.rpc.withdraw([{'destination': waddr, 'satoshi': 'all'}])
+        l1.rpc.withdraw([{'destination': waddr5, 'satoshi': 'all'}])
 
 
 def test_minconf_withdraw(node_factory, bitcoind):
