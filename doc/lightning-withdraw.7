@@ -2,12 +2,12 @@
 .\"     Title: lightning-withdraw
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 06/05/2019
+.\"      Date: 08/17/2019
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "LIGHTNING\-WITHDRAW" "7" "06/05/2019" "\ \&" "\ \&"
+.TH "LIGHTNING\-WITHDRAW" "7" "08/17/2019" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -31,12 +31,14 @@
 lightning-withdraw \- Command for withdrawing funds from the internal wallet\&.
 .SH "SYNOPSIS"
 .sp
-\fBwithdraw\fR \fIdestination\fR \fIsatoshi\fR [\fIfeerate\fR] [\fIminconf\fR]
+\fBwithdraw\fR \fIoutput\fR [\fIfeerate\fR] [\fIminconf\fR]
 .SH "DESCRIPTION"
 .sp
-The \fBwithdraw\fR RPC command sends funds from c\-lightning\(cqs internal wallet to the address specified in \fIdestination\fR\&.
+The \fBwithdraw\fR RPC command sends funds from c\-lightning\(cqs internal wallet to the address specified in \fIoutput\fR\&.
 .sp
-The address can be of any Bitcoin accepted type, including bech32\&.
+The \fIoutput\fR is the array of outputs that must specify \fIdestination\fR and \fIsatoshi\fR\&. Its format is like [{\fIdestination\fR: address1, \fIsatoshi\fR: satoshi1}, {\fIdestination\fR: address2, \fIsatoshi\fR: satoshi2}, \&.\&.\&.], or [{\fIdestination\fR: address, \fIsatoshi\fR: \fIall\fR}])\&. It support the any number of outputs\&.
+.sp
+\fIdestination\fR is the address which can be of any Bitcoin accepted type, including bech32\&.
 .sp
 \fIsatoshi\fR is the amount to be withdrawn from the internal wallet (expressed, as name suggests, in satoshi)\&. The string \fIall\fR can be used to specify withdrawal of all available funds\&. Otherwise, it is in satoshi precision; it can be a whole number, a whole number ending in \fIsat\fR, a whole number ending in \fI000msat\fR, or a number with 1 to 8 decimal places ending in \fIbtc\fR\&.
 .sp
@@ -45,6 +47,9 @@ The address can be of any Bitcoin accepted type, including bech32\&.
 Otherwise, \fIfeerate\fR is a number, with an optional suffix: \fIperkw\fR means the number is interpreted as satoshi\-per\-kilosipa (weight), and \fIperkb\fR means it is interpreted bitcoind\-style as satoshi\-per\-kilobyte\&. Omitting the suffix is equivalent to \fIperkb\fR\&.
 .sp
 \fIminconf\fR specifies the minimum number of confirmations that used outputs should have\&. Default is 1\&.
+.SH "NOTES"
+.sp
+Prior to 0\&.7\&.3, \fBwithdraw\fR supports only one destination\&. Now the parameters of \fIdestination\fR and \fIsatoshi\fR are integrated into \fIoutput\fR\&.
 .SH "RETURN VALUE"
 .sp
 On success, an object with attributes \fItx\fR and \fItxid\fR will be returned\&.

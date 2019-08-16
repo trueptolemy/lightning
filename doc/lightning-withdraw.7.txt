@@ -9,14 +9,19 @@ internal wallet.
 
 SYNOPSIS
 --------
-*withdraw* 'destination' 'satoshi' ['feerate'] ['minconf']
+*withdraw* 'output' ['feerate'] ['minconf']
 
 DESCRIPTION
 -----------
 The *withdraw* RPC command sends funds from c-lightning's 
-internal wallet to the address specified in 'destination'.
+internal wallet to the address with amonut specified in 'output'.
 
-The address can be of any Bitcoin accepted type, 
+The 'output' is the array of outputs that must specify 'destination' and 'satoshi'.
+Its format is like [{'destination': address1, 'satoshi': satoshi1},
+{'destination': address2, 'satoshi': satoshi2}, ...], or [{'destination': address,
+'satoshi': "all"}]).
+
+'destination' is the address which can be of any Bitcoin accepted type, 
 including bech32.
 
 'satoshi' is the amount to be withdrawn from the internal 
@@ -35,6 +40,11 @@ Otherwise, 'feerate' is a number, with an optional suffix:
 satoshi-per-kilobyte.  Omitting the suffix is equivalent to 'perkb'.
 
 'minconf' specifies the minimum number of confirmations that used outputs should have. Default is 1.
+
+NOTES
+-----
+Prior to 0.7.3, *withdraw* supports only one destination.
+Now the parameters of 'destination' and 'satoshi' are integrated into 'output'.
 
 RETURN VALUE
 ------------
