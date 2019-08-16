@@ -188,7 +188,7 @@ def test_multiple_withdraw(node_factory, bitcoind):
     # lightningd uses P2SH-P2WPKH
     waddr4 = l2.rpc.newaddr('bech32')['bech32']
     l1.rpc.withdraw([{'destination': waddr4, 'satoshi': 2 * amount1},
-                     {'destination': waddr1, 'satoshi': 2 * amount2}])
+                     {'destination': waddr1, 'satoshi': 2 * (amount2 + amount3)}])
     bitcoind.generate_block(1)
 
     # Make sure l2 received the withdrawal.
