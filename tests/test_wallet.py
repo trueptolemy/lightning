@@ -169,14 +169,15 @@ def test_multiple_withdraw(node_factory, bitcoind):
         l1.rpc.withdraw([{'destination': waddr1, 'satoshi': amount * 100},
                          {'destination': waddr2, 'satoshi': amount * 100}])
 
-    out = l1.rpc.withdraw([{'destination': waddr1, 'satoshi': amount},
-                           {'destination': waddr2, 'satoshi': amount}])
+    out = l1.rpc.withdraw([{'destination': waddr1, 'satoshi': amount1 * 2},
+                           {'destination': waddr2, 'satoshi': amount2 * 2}])
 
     # Make sure bitcoind received the withdrawal
     unspent = l1.bitcoin.rpc.listunspent(0)
     withdrawal = [u for u in unspent if u['txid'] == out['txid']]
+    withdrawal_unspent = withdrawal[0]['amount'] + withdrawal[1]['amount']
 
-    assert(withdrawal[0]['amount'] == Decimal('0.02'))
+    assert(withdrawal_unspent == Decimal('0.02'))
 
     # Now make sure two of them were marked as spent
     assert l1.db_query('SELECT COUNT(*) as c FROM outputs WHERE status=2')[0]['c'] == 2
