@@ -9,7 +9,7 @@ internal wallet.
 
 SYNOPSIS
 --------
-*txprepare* 'destination' 'satoshi' ['feerate'] ['minconf']
+*txprepare* 'output' ['feerate'] ['minconf']
 
 DESCRIPTION
 -----------
@@ -19,6 +19,11 @@ specified in 'destination'.
 
 Effectively, it is the first part of a *withdraw* command, and uses
 the same parameters.  The second part is provided by *txsend*.
+
+NOTES
+-----
+Prior to 0.7.3, *txprepare* supports only one destination.
+Now the parameters of 'destination' and 'satoshi' are integrated into 'output'.
 
 RETURN VALUE
 ------------
