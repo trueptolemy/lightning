@@ -177,7 +177,6 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		if (!params || !deprecated_apis)
 			return command_param_failed();
 
-		log_unusual(cmd->ld->log, "command fail");
 		/* For the old style: [destination] [satoshi] <feerate> <minconf> */
 		if (!param(cmd, buffer, params,
 			   p_req("destination", param_bitcoin_address,
@@ -224,10 +223,8 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 			   p_req("destination", param_bitcoin_address,
 				 &destination),
 			   p_req("satoshi", param_sat_or_all, &amount),
-			   NULL)) {
-			log_unusual(cmd->ld->log, "output fail");
+			   NULL))
 			return command_param_failed();
-		}
 
 		if (!destination || !amount)
 			return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
@@ -235,8 +232,15 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 					    " and satoshi", i);
 
 		out_len += tal_count(destination);
-		/* In fact, the maximum amount of satoshi is 2,100,000,000,000,000.
-		* It can't be equal to/bigger than 2^64. */
+		outputs[i] = tal(outputs, struct bitcoin_tx_output);
+		outputs[i]->amount = *amount;
+		outputs[i]->script = tal_dup_arr(outputs[i], u8, destination,
+						 tal_count(destination), 0);
+
+		/* In fact, the maximum amount of bitcoin satoshi is 2.1e15.
+		 * It can't be equal to/bigger than 2^64.
+		 * On the hand, the maximum amount of litoshi is 8.4e15, 
+		 * which also can't overflow. */
 		/* This means this destination need "all" satoshi we have. */
 		if (amount_sat_eq(*amount, AMOUNT_SAT(-1ULL))) {
 			if (outputstok->size > 1)
@@ -251,10 +255,6 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		if (i == 0)
 			(*utx)->wtx->amount = AMOUNT_SAT(0);
 
-		outputs[i] = tal(outputs, struct bitcoin_tx_output);
-		outputs[i]->amount = *amount;
-		outputs[i]->script = tal_dup_arr(outputs[i], u8, destination,
-						 tal_count(destination), 0);
 		if (!amount_sat_add(&(*utx)->wtx->amount, (*utx)->wtx->amount, *amount))
 			return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
 					    "outputs: The sum of first %zi satoshi"
@@ -266,7 +266,12 @@ create_tx:
 	res = wtx_select_utxos((*utx)->wtx, *feerate_per_kw,
 			       out_len, maxheight);
 	if (res)
-		return res;
+		return res;	
+
+	/* Because of the max limit of AMOUNT_SAT(-1ULL),
+	 * `(*utx)->wtx->all_funds` won't change in `wtx_select_utxos()` */
+	if ((*utx)->wtx->all_funds)
+		outputs[0]->amount = (*utx)->wtx->amount;
 
 	if (!amount_sat_eq((*utx)->wtx->change, AMOUNT_SAT(0))) {
 		changekey = tal(tmpctx, struct pubkey);
