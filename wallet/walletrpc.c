@@ -160,7 +160,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	struct pubkey *changekey;
 	struct bitcoin_tx_output **outputs;
 	const jsmntok_t *outputstok, *t;
-	const u8 *old_destination;
+	const u8 *old_destination = NULL;
 	size_t out_len, i;
 
 	*utx = tal(cmd, struct unreleased_tx);
@@ -203,10 +203,9 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	if (old_destination) {
 		outputs = tal_arr(tmpctx, struct bitcoin_tx_output *, 1);
 		outputs[0]->script = tal_dup_arr(outputs[0], u8, old_destination,
-				     tal_count(old_destination), 0);
+						 tal_count(old_destination), 0);
 		outputs[0]->amount = (*utx)->wtx->amount;
 		out_len = tal_count(outputs[0]->script);
-		tal_steal(tmpctx, old_destination);
 
 		goto create_tx;
 	}
