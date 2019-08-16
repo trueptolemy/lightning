@@ -152,24 +152,24 @@ def test_multiple_withdraw(node_factory, bitcoind):
     waddr1 = l1.bitcoin.rpc.getnewaddress()
     waddr2 = l1.bitcoin.rpc.getnewaddress()
     # amount1 + amount2 = amount
-    amount1 = 510000
-    amount2 = 490000
+#    amount1 = 510000
+#    amount2 = 490000
     # Now attempt to withdraw some (making sure we collect multiple inputs)
     with pytest.raises(RpcError):
-        l1.rpc.withdraw([{'destination': 'not an address', 'satoshi': amount1},
-                         {'destination': waddr1, 'satoshi': amount2}])
+        l1.rpc.withdraw([{'destination': 'not an address', 'satoshi': amount},
+                         {'destination': waddr1, 'satoshi': amount}])
     with pytest.raises(RpcError):
         l1.rpc.withdraw([{'destination': waddr1, 'satoshi':'not an amount'},
-                         {'destination': waddr2, 'satoshi': amount1}])
+                         {'destination': waddr2, 'satoshi': amount}])
     with pytest.raises(RpcError):
-        l1.rpc.withdraw([{'destination': waddr1, 'satoshi': -amount1},
-                         {'destination': waddr2, 'satoshi': amount2}])
+        l1.rpc.withdraw([{'destination': waddr1, 'satoshi': -amount},
+                         {'destination': waddr2, 'satoshi': amount}])
     with pytest.raises(RpcError, match=r'Cannot afford transaction'):
-        l1.rpc.withdraw([{'destination': waddr1, 'satoshi': amount1 * 100},
-                         {'destination': waddr2, 'satoshi': amount2 * 100}])
+        l1.rpc.withdraw([{'destination': waddr1, 'satoshi': amount * 100},
+                         {'destination': waddr2, 'satoshi': amount * 100}])
 
-    out = l1.rpc.withdraw([{'destination': waddr1, 'satoshi': 2 * amount1},
-                           {'destination': waddr2, 'satoshi': 2 * amount2}])
+    out = l1.rpc.withdraw([{'destination': waddr1, 'satoshi': amount},
+                           {'destination': waddr2, 'satoshi': amount}])
 
     # Make sure bitcoind received the withdrawal
     unspent = l1.bitcoin.rpc.listunspent(0)
