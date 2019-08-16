@@ -225,8 +225,10 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 			   p_req("destination", param_bitcoin_address,
 				 &destination),
 			   p_req("satoshi", param_sat_or_all, &amount),
-			   NULL))
+			   NULL)) {
+			log_unusual(cmd->ld->log, "output fail");
 			return command_param_failed();
+		}
 
 		if (!destination || !amount)
 			return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
