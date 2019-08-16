@@ -431,11 +431,11 @@ def test_txprepare(node_factory, bitcoind):
     with pytest.raises(RpcError, match=r'this destination wants all satoshi. The amount of outputs can\'t be more than 1'):
         prep5 = l1.rpc.txprepare([{'destination' : 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
                                    'satoshi' : Millisatoshi(amount * 3 * 1000)},
-                                  {'destination' : 'xx1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx',
+                                  {'destination' : 'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080',
                                    'satoshi' : 'all'}])
     prep5 = l1.rpc.txprepare([{'destination' : 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg',
                                'satoshi' : Millisatoshi(amount * 3 * 500 + 100000)},
-                              {'destination' : 'xx1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx',
+                              {'destination' : 'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080',
                                'satoshi' : Millisatoshi(amount * 3 * 500 - 100000)}])
     decode = bitcoind.rpc.decoderawtransaction(prep5['unsigned_tx'])
     assert decode['txid'] == prep5['txid']
@@ -445,41 +445,19 @@ def test_txprepare(node_factory, bitcoind):
 
     assert decode['vout'][0]['value'] == 0 or decode['vout'][1]['value'] == 0 or decode['vout'][2]['value'] == 0
     # One output will be correct.
-    if decode['vout'][0]['value'] == Decimal(amount * 3) / 10**8 * 0.6:
-        if decode['vout'][1]['value'] == Decimal(amount * 3) / 10**8 * 0.4:
-            outnum1 = 0
-            outnum2 = 1
-            changenum = 2
+    for i in range(3):
+        if decode['vout'][i - 1]['value'] == Decimal(amount * 3) / 10**8 * 0.6:
+            outnum1 = i - 1
+        else if decode['vout'][i - 1]['value'] == Decimal(amount * 3) / 10**8 * 0.4:
+            outnum2 = i - 1
         else:
-            outnum1 = 0
-            outnum2 = 2
-            changenum = 1
-    elif decode['vout'][1]['value'] == Decimal(amount * 3) / 10**8:
-        if decode['vout'][0]['value'] == Decimal(amount * 3) / 10**8 * 0.4:
-            outnum1 = 1
-            outnum2 = 0
-            changenum = 2
-        else:
-            outnum1 = 1
-            outnum2 = 2
-            changenum = 0
-    elif decode['vout'][2]['value'] == Decimal(amount * 3) / 10**8:
-        if decode['vout'][0]['value'] == Decimal(amount * 3) / 10**8 * 0.4:
-            outnum1 = 2
-            outnum2 = 0
-            changenum = 1
-        else:
-            outnum1 = 2
-            outnum2 = 1
-            changenum = 0
-    else:
-        assert False
+            changenum = i - 1
 
     assert decode['vout'][outnum1]['scriptPubKey']['type'] == 'witness_v0_keyhash'
     assert decode['vout'][outnum1]['scriptPubKey']['addresses'] == ['bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg']
 
     assert decode['vout'][outnum2]['scriptPubKey']['type'] == 'witness_v0_keyhash'
-    assert decode['vout'][outnum2]['scriptPubKey']['addresses'] == ['xx1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx']
+    assert decode['vout'][outnum2]['scriptPubKey']['addresses'] == ['bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080']
 
     assert decode['vout'][changenum]['scriptPubKey']['type'] == 'witness_v0_keyhash'
 
