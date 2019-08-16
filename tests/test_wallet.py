@@ -152,7 +152,7 @@ def test_multiple_withdraw(node_factory, bitcoind):
     waddr1 = l1.bitcoin.rpc.getnewaddress()
     waddr2 = l2.bitcoin.rpc.getnewaddress()
     amount1 = amount/2 + 500
-    amonut2 = amount/2 - 500
+    amount2 = amount/2 - 500
     # Now attempt to withdraw some (making sure we collect multiple inputs)
     with pytest.raises(RpcError):
         l1.rpc.withdraw([{'destination': 'not an address', 'satoshi': amount1},
