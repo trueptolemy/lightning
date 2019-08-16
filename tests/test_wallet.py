@@ -177,7 +177,7 @@ def test_multiple_withdraw(node_factory, bitcoind):
     # Make sure bitcoind received the withdrawal
     unspent = l1.bitcoin.rpc.listunspent(0)
     withdrawal = [u for u in unspent if u['txid'] == out['txid']]
-    withdrawal_unspent = withdrawal[0]['amount'] + withdrawal[1]['amount']
+    withdrawal_unspent = withdrawal[0]['amount'] + withdrawal[1]['amount'] + withdrawal[2]['amount']
 
     assert(withdrawal_unspent == Decimal('0.02'))
 
