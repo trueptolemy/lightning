@@ -18,13 +18,6 @@
 
 bool notifications_have_topic(const char *topic);
 
-void notify_forward_event(struct lightningd *ld,
-			  const struct htlc_in *in,
-			  const struct htlc_out *out,
-			  enum forward_status state,
-			  enum onion_type failcode,
-			  struct timeabs *resolved_time);
-
 struct notification {
 	const char *topic;
 	void (*serialize_payload)(void *src, struct json_stream *dest);
@@ -69,6 +62,14 @@ struct channel_opened_notification_payload {
 	struct amount_sat *funding_sat;
 	struct bitcoin_txid *funding_txid;
 	bool *funding_locked;
+};
+
+struct forward_event_notification_payload {
+	const struct htlc_in *in;
+	const struct htlc_out *out;
+	enum forward_status state;
+	enum onion_type failcode;
+	struct timeabs *resolved_time;
 };
 
 #endif /* LIGHTNING_LIGHTNINGD_NOTIFICATION_H */

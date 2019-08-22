@@ -73,7 +73,7 @@ void htlcs_resubmit(struct lightningd *ld, struct htlc_in_map *unprocessed);
 void fulfill_htlc(struct htlc_in *hin, const struct preimage *preimage);
 void fail_htlc(struct htlc_in *hin, enum onion_type failcode);
 
-/* This json process will be both used in 'notify_forward_event()'
+/* This json process will be both used in 'forward_event_notification_serialize()'
  * and 'listforwardings_add_forwardings()'*/
 void json_format_forwarding_object(struct json_stream *response, const char *fieldname,
 				   const struct forwarding *cur);
