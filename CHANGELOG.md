@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Plugin: new notifications `sendpay_success` and `sendpay_failure`.
+
 ### Changed
 
 ### Deprecated
