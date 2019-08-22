@@ -5,7 +5,6 @@
 #include <lightningd/peer_htlcs.h>
 
 const char *notification_topics[] = {
-	"connect",
 	"disconnect",
 	"warning",
 	"invoice_payment",
@@ -39,16 +38,17 @@ bool notifications_have_topic(const char *topic)
 	return false;
 }
 
-void notify_connect(struct lightningd *ld, struct node_id *nodeid,
-		    struct wireaddr_internal *addr)
+static void connect_notification_serialize(
+			struct connect_notification_payload *payload,
+			struct json_stream *stream)
 {
-	struct jsonrpc_notification *n =
-	    jsonrpc_notification_start(NULL, "connect");
-	json_add_node_id(n->stream, "id", nodeid);
-	json_add_address_internal(n->stream, "address", addr);
-	jsonrpc_notification_end(n);
-	plugins_notify(ld->plugins, take(n));
+	json_add_node_id(stream, "id", payload->nodeid);
+	json_add_address_internal(stream, "address", payload->addr);
 }
+
+REGISTER_NOTIFICATION(connect,
+		      connect_notification_serialize,
+		      struct connect_notification_payload *);
 
 void notify_disconnect(struct lightningd *ld, struct node_id *nodeid)
 {
@@ -161,7 +161,3 @@ void notification_call(struct lightningd *ld, const char* topic,
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }
-
-/* TODO: It's a dummy notification. Will be removed when we have a 'real' one
- * in this file. */
-REGISTER_JSON_INTERNAL_COMMAND(hello_notification, NULL, void *);
