@@ -6,17 +6,35 @@ internal wallet.
 SYNOPSIS
 --------
 
-**txprepare** *destination* *satoshi* \[*feerate*\] \[*minconf*\]
+**txprepare** *outputs* \[*feerate*\] \[*minconf*\]
 
 DESCRIPTION
 -----------
 
 The **txprepare** RPC command creates an unsigned transaction which
-spends funds from c-lightning’s internal wallet to the address specified
-in *destination*.
+spends funds from c-lightning’s internal wallet to the outputs specified
+in *outputs*.
 
-Effectively, it is the first part of a **withdraw** command, and uses
-the same parameters. The second part is provided by **txsend**.
+The *outputs* is the array of outputs that must specify *destination*
+and *amount*. Its format is like:
+\[\{*destination*: address1, *amount*: amount1\},
+\{*destination*: address2, *amount*: amount2\}, \.\.\.\],
+or
+\[\{*destination*: address, *amount*: *all*\}\]\.
+It supports the any number of outputs.
+
+*destination* is the address which can be of any Bitcoin accepted type,
+including bech32.
+
+*amount* is the amount to be withdrawn from the internal wallet (expressed,
+as name suggests, in amount). The string *all* can be used to specify
+withdrawal of all available funds. Otherwise, it is in amount precision; it
+can be a whole number, a whole number ending in *sat*, a whole number ending
+in *000msat*, or a number with 1 to 8 decimal places ending in *btc*.
+
+**txprepare** is similar to the first part of a **withdraw** command, but
+supports multiple outputs and uses *outputs* as parameter. The second part
+is provided by **txsend**.
 
 RETURN VALUE
 ------------
