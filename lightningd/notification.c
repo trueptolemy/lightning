@@ -27,10 +27,6 @@ bool notifications_have_topic(const char *topic)
 	if (noti)
 		return true;
 
-	/* TODO: Remove this block after making all notifications registered. */
-	for (size_t i=0; i<ARRAY_SIZE(notification_topics); i++)
-		if (streq(topic, notification_topics[i]))
-			return true;
 	return false;
 }
 
@@ -116,40 +112,37 @@ REGISTER_NOTIFICATION(channel_opened,
 		      channel_opened_notification_serialize,
 		      struct channel_opened_notification_payload *);
 
-void notify_forward_event(struct lightningd *ld,
-			  const struct htlc_in *in,
-			  const struct htlc_out *out,
-			  enum forward_status state,
-			  enum onion_type failcode,
-			  struct timeabs *resolved_time)
+static void forward_event_notification_serialize(
+			struct forward_event_notification_payload *payload,
+			struct json_stream *stream)
 {
-	struct jsonrpc_notification *n =
-		jsonrpc_notification_start(NULL, "forward_event");
 	/* Here is more neat to initial a forwarding structure than
 	 * to pass in a bunch of parameters directly*/
 	struct forwarding *cur = tal(tmpctx, struct forwarding);
-	cur->channel_in = *in->key.channel->scid;
-	cur->msat_in = in->msat;
-	if (out) {
-		cur->channel_out = *out->key.channel->scid;
-		cur->msat_out = out->msat;
-		assert(amount_msat_sub(&cur->fee, in->msat, out->msat));
+	cur->channel_in = *payload->in->key.channel->scid;
+	cur->msat_in = payload->in->msat;
+	if (payload->out) {
+		cur->channel_out = *payload->out->key.channel->scid;
+		cur->msat_out = payload->out->msat;
+		assert(amount_msat_sub(&cur->fee, payload->in->msat,
+				       payload->out->msat));
 	} else {
 		cur->channel_out.u64 = 0;
 		cur->msat_out = AMOUNT_MSAT(0);
 		cur->fee = AMOUNT_MSAT(0);
 	}
-	cur->payment_hash = tal_dup(cur, struct sha256, &in->payment_hash);
-	cur->status = state;
-	cur->failcode = failcode;
-	cur->received_time = in->received_time;
-	cur->resolved_time = tal_steal(cur, resolved_time);
+	cur->payment_hash = tal_dup(cur, struct sha256, &payload->in->payment_hash);
+	cur->status = payload->state;
+	cur->failcode = payload->failcode;
+	cur->received_time = payload->in->received_time;
+	cur->resolved_time = tal_steal(cur, payload->resolved_time);
 
-	json_format_forwarding_object(n->stream, "forward_event", cur);
-
-	jsonrpc_notification_end(n);
-	plugins_notify(ld->plugins, take(n));
+	json_format_forwarding_object(stream, "forward_event", cur);
 }
+
+REGISTER_NOTIFICATION(forward_event,
+		      forward_event_notification_serialize,
+		      struct forward_event_notification_payload *);
 
 void notification_call(struct lightningd *ld, const char* topic,
 		       void *payload)
