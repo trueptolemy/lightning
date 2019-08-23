@@ -2588,6 +2588,19 @@ void wallet_transaction_annotate(struct wallet *w,
 	db_exec_prepared(w->db, stmt);
 }
 
+bool wallet_transaction_type(struct wallet *w, const struct bitcoin_txid *txid,
+			     enum wallet_tx_type *type)
+{
+	sqlite3_stmt *stmt = db_select_prepare(w->db, "type FROM transactions WHERE id=?");
+	sqlite3_bind_sha256(stmt, 1, &txid->shad.sha);
+	if (!db_select_step(w->db, stmt))
+		return false;
+
+	*type = sqlite3_column_int(stmt, 0);
+	db_stmt_done(stmt);
+	return true;
+}
+
 u32 wallet_transaction_height(struct wallet *w, const struct bitcoin_txid *txid)
 {
 	u32 blockheight;

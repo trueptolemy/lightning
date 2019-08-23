@@ -1173,10 +1173,12 @@ static struct command_result *json_fund_channel_cancel(struct command *cmd,
 
 	struct node_id *id;
 	struct peer *peer;
+	const jsmntok_t *cidtok;
 	u8 *msg;
 
 	if (!param(cmd, buffer, params,
 		   p_req("id", param_node_id, &id),
+		   p_opt("channel_id", param_tok, &cidtok),
 		   NULL))
 		return command_param_failed();
 
@@ -1185,40 +1187,18 @@ static struct command_result *json_fund_channel_cancel(struct command *cmd,
 		return command_fail(cmd, LIGHTNINGD, "Unknown peer");
 	}
 
-	if (!peer->uncommitted_channel) {
-		return command_fail(cmd, LIGHTNINGD, "Peer not connected");
+	if (peer->uncommitted_channel) {
+		if(!peer->uncommitted_channel->fc || !peer->uncommitted_channel->fc->inflight)
+			return command_fail(cmd, LIGHTNINGD, "No channel funding in progress.");
+
+		/* Make sure this gets notified if we succeed or cancel */
+		tal_arr_expand(&peer->uncommitted_channel->fc->cancels, cmd);
+		msg = towire_opening_funder_cancel(NULL);
+		subd_send_msg(peer->uncommitted_channel->openingd, take(msg));
+		return command_still_pending(cmd);
 	}
 
-	if (!peer->uncommitted_channel->fc || !peer->uncommitted_channel->fc->inflight)
-		return command_fail(cmd, LIGHTNINGD, "No channel funding in progress.");
-
-	/**
-	 * there's a question of 'state machinery' here. as is, we're not checking
-	 * to see if you've already called `complete` -- we expect you
-	 * the caller to EITHER pick 'complete' or 'cancel'.
-	 * but if for some reason you've decided to test your luck, how much
-	 * 'handling' can we do for that case? the easiest thing to do is to
-	 * say "sorry you've already called complete", we can't cancel this.
-	 *
-	 * there's also the state you might end up in where you've called
-	 * complete (and it's completed and been passed off to channeld) but
-	 * you've decided (for whatever reason) not to broadcast the transaction
-	 * so your channels have ended up in this 'waiting' state. neither of us
-	 * are actually out any amount of cash, but it'd be nice if there's a way
-	 * to signal to c-lightning (+ your peer) that this channel is dead on arrival.
-	 * ... but also if you then broadcast this tx you'd be in trouble cuz we're
-	 * both going to forget about it. the meta question here is how 'undoable'
-	 * should we make any of this. how much tools do we give you, reader?
-	 *
-	 * for now, let's settle for the EITHER / OR case and disregard the larger
-	 * question about 'how long cancelable'.
-	 */
-
-	/* Make sure this gets notified if we succeed or cancel */
-	tal_arr_expand(&peer->uncommitted_channel->fc->cancels, cmd);
-	msg = towire_opening_funder_cancel(NULL);
-	subd_send_msg(peer->uncommitted_channel->openingd, take(msg));
-	return command_still_pending(cmd);
+	return cancel_channel_before_broadcast(cmd, buffer, peer, cidtok);
 }
 
 /**
