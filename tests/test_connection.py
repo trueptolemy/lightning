@@ -852,7 +852,7 @@ def test_funding_external_wallet_corners(node_factory, bitcoind):
     funding_addr = l1.rpc.fundchannel_start(l2.info['id'], amount2)['funding_address']
 
     addr = l1.rpc.newaddr()['bech32']
-    l1.bitcoin.rpc.sendtoaddress(addr, amount2 * 2)
+    l1.bitcoin.rpc.sendtoaddress(addr, 0.1)
     bitcoind.generate_block(1)
     wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 1)
     # Create the funding transaction
