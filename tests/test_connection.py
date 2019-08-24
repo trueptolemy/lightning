@@ -1,3 +1,4 @@
+from decimal import Decimal
 from collections import namedtuple
 from fixtures import *  # noqa: F401,F403
 from flaky import flaky  # noqa: F401
