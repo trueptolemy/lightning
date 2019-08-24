@@ -652,7 +652,7 @@ struct command_result *cancel_channel_before_broadcast(struct command *cmd,
 	}
 
 	enum wallet_tx_type type;
-	if(!wallet_transaction_type(cmd->ld->wallet,
+	if(wallet_transaction_type(cmd->ld->wallet,
 				    &cancel->cancel_channel->funding_txid,
 				    &type))
 		return command_fail(cmd, LIGHTNINGD,
