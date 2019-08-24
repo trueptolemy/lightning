@@ -861,12 +861,7 @@ def test_funding_external_wallet_corners(node_factory, bitcoind):
     assert decode['txid'] == prep['txid']
 
     # One output will be correct.
-    if decode['vout'][0]['value'] == amount2:
-        txout = 0
-    elif decode['vout'][1]['value'] == amount2:
-        txout = 1
-    else:
-        assert False
+    assert decode['vout'][0]['value'] == amount2 or decode['vout'][1]['value'] == amount2
 
     # Be sure fundchannel_complete is successful
     assert l1.rpc.fundchannel_complete(l2.info['id'], prep['txid'], txout)['commitments_secured']
