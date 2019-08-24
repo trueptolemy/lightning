@@ -2732,6 +2732,9 @@ static void handle_send_error(struct peer *peer, const u8 *msg)
 	if (!fromwire_channel_send_error(msg, msg, &reason))
 		master_badmsg(WIRE_CHANNEL_SEND_ERROR, msg);
 
+	wire_sync_write(MASTER_FD,
+			take(towire_channel_send_error_reply(NULL, peer->pps)));
+	per_peer_state_fdpass_send(MASTER_FD, peer->pps);
 	peer_failed(peer->pps, &peer->channel_id,
 		    "%s", reason);
 }
@@ -2818,6 +2821,7 @@ static void req_in(struct peer *peer, const u8 *msg)
 	case WIRE_CHANNEL_DEV_REENABLE_COMMIT_REPLY:
 	case WIRE_CHANNEL_FAIL_FALLEN_BEHIND:
 	case WIRE_CHANNEL_DEV_MEMLEAK_REPLY:
+	case WIRE_CHANNEL_SEND_ERROR_REPLY:
 		break;
 	}
 	master_badmsg(-1, msg);

@@ -220,6 +220,13 @@ static void peer_start_closingd_after_shutdown(struct channel *channel,
 	channel_set_state(channel, CHANNELD_SHUTTING_DOWN, CLOSINGD_SIGEXCHANGE);
 }
 
+static void handle_error_channel(struct channel *channel,
+				 const u8 *msg,
+				 const int *fds)
+{
+	
+}
+
 static unsigned channel_msg(struct subd *sd, const u8 *msg, const int *fds)
 {
 	enum channel_wire_type t = fromwire_peektype(msg);
@@ -252,6 +259,8 @@ static unsigned channel_msg(struct subd *sd, const u8 *msg, const int *fds)
 	case WIRE_CHANNEL_FAIL_FALLEN_BEHIND:
 		channel_fail_fallen_behind(sd->channel, msg);
 		break;
+	case WIRE_CHANNEL_SEND_ERROR_REPLY:
+		handle_error_channel(sd->channel, msg, fds);
 
 	/* And we never get these from channeld. */
 	case WIRE_CHANNEL_INIT:
