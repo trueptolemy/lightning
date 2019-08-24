@@ -872,7 +872,7 @@ def test_funding_external_wallet_corners(node_factory, bitcoind):
     # Be sure fundchannel_complete is successful
     assert l1.rpc.fundchannel_complete(l2.info['id'], prep['txid'], txout)['commitments_secured']
     # Canceld channel after fundchannel_complete
-    assert l1.rpc.fundchannel_cancel(l2.info['id'])['canceld']
+    assert l1.rpc.fundchannel_cancel(l2.info['id'])['cancelled']
 
     l1.rpc.fundchannel_start(l2.info['id'], amount)['funding_address']
     assert l1.rpc.fundchannel_complete(l2.info['id'], prep['txid'], txout)['commitments_secured']

@@ -582,7 +582,7 @@ static void process_check_funding_broadcast(struct bitcoind *bitcoind UNUSED,
 	}
 
 	response = json_stream_success(cancel->cmd);
-	json_add_string(response, "canceled", "Channel open canceled by RPC");
+	json_add_string(response, "cancelled", "Channel open canceled by RPC");
 
 	/* Set error so we don't try to reconnect. */
 	cancel->cancel_channel->error = towire_errorfmt(cancel->cancel_channel,
