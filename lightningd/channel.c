@@ -105,7 +105,6 @@ static void destroy_channel(struct channel *channel)
 
 void delete_channel_direct(struct channel *channel)
 {
-	struct peer *peer = channel->peer;
 	wallet_channel_close(channel->peer->ld->wallet, channel->dbid);
 	tal_free(channel);
 }
