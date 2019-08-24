@@ -850,6 +850,8 @@ def test_funding_external_wallet_corners(node_factory, bitcoind):
     # Should be able to 'restart' after canceling
     funding_addr = l1.rpc.fundchannel_start(l2.info['id'], amount)['funding_address']
 
+    addr = l1.rpc.newaddr()['bech32']
+    l1.bitcoin.rpc.sendtoaddress(addr, amount * 2)
     # Create the funding transaction
     prep = l1.rpc.txprepare(funding_addr, amount)
     decode = bitcoind.rpc.decoderawtransaction(prep['unsigned_tx'])
