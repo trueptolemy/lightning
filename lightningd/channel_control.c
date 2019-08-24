@@ -597,7 +597,7 @@ static void process_check_funding_broadcast(struct bitcoind *bitcoind UNUSED,
 	subd_send_msg(cancel->cancel_channel->owner,
 		      take(towire_channel_send_error(NULL, error_reason)));
 
-	delete_channel(cancel->cancel_channel);
+	delete_channel_direct(cancel->cancel_channel);
 	was_pending(command_success(cancel->cmd, response));
 }
 

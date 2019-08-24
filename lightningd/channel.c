@@ -103,13 +103,17 @@ static void destroy_channel(struct channel *channel)
 	list_del_from(&channel->peer->channels, &channel->list);
 }
 
-void delete_channel(struct channel *channel)
+void delete_channel_direct(struct channel *channel)
 {
 	struct peer *peer = channel->peer;
 	wallet_channel_close(channel->peer->ld->wallet, channel->dbid);
 	tal_free(channel);
+}
 
-	maybe_delete_peer(peer);
+void delete_channel(struct channel *channel)
+{
+	delete_channel_direct(channel);
+	maybe_delete_peer(channel->peer);
 }
 
 void get_channel_basepoints(struct lightningd *ld,

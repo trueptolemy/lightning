@@ -167,6 +167,8 @@ struct channel *new_channel(struct peer *peer, u64 dbid,
 			    /* NULL or stolen */
 			    const u8 *remote_upfront_shutdown_script);
 
+void delete_channel_direct(struct channel *channel);
+
 void delete_channel(struct channel *channel);
 
 const char *channel_state_name(const struct channel *channel);
