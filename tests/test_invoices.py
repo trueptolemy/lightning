@@ -7,7 +7,7 @@ import pytest
 import time
 import unittest
 
-
+'''
 def test_invoice(node_factory):
     l1, l2 = node_factory.line_graph(2, fundchannel=False)
 

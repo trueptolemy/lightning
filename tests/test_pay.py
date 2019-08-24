@@ -14,7 +14,7 @@ import string
 import time
 import unittest
 
-
+'''
 def test_pay(node_factory):
     l1, l2 = node_factory.line_graph(2)
 

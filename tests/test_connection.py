@@ -14,7 +14,7 @@ import shutil
 import time
 import unittest
 
-
+'''
 def test_connect(node_factory):
     l1, l2 = node_factory.line_graph(2, fundchannel=False)
 
@@ -816,7 +816,7 @@ def test_funding_by_utxos(node_factory, bitcoind):
     # Fund another channel with already spent utxos
     with pytest.raises(RpcError, match=r"No matching utxo was found from the wallet"):
         l1.rpc.fundchannel(l3.info["id"], int(0.01 * 10**8), utxos=utxos)
-
+'''
 
 def test_funding_external_wallet_corners(node_factory, bitcoind):
     l1 = node_factory.get_node()
@@ -874,7 +874,7 @@ def test_funding_external_wallet_corners(node_factory, bitcoind):
     with pytest.raises(RpcError, match='*been broadcast*'):
         l1.rpc.fundchannel_cancel(l2.info['id'])['canceld']
 
-
+'''
 def test_funding_cancel_race(node_factory, bitcoind, executor):
     l1 = node_factory.get_node()
 
@@ -1931,3 +1931,4 @@ def test_feerate_spam(node_factory):
     # But it won't do it again once it's at max.
     with pytest.raises(TimeoutError):
         l1.daemon.wait_for_log('peer_out WIRE_UPDATE_FEE', timeout=5)
+'''

@@ -10,7 +10,7 @@ import re
 import threading
 import unittest
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "Too slow without --dev-bitcoind-poll")
 def test_closing(node_factory, bitcoind):
     l1, l2 = node_factory.line_graph(2)

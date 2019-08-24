@@ -13,7 +13,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 def test_option_passthrough(node_factory, directory):
     """ Ensure that registering options works.
 
