@@ -117,6 +117,9 @@ struct channel {
 
 	/* If they used option_upfront_shutdown_script. */
 	const u8 *remote_upfront_shutdown_script;
+
+	/* Any commands trying to forget us. */
+	struct command **forgets;
 };
 
 struct channel *new_channel(struct peer *peer, u64 dbid,
