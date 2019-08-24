@@ -283,7 +283,10 @@ static unsigned channel_msg(struct subd *sd, const u8 *msg, const int *fds)
 		channel_fail_fallen_behind(sd->channel, msg);
 		break;
 	case WIRE_CHANNEL_SEND_ERROR_REPLY:
+		if (tal_count(fds) != 3)
+			return 3;
 		handle_error_channel(sd->channel, msg, fds);
+		break;
 
 	/* And we never get these from channeld. */
 	case WIRE_CHANNEL_INIT:

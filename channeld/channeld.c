@@ -2795,6 +2795,7 @@ static void req_in(struct peer *peer, const u8 *msg)
 		return;
 	case WIRE_CHANNEL_SEND_ERROR:
 		handle_send_error(peer, msg);
+		return;
 #if DEVELOPER
 	case WIRE_CHANNEL_DEV_REENABLE_COMMIT:
 		handle_dev_reenable_commit(peer);
