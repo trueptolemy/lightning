@@ -1,6 +1,8 @@
 #include <bitcoin/script.h>
 #include <ccan/crypto/hkdf_sha256/hkdf_sha256.h>
 #include <ccan/tal/str/str.h>
+#include <common/json_command.h>
+#include <common/jsonrpc_errors.h>
 #include <common/wire_error.h>
 #include <connectd/gen_connect_wire.h>
 #include <errno.h>
@@ -97,6 +99,10 @@ static void destroy_channel(struct channel *channel)
 		      channel_state_name(channel),
 		      htlc_state_name(hin->hstate));
 
+	for (size_t i = 0; i < tal_count(channel->forgets); i++)
+		was_pending(command_fail(channel->forgets[i], LIGHTNINGD,
+			    "Channel structure was freed!"));
+
 	/* Free any old owner still hanging around. */
 	channel_set_owner(channel, NULL);
 
@@ -111,8 +117,9 @@ void delete_channel_direct(struct channel *channel)
 
 void delete_channel(struct channel *channel)
 {
+	struct peer *peer = channel->peer;
 	delete_channel_direct(channel);
-	maybe_delete_peer(channel->peer);
+	maybe_delete_peer(peer);
 }
 
 void get_channel_basepoints(struct lightningd *ld,
@@ -251,6 +258,7 @@ struct channel *new_channel(struct peer *peer, u64 dbid,
 	channel->feerate_ppm = feerate_ppm;
 	channel->remote_upfront_shutdown_script
 		= tal_steal(channel, remote_upfront_shutdown_script);
+	channel->forgets = tal_arr(channel, struct command *, 0);
 
 	list_add_tail(&peer->channels, &channel->list);
 	tal_add_destructor(channel, destroy_channel);
