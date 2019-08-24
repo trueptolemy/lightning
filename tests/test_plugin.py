@@ -676,3 +676,4 @@ def test_plugin_deprecated_relpath(node_factory):
     assert l1.daemon.is_in_log('DEPRECATED WARNING.*plugin={}'
                                .format(os.path.join(os.getcwd(),
                                                     'tests/plugins/millisatoshis.py')))
+'''

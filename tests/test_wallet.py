@@ -376,3 +376,4 @@ def test_txprepare_restart(node_factory, bitcoind):
     assert decode['txid'] == prep['txid']
     # All 10 inputs
     assert len(decode['vin']) == 10
+'''

@@ -1435,3 +1435,4 @@ def test_dev_demux(node_factory):
 
     with pytest.raises(RpcError):
         l1.rpc.call('dev', {'subcommand': 'crash'})
+'''

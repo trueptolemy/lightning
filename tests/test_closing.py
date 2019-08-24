@@ -1552,3 +1552,4 @@ def test_option_upfront_shutdown_script(node_factory, bitcoind):
     l1.rpc.fundchannel(l2.info['id'], 1000000)
     l1.rpc.close(l2.info['id'])
     wait_for(lambda: sorted([c['state'] for c in only_one(l1.rpc.listpeers()['peers'])['channels']]) == ['CLOSINGD_COMPLETE', 'ONCHAIN', 'ONCHAIN'])
+'''

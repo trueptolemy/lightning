@@ -111,3 +111,4 @@ def test_max_channel_id(node_factory, bitcoind):
 
     # Fundchannel again, should succeed.
     l1.rpc.fundchannel(l2.info['id'], 10**5)
+'''

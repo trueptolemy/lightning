@@ -2190,3 +2190,4 @@ def test_channel_drainage(node_factory, bitcoind):
     route = l2.rpc.getroute(l1.info['id'], amount, riskfactor=1, fuzzpercent=0)['route']
     l2.rpc.sendpay(route, payment_hash)
     l2.rpc.waitsendpay(payment_hash, TIMEOUT)
+'''
