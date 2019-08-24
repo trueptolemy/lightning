@@ -2729,11 +2729,13 @@ static void handle_shutdown_cmd(struct peer *peer, const u8 *inmsg)
 static void handle_send_error(struct peer *peer, const u8 *msg)
 {
 	char *reason;
+	u8 *errmsg;
+
 	if (!fromwire_channel_send_error(msg, msg, &reason))
 		master_badmsg(WIRE_CHANNEL_SEND_ERROR, msg);
 
-	peer_failed(peer->pps, &peer->channel_id,
-		    "%s", reason);
+	errmsg = towire_errorfmt(NULL, &peer->channel_id, "%s", reason);
+	sync_crypto_write(peer->pps, take(errmsg));
 }
 
 #if DEVELOPER
