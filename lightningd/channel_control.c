@@ -227,7 +227,9 @@ static void handle_error_channel(struct channel *channel,
 {
 	struct per_peer_state *pps;
 	struct peer *peer = channel->peer;
-	struct command **forgets = tal_steal(NULL, channel->forgets);
+	struct command **forgets = tal_dup_arr(tmpctx, struct *command,
+					       channel->forgets,
+					       tal_count(channel->forgets), 0);
 
 	if (!fromwire_channel_send_error_reply(tmpctx, msg, &pps)) {
 		channel_internal_error(channel, "bad send_error_reply: %s",
