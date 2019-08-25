@@ -242,7 +242,8 @@ static void handle_error_channel(struct channel *channel,
 	peer_start_openingd(peer, pps, NULL);
 
 	for (size_t i = 0; i < tal_count(forgets); i++) {
-		struct json_stream *response = json_stream_success(forgets[i]);
+		struct json_stream *response;
+		response = json_stream_success(forgets[i]);
 		json_add_string(response, "cancelled", "Channel open canceled by RPC");
 		was_pending(command_success(forgets[i], response));
 	}
