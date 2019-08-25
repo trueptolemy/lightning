@@ -632,7 +632,7 @@ static void process_check_funding_broadcast(struct bitcoind *bitcoind UNUSED,
 	subd_send_msg(cancel->owner,
 		      take(towire_channel_send_error(NULL, error_reason)));
 	for (size_t i = 0; i < tal_count(cancel->forgets); i++)
-		assert(!forgets[i]->json_stream);
+		assert(!cancel->forgets[i]->json_stream);
 }
 
 struct command_result *cancel_channel_before_broadcast(struct command *cmd,
