@@ -82,6 +82,8 @@ void *tal_link_(const tal_t *ctx, const tal_t *link)
 		tal_free(lnk);
 		return NULL;
 	}
+	assert(l->links.n.next);
+	assert(lnk->list.next);
 	list_add(&l->links, &lnk->list);
 	return (void *)link;
 }
