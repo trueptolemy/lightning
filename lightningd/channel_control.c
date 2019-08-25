@@ -245,6 +245,7 @@ static void handle_error_channel(struct channel *channel,
 
 	for (size_t i = 0; i < tal_count(forgets); i++) {
 		assert(!forgets[i]->json_stream);
+		assert(forgets[i]->jcon->js_arr);
 
 		struct json_stream *response;
 		response = json_stream_success(forgets[i]);
