@@ -235,11 +235,9 @@ static void handle_error_channel(struct channel *channel,
 		assert(!channel->forgets[i]->json_stream);
 
 	struct command **forgets = tal_steal(tmpctx, channel->forgets);
+	channel->forgets = tal_arr(channel, struct command *, 0);
 	for (size_t i = 0; i < tal_count(forgets); i++)
 		assert(!forgets[i]->json_stream);
-//	tal_free(channel);
-//	for (size_t i = 0; i < tal_count(forgets); i++)
-//		assert(!forgets[i]->json_stream);
 
 	if (!fromwire_channel_send_error_reply(tmpctx, msg, &pps)) {
 		channel_internal_error(channel, "bad send_error_reply: %s",
@@ -251,6 +249,11 @@ static void handle_error_channel(struct channel *channel,
 	for (size_t i = 0; i < tal_count(forgets); i++)
 		assert(!forgets[i]->json_stream);
 
+	/* Forget the channel. */
+	delete_channel_direct(channel);
+	/* Begin openingd again to keep peer connected. */
+	peer_start_openingd(peer, pps, NULL);
+
 	for (size_t i = 0; i < tal_count(forgets); i++) {
 		assert(!forgets[i]->json_stream);
 
@@ -260,15 +263,6 @@ static void handle_error_channel(struct channel *channel,
 		was_pending(command_success(forgets[i], response));
 		tal_free(response);
 	}
-
-	/* Forget the channel. */
-	delete_channel_direct(channel);
-	/* Begin openingd again to keep peer connected. */
-
-	for (size_t i = 0; i < tal_count(forgets); i++)
-		assert(!forgets[i]->json_stream);
-
-	peer_start_openingd(peer, pps, NULL);
 
 	tal_free(forgets);
 }
