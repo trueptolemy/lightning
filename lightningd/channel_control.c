@@ -677,8 +677,6 @@ struct command_result *cancel_channel_before_broadcast(struct command *cmd,
 					    buffer + cidtok->start);
 	}
 
-	tal_arr_expand(&cancel_channel->forgets, cmd);
-
 	enum wallet_tx_type type;
 	if(wallet_transaction_type(cmd->ld->wallet,
 				   &cancel_channel->funding_txid,
@@ -696,6 +694,7 @@ struct command_result *cancel_channel_before_broadcast(struct command *cmd,
 				    "instead.");
 	}
 
+	tal_arr_expand(&cancel_channel->forgets, cmd);
 	bitcoind_gettxout(cmd->ld->topology->bitcoind,
 			  &cancel_channel->funding_txid,
 			  cancel_channel->funding_outnum,
