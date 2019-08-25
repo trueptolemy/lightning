@@ -613,7 +613,7 @@ static void process_check_funding_broadcast(struct bitcoind *bitcoind UNUSED,
 				    "The funding transaction has been broadcast, "
 				    "please consider `close` or `dev-fail`! "));
 		tal_free(cancel->forgets);
-		tal_arr(cancel, struct command *, 0);
+		cancel->forgets = tal_arr(cancel, struct command *, 0);
 		return;
 	}
 
