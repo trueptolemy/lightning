@@ -235,7 +235,9 @@ static void handle_error_channel(struct channel *channel,
 		assert(!channel->forgets[i]->json_stream);
 
 	struct command **forgets = tal_steal(tmpctx, channel->forgets);
-
+	for (size_t i = 0; i < tal_count(forgets); i++)
+		assert(!forgets[i]->json_stream);
+	tal_free(channel);
 	for (size_t i = 0; i < tal_count(forgets); i++)
 		assert(!forgets[i]->json_stream);
 
