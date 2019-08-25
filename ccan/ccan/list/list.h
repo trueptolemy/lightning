@@ -180,6 +180,8 @@ static inline void list_add_after_(struct list_head *h,
 				   struct list_node *n,
 				   const char *abortstr)
 {
+	assert(n->next);
+	assert(p->next);
 	n->next = p->next;
 	n->prev = p;
 	p->next->prev = n;
