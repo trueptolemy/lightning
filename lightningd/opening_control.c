@@ -1068,7 +1068,7 @@ void peer_start_openingd(struct peer *peer,
 				  | HSM_CAP_SIGN_REMOTE_TX);
 
 	struct linkable *l = tal_parent(uc->log->lr);
-	assert(l->links.n.next != NULL);
+	assert(l->links.n.next);
 	uc->openingd = new_channel_subd(peer->ld,
 					"lightning_openingd",
 					uc, uc->log,
