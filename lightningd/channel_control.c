@@ -244,6 +244,8 @@ static void handle_error_channel(struct channel *channel,
 	peer_start_openingd(peer, pps, NULL);
 
 	for (size_t i = 0; i < tal_count(forgets); i++) {
+		assert(!cmd->json_stream);
+
 		struct json_stream *response;
 		response = json_stream_success(forgets[i]);
 		json_add_string(response, "cancelled", "Channel open canceled by RPC");
@@ -638,7 +640,6 @@ struct command_result *cancel_channel_before_broadcast(struct command *cmd,
 {
 	struct channel *cancel_channel, *channel;
 
-	assert(!cmd->json_stream);
 	cancel_channel = NULL;
 	if (!cidtok) {
 		list_for_each(&peer->channels, channel, list) {
@@ -702,6 +703,5 @@ struct command_result *cancel_channel_before_broadcast(struct command *cmd,
 			  cancel_channel->funding_outnum,
 			  process_check_funding_broadcast,
 			  cancel_channel);
-	assert(!cmd->json_stream);
 	return command_still_pending(cmd);
 }
