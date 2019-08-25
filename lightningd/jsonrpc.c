@@ -120,6 +120,7 @@ static struct json_stream *jcon_new_json_stream(const tal_t *ctx,
 						struct json_connection *jcon,
 						struct command *writer)
 {
+	assert(jcon->jsarr);
 	struct json_stream *js = new_json_stream(ctx, writer, jcon->log);
 
 	/* Wake writer to start streaming, in case it's not already. */
