@@ -701,5 +701,6 @@ struct command_result *cancel_channel_before_broadcast(struct command *cmd,
 			  cancel_channel->funding_outnum,
 			  process_check_funding_broadcast,
 			  cancel_channel);
+	assert(!cmd->json_stream);
 	return command_still_pending(cmd);
 }
