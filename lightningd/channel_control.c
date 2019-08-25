@@ -244,7 +244,7 @@ static void handle_error_channel(struct channel *channel,
 	peer_start_openingd(peer, pps, NULL);
 
 	for (size_t i = 0; i < tal_count(forgets); i++) {
-		assert(!cmd->json_stream);
+		assert(!forgets[i]->json_stream);
 
 		struct json_stream *response;
 		response = json_stream_success(forgets[i]);
