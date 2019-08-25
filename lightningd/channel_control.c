@@ -637,6 +637,7 @@ struct command_result *cancel_channel_before_broadcast(struct command *cmd,
 {
 	struct channel *cancel_channel, *channel;
 
+	assert(!cmd->json_stream);
 	cancel_channel = NULL;
 	if (!cidtok) {
 		list_for_each(&peer->channels, channel, list) {
