@@ -609,10 +609,11 @@ static void process_check_funding_broadcast(struct bitcoind *bitcoind UNUSED,
 
 	if (txout != NULL) {
 		for (size_t i = 0; i < tal_count(cancel->forgets); i++)
-			return command_fail(cancel->forgets[i], LIGHTNINGD,
-					    "The funding transaction has been "
-					    "broadcast, please consider `close` "
-					    "or `dev-fail`! "));
+			was_pending(command_fail(cancel->forgets[i], LIGHTNINGD,
+				    "The funding transaction has been broadcast, "
+				    "please consider `close` or `dev-fail`! "));
+		tal_free(cancel->forgets);
+		tal_arr(cancel, struct command *, 0);
 		return;
 	}
 
