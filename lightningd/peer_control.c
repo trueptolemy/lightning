@@ -2077,4 +2077,3 @@ void peer_dev_memleak(struct command *cmd)
 	peer_memleak_req_next(cmd, NULL);
 }
 #endif /* DEVELOPER */
-
