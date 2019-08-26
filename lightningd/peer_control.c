@@ -396,7 +396,10 @@ void channel_errmsg(struct channel *channel,
 		    bool soft_error,
 		    const u8 *err_for_them)
 {
-	notify_disconnect(channel->peer->ld, &channel->peer->id);
+	struct peer *peer = channel->peer;
+	bool keep_connected = false;
+
+	notify_disconnect(peer->ld, &peer->id);
 
 	/* No per_peer_state means a subd crash or disconnection. */
 	if (!pps) {
@@ -441,9 +444,15 @@ void channel_errmsg(struct channel *channel,
 	 *    - MUST fail the channel referred to by the error message,
 	 *      if that channel is with the sending node.
 	 */
+	if (!channel->remote_funding_locked && !channel->scid)
+		keep_connected = true;
+
 	channel_fail_permanent(channel, "%s: %s ERROR %s",
 			       channel->owner->name,
 			       err_for_them ? "sent" : "received", desc);
+	
+	if (keep_connected)
+		peer_start_openingd(peer, pps, NULL);
 }
 
 struct peer_connected_hook_payload {
