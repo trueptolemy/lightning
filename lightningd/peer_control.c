@@ -451,8 +451,8 @@ void channel_errmsg(struct channel *channel,
 			       channel->owner->name,
 			       err_for_them ? "sent" : "received", desc);
 	
-	if (keep_connected)
-		peer_start_openingd(peer, pps, NULL);
+//	if (keep_connected)
+//		peer_start_openingd(peer, pps, NULL);
 }
 
 struct peer_connected_hook_payload {
