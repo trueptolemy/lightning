@@ -393,7 +393,7 @@ void channel_fail_permanent(struct channel *channel, const char *fmt, ...)
 		if (channel_active(channel))
 			channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
 	} else
-		delete_channel_direct(channel);
+		delete_channel(channel);
 
 	tal_free(why);
 }
