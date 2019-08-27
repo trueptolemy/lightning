@@ -1073,17 +1073,6 @@ void peer_start_openingd(struct peer *peer,
 //	struct linkable *l = tal_parent(uc->log->lr);
 //	list_head_init(&l->links);
 //	assert(l->links.n.next);
-	uc->openingd = new_channel_subd(peer->ld,
-					"lightning_openingd",
-					uc, uc->log,
-					true, opening_wire_type_name,
-					openingd_msg,
-					opening_channel_errmsg,
-					opening_channel_set_billboard,
-					take(&pps->peer_fd),
-					take(&pps->gossip_fd),
-					take(&pps->gossip_store_fd),
-					take(&hsmfd), NULL);
 	if (!uc->openingd) {
 		uncommitted_channel_disconnect(uc,
 					       tal_fmt(tmpctx,
@@ -1103,6 +1092,18 @@ void peer_start_openingd(struct peer *peer,
 	 *     reasonable to avoid double-spending of the funding transaction.
 	 */
 	uc->minimum_depth = peer->ld->config.anchor_confirms;
+
+	uc->openingd = new_channel_subd(peer->ld,
+					"lightning_openingd",
+					uc, uc->log,
+					true, opening_wire_type_name,
+					openingd_msg,
+					opening_channel_errmsg,
+					opening_channel_set_billboard,
+					take(&pps->peer_fd),
+					take(&pps->gossip_fd),
+					take(&pps->gossip_store_fd),
+					take(&hsmfd), NULL);
 
 	msg = towire_opening_init(NULL,
 				  &get_chainparams(peer->ld)->genesis_blockhash,
