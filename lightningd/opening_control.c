@@ -200,7 +200,7 @@ wallet_commit_channel(struct lightningd *ld,
 			      NULL, /* No shachain yet */
 			      CHANNELD_AWAITING_LOCKIN,
 			      uc->fc ? LOCAL : REMOTE,
-			      uc->log, /* channel should create its own log. */
+			      NULL, /* channel should create its own log. */
 			      take(uc->transient_billboard),
 			      channel_flags,
 			      &uc->our_config,
