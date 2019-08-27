@@ -221,38 +221,21 @@ static void peer_start_closingd_after_shutdown(struct channel *channel,
 }
 
 static void handle_error_channel(struct channel *channel,
-				 const u8 *msg,
-				 const int *fds)
+				 const u8 *msg)
 {
-	struct per_peer_state *pps;
 	struct peer *peer = channel->peer;
-//	struct command **forgets = tal_dup_arr(tmpctx, struct command *,
-//					       channel->forgets,
-//					       tal_count(channel->forgets), 0);
-
-	for (size_t i = 0; i < tal_count(channel->forgets); i++)
-		assert(!channel->forgets[i]->json_stream);
 
 	struct command **forgets = tal_steal(tmpctx, channel->forgets);
 	channel->forgets = tal_arr(channel, struct command *, 0);
-	for (size_t i = 0; i < tal_count(forgets); i++)
-		assert(!forgets[i]->json_stream);
 
-	if (!fromwire_channel_send_error_reply(tmpctx, msg, &pps)) {
+	if (!fromwire_channel_send_error_reply(tmpctx, msg)) {
 		channel_internal_error(channel, "bad send_error_reply: %s",
 				       tal_hex(msg, msg));
 		return;
 	}
-	per_peer_state_set_fds_arr(pps, fds);
 
-	for (size_t i = 0; i < tal_count(forgets); i++)
-		assert(!forgets[i]->json_stream);
-
-	log_debug(peer->ld->log, "delete channel");
 	/* Forget the channel. */
 	delete_channel(channel);
-	/* Begin openingd again to keep peer connected. */
-//	peer_start_openingd(peer, pps, NULL);
 
 	for (size_t i = 0; i < tal_count(forgets); i++) {
 		assert(!forgets[i]->json_stream);
@@ -300,9 +283,7 @@ static unsigned channel_msg(struct subd *sd, const u8 *msg, const int *fds)
 		channel_fail_fallen_behind(sd->channel, msg);
 		break;
 	case WIRE_CHANNEL_SEND_ERROR_REPLY:
-		if (tal_count(fds) != 3)
-			return 3;
-		handle_error_channel(sd->channel, msg, fds);
+		handle_error_channel(sd->channel, msg);
 		break;
 
 	/* And we never get these from channeld. */
@@ -640,11 +621,8 @@ static void process_check_funding_broadcast(struct bitcoind *bitcoind UNUSED,
 					 (char *)cancel->error,
 					 tal_count(cancel->error), 1);
 	error_reason[tal_count(cancel->error)] = '\0';
-	log_debug(cancel->log, "ask channeld send error");
 	subd_send_msg(cancel->owner,
 		      take(towire_channel_send_error(NULL, error_reason)));
-	for (size_t i = 0; i < tal_count(cancel->forgets); i++)
-		assert(!cancel->forgets[i]->json_stream);
 }
 
 struct command_result *cancel_channel_before_broadcast(struct command *cmd,
