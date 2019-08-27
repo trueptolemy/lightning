@@ -641,6 +641,7 @@ static void process_check_funding_broadcast(struct bitcoind *bitcoind UNUSED,
 					 (char *)cancel->error,
 					 tal_count(cancel->error), 1);
 	error_reason[tal_count(cancel->error)] = '\0';
+	log_debug(cancel->log, "ask channeld send error");
 	subd_send_msg(cancel->owner,
 		      take(towire_channel_send_error(NULL, error_reason)));
 	for (size_t i = 0; i < tal_count(cancel->forgets); i++)
