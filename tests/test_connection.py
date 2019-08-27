@@ -879,7 +879,7 @@ def test_funding_external_wallet_corners(node_factory, bitcoind):
     assert l1.rpc.fundchannel_complete(l2.info['id'], prep['txid'], txout)['commitments_secured']
     l1.rpc.txsend(prep['txid'])
     with pytest.raises(RpcError, match='*been broadcast*'):
-        l1.rpc.fundchannel_cancel(l2.info['id'])['canceld']
+        l1.rpc.fundchannel_cancel(l2.info['id'])
 
 '''
 def test_funding_cancel_race(node_factory, bitcoind, executor):
