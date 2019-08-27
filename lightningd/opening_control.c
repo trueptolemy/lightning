@@ -1208,7 +1208,7 @@ static struct command_result *json_fund_channel_cancel(struct command *cmd,
 		return command_still_pending(cmd);
 	}
 
-	log_debug(peer->ld->lod, "cancel after complete");
+	log_debug(peer->ld->log, "cancel after complete");
 	return cancel_channel_before_broadcast(cmd, buffer, peer, cidtok);
 }
 
