@@ -200,4 +200,3 @@ msgtype,channel_send_error,1008
 msgdata,channel_send_error,reason,wirestring,
 
 msgtype,channel_send_error_reply,1108
-msgdata,channel_send_error_reply,per_peer_state,per_peer_state,

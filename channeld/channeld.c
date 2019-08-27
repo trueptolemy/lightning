@@ -2731,14 +2731,13 @@ static void handle_send_error(struct peer *peer, const u8 *msg)
 	char *reason;
 	if (!fromwire_channel_send_error(msg, msg, &reason))
 		master_badmsg(WIRE_CHANNEL_SEND_ERROR, msg);
-	status_trace("error reason: %s", reason);
+	status_trace("Send error reason: %s", reason);
 	wire_sync_write(MASTER_FD,
-			take(towire_channel_send_error_reply(NULL, peer->pps)));
-	per_peer_state_fdpass_send(MASTER_FD, peer->pps);
-	status_trace("send error");
-	sync_crypto_write(peer->pps, take(towire_errorfmt(NULL, &peer->channel_id, "%s", reason)));
-//	peer_failed(peer->pps, &peer->channel_id,
-//		    "%s", reason);
+			take(towire_channel_send_error_reply(NULL)));
+
+	sync_crypto_write(peer->pps,
+			  take(towire_errorfmt(NULL, &peer->channel_id,
+					       "%s", reason)));
 }
 
 #if DEVELOPER
