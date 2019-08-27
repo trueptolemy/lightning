@@ -226,7 +226,7 @@ static void handle_error_channel(struct channel *channel,
 				 const int *fds)
 {
 	struct per_peer_state *pps;
-//	struct peer *peer = channel->peer;
+	struct peer *peer = channel->peer;
 //	struct command **forgets = tal_dup_arr(tmpctx, struct command *,
 //					       channel->forgets,
 //					       tal_count(channel->forgets), 0);
@@ -249,6 +249,7 @@ static void handle_error_channel(struct channel *channel,
 	for (size_t i = 0; i < tal_count(forgets); i++)
 		assert(!forgets[i]->json_stream);
 
+	log_debug(peer->ld->log, "delete channel");
 	/* Forget the channel. */
 	delete_channel(channel);
 	/* Begin openingd again to keep peer connected. */
