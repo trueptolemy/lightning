@@ -260,7 +260,7 @@ static void handle_error_channel(struct channel *channel,
 
 		struct json_stream *response;
 		response = json_stream_success(forgets[i]);
-		json_add_string(response, "cancelled", "Channel open canceled by RPC");
+		json_add_string(response, "cancelled", "Channel open canceled by RPC(after fundchannel_complete)");
 		was_pending(command_success(forgets[i], response));
 		tal_free(response);
 	}
