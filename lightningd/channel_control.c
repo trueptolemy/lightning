@@ -249,7 +249,6 @@ static void handle_error_channel(struct channel *channel,
 	for (size_t i = 0; i < tal_count(forgets); i++)
 		assert(!forgets[i]->json_stream);
 
-	channel_set_owner(channel, NULL);
 	/* Forget the channel. */
 	delete_channel_direct(channel);
 	/* Begin openingd again to keep peer connected. */
