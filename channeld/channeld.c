@@ -2731,7 +2731,7 @@ static void handle_send_error(struct peer *peer, const u8 *msg)
 	char *reason;
 	if (!fromwire_channel_send_error(msg, msg, &reason))
 		master_badmsg(WIRE_CHANNEL_SEND_ERROR, msg);
-
+	status_trace("error reason: %s", reason);
 	wire_sync_write(MASTER_FD,
 			take(towire_channel_send_error_reply(NULL, peer->pps)));
 	per_peer_state_fdpass_send(MASTER_FD, peer->pps);
