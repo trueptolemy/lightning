@@ -397,7 +397,7 @@ void channel_errmsg(struct channel *channel,
 		    const u8 *err_for_them)
 {
 	struct peer *peer = channel->peer;
-	bool keep_connected = false;
+//	bool keep_connected = false;
 
 	notify_disconnect(peer->ld, &peer->id);
 
