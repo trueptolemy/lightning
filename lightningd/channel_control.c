@@ -226,7 +226,7 @@ static void handle_error_channel(struct channel *channel,
 				 const int *fds)
 {
 	struct per_peer_state *pps;
-	struct peer *peer = channel->peer;
+//	struct peer *peer = channel->peer;
 //	struct command **forgets = tal_dup_arr(tmpctx, struct command *,
 //					       channel->forgets,
 //					       tal_count(channel->forgets), 0);
