@@ -223,14 +223,12 @@ static void peer_start_closingd_after_shutdown(struct channel *channel,
 static void handle_error_channel(struct channel *channel,
 				 const u8 *msg)
 {
-	struct peer *peer = channel->peer;
-
 	struct command **forgets = tal_steal(tmpctx, channel->forgets);
 	channel->forgets = tal_arr(channel, struct command *, 0);
 
-	if (!fromwire_channel_send_error_reply(tmpctx, msg)) {
+	if (!fromwire_channel_send_error_reply(msg)) {
 		channel_internal_error(channel, "bad send_error_reply: %s",
-				       tal_hex(msg, msg));
+				       tal_hex(tmpctx, msg));
 		return;
 	}
 
