@@ -1047,11 +1047,11 @@ static unsigned int openingd_msg(struct subd *openingd,
 	tal_free(openingd);
 	return 0;
 }
-/*
+
 struct linkable {
 	struct list_head links;
 };
-*/
+
 void peer_start_openingd(struct peer *peer,
 			 struct per_peer_state *pps,
 			 const u8 *send_msg)
