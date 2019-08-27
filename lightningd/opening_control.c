@@ -200,7 +200,7 @@ wallet_commit_channel(struct lightningd *ld,
 			      NULL, /* No shachain yet */
 			      CHANNELD_AWAITING_LOCKIN,
 			      uc->fc ? LOCAL : REMOTE,
-			      uc->log,
+			      NULL, /* channel should create its own log. */
 			      take(uc->transient_billboard),
 			      channel_flags,
 			      &uc->our_config,
@@ -1047,11 +1047,11 @@ static unsigned int openingd_msg(struct subd *openingd,
 	tal_free(openingd);
 	return 0;
 }
-
+/*
 struct linkable {
 	struct list_head links;
 };
-
+*/
 void peer_start_openingd(struct peer *peer,
 			 struct per_peer_state *pps,
 			 const u8 *send_msg)
@@ -1070,9 +1070,9 @@ void peer_start_openingd(struct peer *peer,
 				  HSM_CAP_COMMITMENT_POINT
 				  | HSM_CAP_SIGN_REMOTE_TX);
 
-	struct linkable *l = tal_parent(uc->log->lr);
-	list_head_init(&l->links);
-	assert(l->links.n.next);
+//	struct linkable *l = tal_parent(uc->log->lr);
+//	list_head_init(&l->links);
+//	assert(l->links.n.next);
 	uc->openingd = new_channel_subd(peer->ld,
 					"lightning_openingd",
 					uc, uc->log,
