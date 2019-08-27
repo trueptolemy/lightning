@@ -387,14 +387,19 @@ void channel_fail_permanent(struct channel *channel, const char *fmt, ...)
 
 	channel_set_owner(channel, NULL);
 
-	if (channel->remote_funding_locked || channel->scid) {
+//	if (channel->remote_funding_locked || channel->scid) {
 		/* Drop non-cooperatively (unilateral) to chain. */
-		drop_to_chain(ld, channel, false);
+//		drop_to_chain(ld, channel, false);
 
-		if (channel_active(channel))
-			channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
-	} else
-		delete_channel_direct(channel);
+//		if (channel_active(channel))
+//			channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
+//	} else
+//		delete_channel_direct(channel);
+
+	drop_to_chain(ld, channel, false);
+
+	if (channel_active(channel))
+		channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
 
 	tal_free(why);
 }
