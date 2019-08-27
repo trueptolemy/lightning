@@ -756,7 +756,7 @@ static void destroy_uncommitted_channel(struct uncommitted_channel *uc)
 
 	uc->peer->uncommitted_channel = NULL;
 
-	log_debug(peer->ld->log, "delete peer");
+	log_debug(uc->peer->ld->log, "delete peer");
 	maybe_delete_peer(uc->peer);
 }
 
