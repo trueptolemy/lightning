@@ -1468,7 +1468,7 @@ def test_fundee_forget_funding_tx_unconfirmed(node_factory, bitcoind):
 
     # fundee will also forget and disconnect from peer.
     assert len(l2.rpc.listpeers(l1.info['id'])['peers']) == 0
-
+'''
 
 @unittest.skipIf(not DEVELOPER, "needs dev_fail")
 def test_no_fee_estimate(node_factory, bitcoind, executor):
@@ -1549,7 +1549,7 @@ def test_no_fee_estimate(node_factory, bitcoind, executor):
     # Can withdraw (use urgent feerate).
     l1.rpc.withdraw(l2.rpc.newaddr()['bech32'], 'all', 'urgent')
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "needs --dev-disconnect")
 def test_funder_feerate_reconnect(node_factory, bitcoind):
     # l1 updates fees, then reconnect so l2 retransmits commitment_signed.
