@@ -227,15 +227,14 @@ static void handle_error_channel(struct channel *channel,
 {
 	struct per_peer_state *pps;
 	struct peer *peer = channel->peer;
-	struct command **forgets = tal_dup_arr(tmpctx, struct command *,
-					       channel->forgets,
-					       tal_count(channel->forgets), 0);
+//	struct command **forgets = tal_dup_arr(tmpctx, struct command *,
+//					       channel->forgets,
+//					       tal_count(channel->forgets), 0);
 
 	for (size_t i = 0; i < tal_count(channel->forgets); i++)
 		assert(!channel->forgets[i]->json_stream);
 
-//	struct command **forgets = tal_steal(tmpctx, channel->forgets);
-	tal_free(channel->forgets);
+	struct command **forgets = tal_steal(tmpctx, channel->forgets);
 	channel->forgets = tal_arr(channel, struct command *, 0);
 	for (size_t i = 0; i < tal_count(forgets); i++)
 		assert(!forgets[i]->json_stream);
