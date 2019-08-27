@@ -2736,8 +2736,8 @@ static void handle_send_error(struct peer *peer, const u8 *msg)
 			take(towire_channel_send_error_reply(NULL, peer->pps)));
 	per_peer_state_fdpass_send(MASTER_FD, peer->pps);
 	status_trace("send error");
-//	peer_failed(peer->pps, &peer->channel_id,
-//		    "%s", reason);
+	peer_failed(peer->pps, &peer->channel_id,
+		    "%s", reason);
 }
 
 #if DEVELOPER
