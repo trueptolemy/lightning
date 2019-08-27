@@ -1075,7 +1075,7 @@ void peer_start_openingd(struct peer *peer,
 //	assert(l->links.n.next);
 	uc->openingd = new_channel_subd(peer->ld,
 					"lightning_openingd",
-					uc, uc->log,
+					uc, NULL,
 					true, opening_wire_type_name,
 					openingd_msg,
 					opening_channel_errmsg,
