@@ -742,9 +742,9 @@ static void opening_channel_set_billboard(struct uncommitted_channel *uc,
 
 static void destroy_uncommitted_channel(struct uncommitted_channel *uc)
 {
-	log_debug(uc->peer->ld->log, "destroy uncommitted");
+//	log_debug(uc->peer->ld->log, "destroy uncommitted");
 	if (uc->openingd) {
-		log_debug(uc->peer->ld->log, "destroy openingd");
+//		log_debug(uc->peer->ld->log, "destroy openingd");
 		struct subd *openingd = uc->openingd;
 		uc->openingd = NULL;
 		subd_release_channel(openingd, uc);
@@ -756,7 +756,7 @@ static void destroy_uncommitted_channel(struct uncommitted_channel *uc)
 
 	uc->peer->uncommitted_channel = NULL;
 
-	log_debug(uc->peer->ld->log, "delete peer");
+//	log_debug(uc->peer->ld->log, "delete peer");
 	maybe_delete_peer(uc->peer);
 }
 
