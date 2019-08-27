@@ -371,7 +371,7 @@ void channel_fail_permanent(struct channel *channel, const char *fmt, ...)
 	struct channel_id cid;
 
 	va_start(ap, fmt);
-	why = tal_vfmt(channel, fmt, ap);
+	why = tal_vfmt(tmpctx, fmt, ap);
 	va_end(ap);
 
 	log_unusual(channel->log, "Peer permanent failure in %s: %s",
