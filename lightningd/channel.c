@@ -385,21 +385,15 @@ void channel_fail_permanent(struct channel *channel, const char *fmt, ...)
 		channel->error = towire_errorfmt(channel, &cid, "%s", why);
 	}
 
-	channel_set_owner(channel, NULL);
-
-//	if (channel->remote_funding_locked || channel->scid) {
+	if (channel->remote_funding_locked || channel->scid) {
+		channel_set_owner(channel, NULL);
 		/* Drop non-cooperatively (unilateral) to chain. */
-//		drop_to_chain(ld, channel, false);
+		drop_to_chain(ld, channel, false);
 
-//		if (channel_active(channel))
-//			channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
-//	} else
-//		delete_channel_direct(channel);
-
-	drop_to_chain(ld, channel, false);
-
-	if (channel_active(channel))
-		channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
+		if (channel_active(channel))
+			channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
+	} else
+		delete_channel_direct(channel);
 
 	tal_free(why);
 }
