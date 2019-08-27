@@ -444,8 +444,8 @@ void channel_errmsg(struct channel *channel,
 	 *    - MUST fail the channel referred to by the error message,
 	 *      if that channel is with the sending node.
 	 */
-	if (!channel->remote_funding_locked && !channel->scid)
-		keep_connected = true;
+//	if (!channel->remote_funding_locked && !channel->scid)
+//		keep_connected = true;
 
 	channel_fail_permanent(channel, "%s: %s ERROR %s",
 			       channel->owner->name,
