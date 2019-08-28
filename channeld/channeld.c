@@ -2732,12 +2732,12 @@ static void handle_send_error(struct peer *peer, const u8 *msg)
 	if (!fromwire_channel_send_error(msg, msg, &reason))
 		master_badmsg(WIRE_CHANNEL_SEND_ERROR, msg);
 	status_trace("Send error reason: %s", reason);
-	wire_sync_write(MASTER_FD,
-			take(towire_channel_send_error_reply(NULL)));
-
 	sync_crypto_write(peer->pps,
 			  take(towire_errorfmt(NULL, &peer->channel_id,
 					       "%s", reason)));
+
+	wire_sync_write(MASTER_FD,
+			take(towire_channel_send_error_reply(NULL)));
 }
 
 #if DEVELOPER
