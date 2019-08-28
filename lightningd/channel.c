@@ -365,7 +365,7 @@ void channel_set_state(struct channel *channel,
 
 void channel_fail_permanent(struct channel *channel, const char *fmt, ...)
 {
-	struct lightningd *ld = channel->peer->ld;
+		struct lightningd *ld = channel->peer->ld;
 	va_list ap;
 	char *why;
 	struct channel_id cid;
@@ -385,19 +385,41 @@ void channel_fail_permanent(struct channel *channel, const char *fmt, ...)
 		channel->error = towire_errorfmt(channel, &cid, "%s", why);
 	}
 
-	/* We should immediately forget the channel if we receive error during
-	 * CHANNELD_AWAITING_LOCKIN if we are fundee. */
-	if (channel->funder == REMOTE && channel->state == CHANNELD_AWAITING_LOCKIN)
-		delete_channel(channel);
-	else {
-		channel_set_owner(channel, NULL);
-		/* Drop non-cooperatively (unilateral) to chain. */
-		drop_to_chain(ld, channel, false);
+	channel_set_owner(channel, NULL);
+	/* Drop non-cooperatively (unilateral) to chain. */
+	drop_to_chain(ld, channel, false);
 
-		if (channel_active(channel))
-			channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
+	if (channel_active(channel))
+		channel_set_state(channel, channel->state, AWAITING_UNILATERAL);
+
+	tal_free(why);
+}
+
+void channel_fail_forget(struct channel *channel, const char *fmt, ...)
+{
+	struct lightningd *ld = channel->peer->ld;
+	va_list ap;
+	char *why;
+	struct channel_id cid;
+
+	assert(channel->funder == REMOTE &&
+	       channel->state == CHANNELD_AWAITING_LOCKIN);
+	va_start(ap, fmt);
+	why = tal_vfmt(tmpctx, fmt, ap);
+	va_end(ap);
+
+	log_unusual(channel->log, "Peer permanent failure in %s: %s, "
+		    "forget channel",
+		    channel_state_name(channel), why);
+
+	if (!channel->error) {
+		derive_channel_id(&cid,
+				  &channel->funding_txid,
+				  channel->funding_outnum);
+		channel->error = towire_errorfmt(channel, &cid, "%s", why);
 	}
 
+	delete_channel(channel);
 	tal_free(why);
 }
 

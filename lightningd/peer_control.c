@@ -447,9 +447,17 @@ void channel_errmsg(struct channel *channel,
 //	if (!channel->remote_funding_locked && !channel->scid)
 //		keep_connected = true;
 
-	channel_fail_permanent(channel, "%s: %s ERROR %s",
-			       channel->owner->name,
-			       err_for_them ? "sent" : "received", desc);
+	/* We should immediately forget the channel if we receive error during
+	 * CHANNELD_AWAITING_LOCKIN if we are fundee. */
+	if (!err_for_them && channel->funder == REMOTE
+	    && channel->state == CHANNELD_AWAITING_LOCKIN)
+		channel_fail_forget(channel, "%s: %s ERROR %s",
+				    channel->owner->name,
+				    err_for_them ? "sent" : "received", desc);
+	else
+		channel_fail_permanent(channel, "%s: %s ERROR %s",
+				       channel->owner->name,
+				       err_for_them ? "sent" : "received", desc);
 	
 //	if (keep_connected)
 //		peer_start_openingd(peer, pps, NULL);
