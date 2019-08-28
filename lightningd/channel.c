@@ -397,7 +397,6 @@ void channel_fail_permanent(struct channel *channel, const char *fmt, ...)
 
 void channel_fail_forget(struct channel *channel, const char *fmt, ...)
 {
-	struct lightningd *ld = channel->peer->ld;
 	va_list ap;
 	char *why;
 	struct channel_id cid;
