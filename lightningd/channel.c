@@ -388,7 +388,7 @@ void channel_fail_permanent(struct channel *channel, const char *fmt, ...)
 	/* We should immediately forget the channel if we receive error during
 	 * CHANNELD_AWAITING_LOCKIN if we are fundee. */
 	if (channel->funder == REMOTE && channel->state == CHANNELD_AWAITING_LOCKIN)
-		delete_channel_direct(channel);
+		delete_channel(channel);
 	else {
 		channel_set_owner(channel, NULL);
 		/* Drop non-cooperatively (unilateral) to chain. */
