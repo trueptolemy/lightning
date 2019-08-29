@@ -7,7 +7,7 @@ from utils import only_one, wait_for
 import pytest
 import time
 
-
+'''
 def test_withdraw(node_factory, bitcoind):
     amount = 1000000
     # Don't get any funds from previous runs.
@@ -332,7 +332,7 @@ def test_addfunds_from_block(node_factory, bitcoind):
     # The address we detect must match what was paid to.
     output = only_one(l1.rpc.listfunds()['outputs'])
     assert output['address'] == addr
-
+'''
 
 def test_txprepare(node_factory, bitcoind):
     amount = 1000000
