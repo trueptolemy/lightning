@@ -148,7 +148,9 @@ void notification_call(struct lightningd *ld, const char* topic,
 		       void *payload)
 {
 	struct notification *noti = find_notification_by_topic(topic);
-	assert(noti);
+	if (noti == NULL)
+		fatal("Could not find notification topic %s", topic);
+
 	struct jsonrpc_notification *n
 		= jsonrpc_notification_start(NULL, noti->topic);
 	noti->serialize_payload(payload, n->stream);
