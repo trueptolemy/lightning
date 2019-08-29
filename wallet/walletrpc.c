@@ -86,7 +86,8 @@ static struct command_result *param_bitcoin_address(struct command *cmd,
 					      scriptpubkey)) {
 	case ADDRESS_PARSE_UNRECOGNIZED:
 		return command_fail(cmd, LIGHTNINGD,
-				    "Could not parse destination address");
+				    "Could not parse destination address, '%.*s'",
+				    tok->end - tok->start, buffer + tok->start);
 	case ADDRESS_PARSE_WRONG_NETWORK:
 		return command_fail(cmd, LIGHTNINGD,
 				    "Destination address is not on network %s",
