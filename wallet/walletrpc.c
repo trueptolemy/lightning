@@ -220,12 +220,20 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		const u8 *destination;
 
 		assert(t->type == JSMN_OBJECT);
-		if (!param(cmd, buffer, t,
+/*		if (!param(cmd, buffer, t,
 			   p_req("destination", param_bitcoin_address,
 				 &destination),
 			   p_req("satoshi", param_sat_or_all, &amount),
 			   NULL))
 			return command_param_failed();
+*/
+		struct command_result *res = param_bitcoin_address(cmd, NULL, buffer, t[0], &destination);
+		if (res)
+			return res;
+		
+		res = param_sat_or_all(cmd, NULL, buffer, t[1], &amount);
+		if (res)
+			return res;
 
 		if (!destination || !amount)
 			return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
