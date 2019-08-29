@@ -721,5 +721,12 @@ def test_sendpay_notifications(node_factory, bitcoind):
     with pytest.raises(RpcError) as err:
         l1.rpc.waitsendpay(payment_hash2)
 
-    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash1, 'response': response1})
-    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash2, 'response': err.value.error})
+    results = l2.rpc.call('listsendpays_plugin')
+    assert len(results['sendpay_success']) == 1
+    assert len(results['sendpay_failure']) == 1
+
+    assert results['sendpay_success'][0]['payment_hash'] = payment_hash1
+    assert results['sendpay_success'][0]['response'] = response1
+
+    assert results['sendpay_failure'][0]['payment_hash'] = payment_hash2
+    assert results['sendpay_failure'][0]['response'] = err.value.error
