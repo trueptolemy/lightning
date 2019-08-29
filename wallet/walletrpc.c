@@ -227,11 +227,11 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 			   NULL))
 			return command_param_failed();
 */
-		struct command_result *res = param_bitcoin_address(cmd, NULL, buffer, t[0], &destination);
+		struct command_result *res = param_bitcoin_address(cmd, NULL, buffer, &t[0], &destination);
 		if (res)
 			return res;
 		
-		res = param_sat_or_all(cmd, NULL, buffer, t[1], &amount);
+		res = param_sat_or_all(cmd, NULL, buffer, &t[1], &amount);
 		if (res)
 			return res;
 
