@@ -16,8 +16,7 @@ def check(result, response):
 @plugin.init()
 def init(configuration, options, plugin):
     plugin.success_list = []
-    plugin.fail_list = []
-    plugin.log("sendpay_result plugin initialed")
+    plugin.failure_list = []
 
 
 @plugin.subscribe("sendpay_success")
@@ -30,24 +29,13 @@ def notify_sendpay_success(plugin, sendpay_success):
 def notify_sendpay_failure(plugin, sendpay_failure):
     plugin.log("receive a sendpay_failure recored, id: {}, payment_hash: {}".format(sendpay_failure['data']['id'],
                sendpay_failure['data']['payment_hash']))
-    plugin.fail_list.append(sendpay_failure)
+    plugin.failure_list.append(sendpay_failure)
 
 
-@plugin.method('recordcheck')
+@plugin.method('listsendpays_plugin')
 def record_lookup(payment_hash, response, plugin):
-    plugin.log("recordcheck: payment_hash: {}".format(payment_hash))
-    for success in plugin.success_list:
-        if success['payment_hash'] == payment_hash:
-            plugin.log("success record exists")
-            check_result = check(success, response)
-            return check_result
-    for fail in plugin.fail_list:
-        if fail['data']['payment_hash'] == payment_hash:
-            plugin.log("fail record exists")
-            check_result = check(fail, response)
-            return check_result
-    plugin.log("no record")
-    return False
+    return {'sendpay_success': plugin.success_list,
+            'sendpay_failure': plugin.failure_list}
 
 
 plugin.run()
