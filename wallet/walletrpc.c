@@ -219,7 +219,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 		struct amount_sat *amount;
 		const u8 *destination;
 
-		assert(t->type == JSMN_ARRAY);
+		assert(t->type == JSMN_OBJECT);
 		if (!param(cmd, buffer, t,
 			   p_req("destination", param_bitcoin_address,
 				 &destination),
