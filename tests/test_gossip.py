@@ -11,7 +11,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 with open('config.vars') as configfile:
     config = dict([(line.rstrip().split('=', 1)) for line in configfile])
 
@@ -1375,3 +1375,4 @@ def test_gossip_announce_unknown_block(node_factory, bitcoind):
 
     # Make sure it's OK once it's caught up.
     sync_blockheight(bitcoind, [l1])
+'''

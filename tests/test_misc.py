@@ -17,7 +17,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "needs --dev-disconnect")
 def test_stop_pending_fundchannel(node_factory, executor):
     """Stop the daemon while waiting for an accept_channel
@@ -1447,3 +1447,4 @@ def test_list_features_only(node_factory):
     if EXPERIMENTAL_FEATURES:
         expected.append('option_gossip_queries_ex/odd')
     assert features == expected
+'''
