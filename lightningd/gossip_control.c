@@ -366,10 +366,10 @@ static struct command_result *json_getroute(struct command *cmd,
 							    buffer + t->start);
 
 				entry->type = EXCLUDE_NODE;
-				entry->u = *node_id;
+				entry->u.chan_id = *node_id;
 			} else {
 				entry->type = EXCLUDE_CHANNEL;
-				entry->u = *chan_id;
+				entry->u.node_id = *chan_id;
 			}
 
 			tal_arr_expand(&excluded, entry);

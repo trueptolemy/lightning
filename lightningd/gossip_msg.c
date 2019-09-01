@@ -204,10 +204,10 @@ struct exclude_entry *fromwire_exclude_entry(const tal_t *ctx,
 	switch (entry->type) {
 		case EXCLUDE_CHANNEL:
 			fromwire_short_channel_id_dir(pptr, max,
-						      (struct short_channel_id_dir *)&entry->u);
+						      &entry->u.chan_id);
 			return entry;
 		case EXCLUDE_NODE:
-			fromwire_node_id(pptr, max, (struct node_id *)&entry->u);
+			fromwire_node_id(pptr, max, &entry->u.node_id);
 			return entry;
 		default:
 			fromwire_fail(pptr, max);
@@ -223,8 +223,7 @@ void towire_exclude_entry(u8 **pptr, const struct exclude_entry *entry)
 
 	towire_u8(pptr, entry->type);
 	if (entry->type == EXCLUDE_CHANNEL)
-		towire_short_channel_id_dir(pptr,
-						 (struct short_channel_id_dir *)&entry->u);
+		towire_short_channel_id_dir(pptr, &entry->u.chan_id);
 	else
-		towire_node_id(pptr, (struct node_id *)&entry->u);
+		towire_node_id(pptr, &entry->u.node_id);
 }

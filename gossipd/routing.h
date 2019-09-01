@@ -276,8 +276,8 @@ enum exclude_entry_type {
 struct exclude_entry {
 	enum exclude_entry_type type;
 	union {
-		struct short_channel_id_dir channel;
-		struct node_id node;
+		struct short_channel_id_dir chan_id;
+		struct node_id node_id;
 	} u;
 };
 
