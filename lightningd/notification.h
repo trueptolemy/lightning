@@ -20,22 +20,18 @@ bool notifications_have_topic(const char *topic);
 
 struct notification {
 	const char *topic;
-	void (*serialize_payload)(void *src, struct json_stream *dest);
+	/* The serialization interface */
+	void *serializ;
 };
 
 AUTODATA_TYPE(notifications, struct notification);
 
-void notification_call(struct lightningd *ld, const char* topic,
-		       void *payload);
-
 /* FIXME: Find a way to avoid back-to-back declaration and definition */
-#define REGISTER_NOTIFICATION(topic, serialize_payload, payload_type)                               \
-	struct notification topic##_notification_gen = {                                            \
-	    stringify(topic),                                                                       \
-	    typesafe_cb_cast(void (*)(void *, struct json_stream *),                                \
-			     void (*)(payload_type, struct json_stream *),                          \
-			     serialize_payload),                                                    \
-	};                                                                                          \
+#define REGISTER_NOTIFICATION(topic, serialize)                               \
+	struct notification topic##_notification_gen = {                      \
+		stringify(topic),                                             \
+		serialize,                                                    \
+	};                                                                    \
 	AUTODATA(notifications, &topic##_notification_gen);
 
 struct connect_notification_payload {
