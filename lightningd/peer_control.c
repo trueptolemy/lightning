@@ -804,7 +804,6 @@ peer_connected_hook_cb(struct peer_connected_hook_payload *payload,
 	struct wireaddr_internal addr = payload->addr;
 	struct peer *peer = payload->peer;
 	u8 *error;
-	struct connect_notification_payload *noti_payload;
 
 	/* If we had a hook, interpret result. */
 	if (buffer) {
@@ -898,10 +897,7 @@ peer_connected_hook_cb(struct peer_connected_hook_payload *payload,
 		abort();
 	}
 
-	noti_payload = tal(tmpctx, struct connect_notification_payload);
-	noti_payload->nodeid = &peer->id;
-	noti_payload->addr = &addr;
-	notification_call(ld, "connect", noti_payload);
+	notify_connect(ld, &peer->id, &addr)
 
 	/* No err, all good. */
 	error = NULL;

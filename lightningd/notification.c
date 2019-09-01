@@ -30,17 +30,26 @@ bool notifications_have_topic(const char *topic)
 	return false;
 }
 
-static void connect_notification_serialize(
-			struct connect_notification_payload *payload,
-			struct json_stream *stream)
+static void connect_notification_serialize(struct json_stream *stream,
+					   struct node_id *nodeid,
+					   struct wireaddr_internal *addr)
 {
-	json_add_node_id(stream, "id", payload->nodeid);
-	json_add_address_internal(stream, "address", payload->addr);
+	json_add_node_id(stream, "id", nodeid);
+	json_add_address_internal(stream, "address", addr);
 }
 
 REGISTER_NOTIFICATION(connect,
-		      connect_notification_serialize,
-		      struct connect_notification_payload *);
+		      connect_notification_serialize);
+
+void notify_connect(struct lightningd *ld, struct node_id *nodeid,
+		    struct wireaddr_internal *addr)
+{
+	struct jsonrpc_notification *n
+		= jsonrpc_notification_start(NULL, connect_notification_gen.topic);
+	connect_notification_gen.serialize(n->stream, nodeid, addr);
+	jsonrpc_notification_end(n);
+	plugins_notify(ld->plugins, take(n));
+}
 
 static void disconnect_notification_serialize(
 			struct disconnect_notification_payload *payload,
