@@ -86,9 +86,8 @@ static struct command_result *param_bitcoin_address(struct command *cmd,
 					      scriptpubkey)) {
 	case ADDRESS_PARSE_UNRECOGNIZED:
 		return command_fail(cmd, LIGHTNINGD,
-				    "Could not parse destination address, "
-				    "%s should be a valid address",
-				    name ? name : "address field");
+				    "Could not parse destination address, '%.*s'",
+				    tok->end - tok->start, buffer + tok->start);
 	case ADDRESS_PARSE_WRONG_NETWORK:
 		return command_fail(cmd, LIGHTNINGD,
 				    "Destination address is not on network %s",
@@ -148,14 +147,13 @@ static struct command_result *broadcast_and_wait(struct command *cmd,
 
 /* Common code for withdraw and txprepare.
  *
- * Returns NULL on success, and fills in wtx, output and
+ * Returns NULL on success, and fills in wtx, destination and
  * maybe changekey (owned by cmd).  Otherwise, cmd has failed, so don't
  * access it! (It's been freed). */
 static struct command_result *json_prepare_tx(struct command *cmd,
 					      const char *buffer,
 					      const jsmntok_t *params,
-					      struct unreleased_tx **utx,
-					      bool for_withdraw)
+					      struct unreleased_tx **utx)
 {
 	u32 *feerate_per_kw;
 	struct command_result *res;
@@ -163,49 +161,34 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	struct pubkey *changekey;
 	struct bitcoin_tx_output **outputs;
 	const jsmntok_t *outputstok, *t;
-	const u8 *destination = NULL;
+	const u8 *old_destination = NULL;
 	size_t out_len, i;
 
 	*utx = tal(cmd, struct unreleased_tx);
 	(*utx)->wtx = tal(*utx, struct wallet_tx);
 	wtx_init(cmd, (*utx)->wtx, AMOUNT_SAT(-1ULL));
 
-	if (!for_withdraw) {
-		/* From v0.7.3, the new style for *txprepare* use array of outputs
-		 * to replace original 'destination' and 'satoshi' parameters.*/
-		if (!param(cmd, buffer, params,
-			   p_req("outputs", param_array, &outputstok),
-			   p_opt("feerate", param_feerate, &feerate_per_kw),
-			   p_opt_def("minconf", param_number, &minconf, 1),
-			   NULL)) {
+	if (!param(cmd, buffer, params,
+		   p_req("outputs", param_array, &outputstok),
+		   p_opt("feerate", param_feerate, &feerate_per_kw),
+		   p_opt_def("minconf", param_number, &minconf, 1),
+		   NULL)) {
 
-			/* For generating help, give new-style. */
-			if (!params || !deprecated_apis)
-				return command_param_failed();
+		/* For generating help, give new-style. */
+		if (!params || !deprecated_apis)
+			return command_param_failed();
 
-			/* For the old style:
-			 * *txprepare* 'destination' 'satoshi' ['feerate'] ['minconf'] */
-			if (!param(cmd, buffer, params,
-				   p_req("destination", param_bitcoin_address,
-					 &destination),
-				   p_req("satoshi", param_wtx, (*utx)->wtx),
-				   p_opt("feerate", param_feerate, &feerate_per_kw),
-				   p_opt_def("minconf", param_number, &minconf, 1),
-				   NULL))
-				/* If the parameters mixed the new style and the old style,
-				 * fail it. */
-				return command_param_failed();
-		}
-	} else {
-		/* *withdraw* command still use 'destination' and 'satoshi' as parameters. */
+		/* For the old style: [destination] [satoshi] <feerate> <minconf> */
 		if (!param(cmd, buffer, params,
 			   p_req("destination", param_bitcoin_address,
-				 &destination),
+			         &old_destination),
 			   p_req("satoshi", param_wtx, (*utx)->wtx),
 			   p_opt("feerate", param_feerate, &feerate_per_kw),
 			   p_opt_def("minconf", param_number, &minconf, 1),
 			   NULL))
-		return command_param_failed();
+			/* If the parameters mixed the new style and the old style,
+			 * fail it. */
+			return command_param_failed();
 	}
 
 	if (!feerate_per_kw) {
@@ -216,14 +199,11 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	}
 
 	maxheight = minconf_to_maxheight(*minconf, cmd->ld);
-
-	/* *withdraw* command or old *txprepare* command.
-	 * Support only one output. */
-	if (destination) {
+	/* Old style. */
+	if (old_destination) {
 		outputs = tal_arr(tmpctx, struct bitcoin_tx_output *, 1);
-		outputs[0] = tal(outputs, struct bitcoin_tx_output);
 		outputs[0]->script = tal_steal(outputs[0],
-					       cast_const(u8 *, destination));
+					       cast_const(u8 *, old_destination));
 		outputs[0]->amount = (*utx)->wtx->amount;
 		out_len = tal_count(outputs[0]->script);
 
@@ -239,13 +219,19 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	json_for_each_arr(i, t, outputstok) {
 		struct amount_sat *amount;
 		const u8 *destination;
-		struct command_result *res;
 
-		/* output format: {destination: amount} */
-		res = param_bitcoin_address(cmd, NULL, buffer, &t[1], &destination);
+		assert(t->type == JSMN_OBJECT);
+/*		if (!param(cmd, buffer, t,
+			   p_req("destination", param_bitcoin_address,
+				 &destination),
+			   p_req("satoshi", param_sat_or_all, &amount),
+			   NULL))
+			return command_param_failed();
+*/
+		struct command_result *res = param_bitcoin_address(cmd, NULL, buffer, &t[1], &destination);
 		if (res)
 			return res;
-
+		
 		res = param_sat_or_all(cmd, NULL, buffer, &t[2], &amount);
 		if (res)
 			return res;
@@ -263,7 +249,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 
 		/* In fact, the maximum amount of bitcoin satoshi is 2.1e15.
 		 * It can't be equal to/bigger than 2^64.
-		 * On the hand, the maximum amount of litoshi is 8.4e15,
+		 * On the hand, the maximum amount of litoshi is 8.4e15, 
 		 * which also can't overflow. */
 		/* This means this destination need "all" satoshi we have. */
 		if (amount_sat_eq(*amount, AMOUNT_SAT(-1ULL))) {
@@ -273,7 +259,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 						    " all satoshi. The amount of outputs"
 						    " can't be more than 1. ", i);
 			(*utx)->wtx->all_funds = true;
-			break;
+			break;	
 		}
 
 		if (i == 0)
@@ -290,7 +276,7 @@ create_tx:
 	res = wtx_select_utxos((*utx)->wtx, *feerate_per_kw,
 			       out_len, maxheight);
 	if (res)
-		return res;
+		return res;	
 
 	/* Because of the max limit of AMOUNT_SAT(-1ULL),
 	 * `(*utx)->wtx->all_funds` won't change in `wtx_select_utxos()` */
@@ -300,7 +286,7 @@ create_tx:
 	if (!amount_sat_eq((*utx)->wtx->change, AMOUNT_SAT(0))) {
 		changekey = tal(tmpctx, struct pubkey);
 		if (!bip32_pubkey(cmd->ld->wallet->bip32_base, changekey,
-				  (*utx)->wtx->change_key_index))
+				(*utx)->wtx->change_key_index))
 			return command_fail(cmd, LIGHTNINGD, "Keys generation failure");
 	} else
 		changekey = NULL;
@@ -323,7 +309,7 @@ static struct command_result *json_txprepare(struct command *cmd,
 	struct command_result *res;
 	struct json_stream *response;
 
-	res = json_prepare_tx(cmd, buffer, params, &utx, false);
+	res = json_prepare_tx(cmd, buffer, params, &utx);
 	if (res)
 		return res;
 
@@ -446,7 +432,7 @@ static struct command_result *json_withdraw(struct command *cmd,
 	struct command_result *res;
 	struct bitcoin_txid txid;
 
-	res = json_prepare_tx(cmd, buffer, params, &utx, true);
+	res = json_prepare_tx(cmd, buffer, params, &utx);
 	if (res)
 		return res;
 
