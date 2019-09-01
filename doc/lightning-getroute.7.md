@@ -41,8 +41,10 @@ route generated. 0.0 means the exact fee of that channel is used, while
 default is 5.0, or up to 5% fee distortion.
 
 *exclude* is a JSON array of short-channel-id/direction (e.g. \[
-"564334x877x1/0", "564195x1292x0/1" \]) which should be excluded from
-consideration for routing. The default is not to exclude any channels.
+"564334x877x1/0", "564195x1292x0/1" \]) or node-id which should be excluded
+from consideration for routing. If a node is specified, all the incoming
+channels of this node will be excluded. The default is not to exclude any
+channels or nodes.
 
 *maxhops* is the maximum number of channels to return; default is 20.
 
