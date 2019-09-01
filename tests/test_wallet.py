@@ -427,8 +427,6 @@ def test_txprepare(node_factory, bitcoind):
     with pytest.raises(RpcError, match=r'this destination wants all satoshi. The amount of outputs can\'t be more than 1'):
         prep5 = l1.rpc.txprepare([{'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg': Millisatoshi(amount * 3 * 1000)},
                                   {'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080': 'all'}])
-    prep5 = l1.rpc.txprepare([{'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'},
-                              {'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080': Millisatoshi(amount * 3 * 500 - 100000)}])
     prep5 = l1.rpc.txprepare([{'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg': Millisatoshi(amount * 3 * 500 + 100000)},
                               {'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080': Millisatoshi(amount * 3 * 500 - 100000)}])
     decode = bitcoind.rpc.decoderawtransaction(prep5['unsigned_tx'])
