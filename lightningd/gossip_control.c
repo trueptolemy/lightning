@@ -21,6 +21,7 @@
 #include <common/utils.h>
 #include <errno.h>
 #include <gossipd/gen_gossip_wire.h>
+#include <gossipd/routing.h>
 #include <hsmd/capabilities.h>
 #include <hsmd/gen_hsm_wire.h>
 #include <inttypes.h>
