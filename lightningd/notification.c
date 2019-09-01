@@ -152,17 +152,3 @@ static void forward_event_notification_serialize(
 REGISTER_NOTIFICATION(forward_event,
 		      forward_event_notification_serialize,
 		      struct forward_event_notification_payload *);
-
-void notification_call(struct lightningd *ld, const char* topic,
-		       void *payload)
-{
-	struct notification *noti = find_notification_by_topic(topic);
-	if (noti == NULL)
-		fatal("Could not find notification topic %s", topic);
-
-	struct jsonrpc_notification *n
-		= jsonrpc_notification_start(NULL, noti->topic);
-	noti->serialize_payload(payload, n->stream);
-	jsonrpc_notification_end(n);
-	plugins_notify(ld->plugins, take(n));
-}
