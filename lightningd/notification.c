@@ -152,4 +152,3 @@ static void forward_event_notification_serialize(
 REGISTER_NOTIFICATION(forward_event,
 		      forward_event_notification_serialize,
 		      struct forward_event_notification_payload *);
-
