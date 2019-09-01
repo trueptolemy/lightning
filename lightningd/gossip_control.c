@@ -358,7 +358,7 @@ static struct command_result *json_getroute(struct command *cmd,
 							   deprecated_apis)) {
 				struct node_id *node_id = tal(tmpctx, struct node_id);
 
-				if (!json_to_node_id(buffer, excludetok, node_id))
+				if (!json_to_node_id(buffer, t, node_id))
 					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
 							    "%.*s is not a valid"
 							    " short_channel_id/node_id",
