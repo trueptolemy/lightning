@@ -1162,8 +1162,8 @@ def test_getroute_exclude(node_factory, bitcoind):
     l1.daemon.wait_for_logs([r'update for channel {}/0 now ACTIVE'
                              .format(scid15),
                              r'update for channel {}/1 now ACTIVE'
-                             .format(scid15)])
-    l5.daemon.wait_for_logs([r'update for channel {}/0 now ACTIVE'
+                             .format(scid15),
+                             r'update for channel {}/0 now ACTIVE'
                              .format(scid54),
                              r'update for channel {}/1 now ACTIVE'
                              .format(scid54)])
