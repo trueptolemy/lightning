@@ -351,19 +351,26 @@ static struct command_result *json_getroute(struct command *cmd,
 
 		json_for_each_arr(i, t, excludetok) {
 			struct exclude_entry *entry = tal(excluded, struct exclude_entry);
+			struct short_channel_id_dir *chan_id = tal(tmpctx, struct short_channel_id_dir);
 			if (!short_channel_id_dir_from_str(buffer + t->start,
 							   t->end - t->start,
-							   (struct short_channel_id_dir *)&entry->u,
+							   chan_id,
 							   deprecated_apis)) {
-				if (!json_to_node_id(buffer, excludetok, (struct node_id *)&entry->u))
+				struct node_id *node_id = tal(tmpctx, struct node_id);
+
+				if (!json_to_node_id(buffer, excludetok, node_id))
 					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
 							    "%.*s is not a valid"
 							    " short_channel_id/node_id",
 							    t->end - t->start,
 							    buffer + t->start);
+
 				entry->type = EXCLUDE_NODE;
-			} else
+				entry->u = *node_id;
+			} else {
 				entry->type = EXCLUDE_CHANNEL;
+				entry->u = *chan_id;
+			}
 
 			tal_arr_expand(&excluded, entry);
 		}
