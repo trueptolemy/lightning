@@ -13,7 +13,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 def test_option_passthrough(node_factory, directory):
     """ Ensure that registering options works.
 
@@ -191,7 +191,7 @@ def test_plugin_hook(node_factory, executor):
     f.result()
     end_time = time.time()
     assert(end_time >= start_time + 20)
-
+'''
 
 def test_plugin_connect_notifications(node_factory):
     """ test 'connect' and 'disconnect' notifications
@@ -201,12 +201,12 @@ def test_plugin_connect_notifications(node_factory):
     l1.connect(l2)
     l1.daemon.wait_for_log(r'Received connect event')
     l2.daemon.wait_for_log(r'Received connect event')
-
+'''
     l2.rpc.disconnect(l1.info['id'])
     l1.daemon.wait_for_log(r'Received disconnect event')
     l2.daemon.wait_for_log(r'Received disconnect event')
-
-
+'''
+'''
 def test_failing_plugins(directory):
     fail_plugins = [
         os.path.join(os.getcwd(), 'contrib/plugins/fail/failtimeout.py'),
@@ -676,3 +676,4 @@ def test_plugin_deprecated_relpath(node_factory):
     assert l1.daemon.is_in_log('DEPRECATED WARNING.*plugin={}'
                                .format(os.path.join(os.getcwd(),
                                                     'tests/plugins/millisatoshis.py')))
+'''
