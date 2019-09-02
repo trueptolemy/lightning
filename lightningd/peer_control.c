@@ -892,7 +892,7 @@ peer_connected_hook_cb(struct peer_connected_hook_payload *payload,
 		abort();
 	}
 
-	notify_connect(ld, &peer->id, &addr)
+	notify_connect(ld, &peer->id, &addr);
 
 	/* No err, all good. */
 	error = NULL;
