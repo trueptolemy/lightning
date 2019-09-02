@@ -162,7 +162,7 @@ void notification_call(struct lightningd *ld, const char* topic,
 
 	struct jsonrpc_notification *n
 		= jsonrpc_notification_start(NULL, noti->topic);
-	noti->serialize_payload(payload, n->stream);
+	noti->serialize(payload, n->stream);
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }

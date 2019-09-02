@@ -21,7 +21,7 @@ bool notifications_have_topic(const char *topic);
 struct notification {
 	const char *topic;
 	/* The serialization interface */
-	void *serializ;
+	void *serialize;
 };
 
 AUTODATA_TYPE(notifications, struct notification);
