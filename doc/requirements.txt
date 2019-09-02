@@ -5,4 +5,4 @@ Sphinx==1.8.4
 commonmark==0.8.1
 commonmark==0.8.1
 recommonmark==0.5.0
-git+git://github.com/darosior/mrkd@dfbc8c342b3c634117e9c117f38b39f45c8570e9
+git+git://github.com/darosior/mrkd@7806173e1119ad9313ac55ea6e3f4f7777ed7fe4
