@@ -44,12 +44,14 @@ REGISTER_NOTIFICATION(connect,
 void notify_connect(struct lightningd *ld, struct node_id *nodeid,
 		    struct wireaddr_internal *addr)
 {
+	lod_debug(ld->log, "notify connect");
 	void (*serialize)(struct json_stream *stream,
 			  struct node_id *nodeid,
 			  struct wireaddr_internal *addr) = connect_notification_gen.serialize;
 	struct jsonrpc_notification *n
 		= jsonrpc_notification_start(NULL, connect_notification_gen.topic);
 	serialize(n->stream, nodeid, addr);
+	lod_debug(ld->log, "send connect notification");
 	jsonrpc_notification_end(n);
 	plugins_notify(ld->plugins, take(n));
 }
