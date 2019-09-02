@@ -26,6 +26,9 @@ struct notification {
 
 AUTODATA_TYPE(notifications, struct notification);
 
+void notification_call(struct lightningd *ld, const char* topic,
+		       void *payload);
+
 /* FIXME: Find a way to avoid back-to-back declaration and definition */
 #define REGISTER_NOTIFICATION(topic, serialize)                               \
 	struct notification topic##_notification_gen = {                      \
