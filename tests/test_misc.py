@@ -17,6 +17,7 @@ import subprocess
 import time
 import unittest
 
+
 '''
 @unittest.skipIf(not DEVELOPER, "needs --dev-disconnect")
 def test_stop_pending_fundchannel(node_factory, executor):
