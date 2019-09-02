@@ -249,7 +249,6 @@ static void maybe_print(const struct log *log, const struct log_entry *l,
 void logv(struct log *log, enum log_level level, bool call_notifier,
 			const char *fmt, va_list ap)
 {
-	struct warning_notification_payload *payload;
 	int save_errno = errno;
 	struct log_entry *l = new_log_entry(log, level);
 
@@ -265,12 +264,6 @@ void logv(struct log *log, enum log_level level, bool call_notifier,
 	maybe_print(log, l, 0);
 
 	add_entry(log, l);
-
-	if (call_notifier) {
-		payload = tal(tmpctx, struct warning_notification_payload);
-		payload->log_entry = l;
-		notification_call(log->lr->ld, "warning", payload);
-	}
 
 	errno = save_errno;
 }

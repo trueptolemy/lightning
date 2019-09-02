@@ -2780,15 +2780,6 @@ void wallet_forwarded_payment_add(struct wallet *w, const struct htlc_in *in,
 	}
 
 	db_exec_prepared(w->db, stmt);
-
-	struct forward_event_notification_payload *payload =
-		tal(tmpctx, struct forward_event_notification_payload);
-	payload->in = in;
-	payload->out = out;
-	payload->state = state;
-	payload->failcode = failcode;
-	payload->resolved_time = resolved_time;
-	notification_call(w->ld, "forward_event", payload);
 }
 
 struct amount_msat wallet_total_forward_fees(struct wallet *w)

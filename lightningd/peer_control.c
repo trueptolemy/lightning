@@ -396,11 +396,6 @@ void channel_errmsg(struct channel *channel,
 		    bool soft_error,
 		    const u8 *err_for_them)
 {
-	struct disconnect_notification_payload *payload =
-		tal(tmpctx, struct disconnect_notification_payload);
-	payload->nodeid = &channel->peer->id;
-	notification_call(channel->peer->ld, "disconnect", payload);
-
 	/* No per_peer_state means a subd crash or disconnection. */
 	if (!pps) {
 		channel_fail_reconnect(channel, "%s: %s",

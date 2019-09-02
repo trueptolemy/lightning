@@ -96,15 +96,11 @@ struct funding_channel {
 static void uncommitted_channel_disconnect(struct uncommitted_channel *uc,
 					   const char *desc)
 {
-	struct disconnect_notification_payload *payload;
 	u8 *msg = towire_connectctl_peer_disconnected(tmpctx, &uc->peer->id);
 	log_info(uc->log, "%s", desc);
 	subd_send_msg(uc->peer->ld->connectd, msg);
 	if (uc->fc && uc->fc->cmd)
 		was_pending(command_fail(uc->fc->cmd, LIGHTNINGD, "%s", desc));
-	payload = tal(tmpctx, struct disconnect_notification_payload);
-	payload->nodeid = &uc->peer->id;
-	notification_call(uc->peer->ld, "disconnect", payload);
 }
 
 void kill_uncommitted_channel(struct uncommitted_channel *uc,
@@ -602,7 +598,6 @@ static void opening_fundee_finished(struct subd *openingd,
 	struct channel *channel;
 	u8 *remote_upfront_shutdown_script;
 	struct per_peer_state *pps;
-	struct channel_opened_notification_payload *payload;
 
 	log_debug(uc->log, "Got opening_fundee_finish_response");
 
@@ -667,14 +662,6 @@ static void opening_fundee_finished(struct subd *openingd,
 				    &channel->funding_txid));
 
 	channel_watch_funding(ld, channel);
-
-	/* Tell plugins about the success */
-	payload = tal(tmpctx, struct channel_opened_notification_payload);
-	payload->node_id = &channel->peer->id;
-	payload->funding_sat = &channel->funding;
-	payload->funding_txid = &channel->funding_txid;
-	payload->funding_locked = &channel->remote_funding_locked;
-	notification_call(ld, "channel_opened", payload);
 
 	/* On to normal operation! */
 	peer_start_channeld(channel, pps, funding_signed, false);
