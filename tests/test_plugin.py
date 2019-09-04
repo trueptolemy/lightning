@@ -566,4 +566,4 @@ def test_sendpay_notifications(node_factory, bitcoind):
         l1.rpc.waitsendpay(payment_hash2)
 
     assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash1, 'response': response1})
-    assert l1.rpc.call('recordcheck', {'payment_hash': payment_hash2, 'response': err.value.error})
+    assert not l1.rpc.call('recordcheck', {'payment_hash': payment_hash2, 'response': err.value.error})
