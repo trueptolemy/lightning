@@ -14,7 +14,7 @@ import string
 import time
 import unittest
 
-
+'''
 def test_pay(node_factory):
     l1, l2 = node_factory.line_graph(2)
 
@@ -119,7 +119,7 @@ def test_pay_limits(node_factory):
     status = l1.rpc.call('paystatus', {'bolt11': inv['bolt11']})['pay'][2]['attempts']
     assert len(status) == 1
     assert status[0]['strategy'] == "Initial attempt"
-
+'''
 
 def test_pay_exclude_node(node_factory, bitcoind):
     """Test excluding the node if there's the NODE-level error in the failure_code
@@ -176,7 +176,7 @@ def test_pay_exclude_node(node_factory, bitcoind):
     assert status[2]['strategy'].startswith("Excluded node {}".format(l2.info['id'])
     assert 'success' in status[2]
 
-
+'''
 def test_pay0(node_factory):
     """Test paying 0 amount
     """
@@ -2268,3 +2268,4 @@ def test_error_returns_blockheight(node_factory, bitcoind):
     #    * [`u32`:`height`]
     assert (err.value.error['data']['raw_message']
             == '400f{:016x}{:08x}'.format(100, bitcoind.rpc.getblockcount()))
+'''
