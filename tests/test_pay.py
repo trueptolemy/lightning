@@ -163,9 +163,8 @@ def test_pay_exclude_node(node_factory, bitcoind):
 
     inv = l3.rpc.invoice(amount, "test2", 'description')['bolt11']
 
-    # This time pay will work
-    with pytest.raises(RpcError):
-        l1.rpc.pay(inv)
+    # This `pay` will work
+    l1.rpc.pay(inv)
 
     # It should have retried (once without routehint, too)
     status = l1.rpc.call('paystatus', {'bolt11': inv})['pay'][0]['attempts']
