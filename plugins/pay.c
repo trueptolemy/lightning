@@ -379,7 +379,8 @@ static struct command_result *waitsendpay_error(struct command *cmd,
 	}
 
 	/* Try again. */
-	return start_pay_attempt(cmd, pc, "Excluded channel %s",
+	return start_pay_attempt(cmd, pc, "Excluded %s %s",
+				 node_err ? "node" : "channel",
 				 pc->excludes[tal_count(pc->excludes)-1]);
 }
 
