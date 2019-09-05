@@ -126,7 +126,7 @@ def test_pay_exclude_node(node_factory, bitcoind):
     """
     opts = [{}, {'plugin': os.path.join(os.getcwd(), 'tests/plugins/fail_htlcs.py')}, {}]
     l1, l2, l3 = node_factory.line_graph(3, opts=opts)
-    amount = 10**8
+    amount = 10**7
     """
     inv = l3.rpc.invoice(amount, "test1", 'description')['bolt11']
     with pytest.raises(RpcError):
