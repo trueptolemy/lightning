@@ -160,9 +160,9 @@ def test_pay_exclude_node(node_factory, bitcoind):
                              r'update for channel {}/1 now ACTIVE'
                              .format(scid14),
                              r'update for channel {}/0 now ACTIVE'
-                             .format(scid43),
+                             .format(scid45),
                              r'update for channel {}/1 now ACTIVE'
-                             .format(scid43),
+                             .format(scid45),
                              r'update for channel {}/0 now ACTIVE'
                              .format(scid53),
                              r'update for channel {}/1 now ACTIVE'
