@@ -11,6 +11,7 @@
 #include <gossipd/gossip_constants.h>
 #include <plugins/libplugin.h>
 #include <stdio.h>
+#include <wire/onion_defs.h>
 
 /* Public key of this node. */
 static struct node_id my_id;
@@ -207,12 +208,13 @@ static bool node_or_channel_in_routehint(const struct route_info *routehint,
 	}
 
 	for (size_t i = 0; i < tal_count(routehint); i++) {
-		if (node_err)
+		if (node_err) {
 			if (node_id_eq(&nodeid, &routehint[i].pubkey))
 				return true;
-		else
+		} else {
 			if (short_channel_id_eq(&scid, &routehint[i].short_channel_id))
 				return true;
+		}
 	}
 	return false;
 }
