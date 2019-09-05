@@ -143,7 +143,8 @@ def test_pay_exclude_node(node_factory, bitcoind):
     assert status[0]['strategy'] == "Initial attempt"
     assert status[0]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
     assert status[1]['strategy'].startswith("Excluded node {}".format(l2.info['id']))
-    assert status[1]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
+    assert 'failure' in status[1]
+
 
     l4 = node_factory.get_node()
     l1.rpc.connect(l4.info['id'], 'localhost', l4.port)
