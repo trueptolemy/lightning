@@ -132,7 +132,7 @@ def test_pay_exclude_node(node_factory, bitcoind):
         l1.rpc.pay(inv)
 
     # It should have retried (once without routehint, too)
-    status = l1.rpc.call('paystatus', {'bolt11': inv['bolt11']})['pay'][0]['attempts']
+    status = l1.rpc.call('paystatus', {'bolt11': inv})['pay'][0]['attempts']
 
     # Excludes channel, then ignores routehint which includes that, then
     # it excludes other channel.
@@ -164,7 +164,7 @@ def test_pay_exclude_node(node_factory, bitcoind):
     l1.rpc.pay(inv)
 
     # It should have retried (once without routehint, too)
-    status = l1.rpc.call('paystatus', {'bolt11': inv['bolt11']})['pay'][0]['attempts']
+    status = l1.rpc.call('paystatus', {'bolt11': inv})['pay'][1]['attempts']
 
     # Excludes channel, then ignores routehint which includes that, then
     # it excludes other channel.
