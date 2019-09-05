@@ -191,19 +191,29 @@ static struct command_result *start_pay_attempt(struct command *cmd,
 						const char *fmt, ...);
 
 /* Is this (erring) channel within the routehint itself? */
-static bool channel_in_routehint(const struct route_info *routehint,
-				 const char *scidstr, size_t scidlen)
+static bool node_or_channel_in_routehint(const struct route_info *routehint,
+					 const char *idstr, size_t idlen)
 {
+	struct node_id nodeid;
 	struct short_channel_id scid;
+	bool node_err = true;
 
-	if (!short_channel_id_from_str(scidstr, scidlen, &scid, false))
-		plugin_err("bad erring_channel '%.*s'",
-			   (int)scidlen, scidstr);
+	if (!node_id_from_hexstr(idstr, idlen, &nodeid)) {
+		if (!short_channel_id_from_str(idstr, idlen, &scid, false))
+			plugin_err("bad erring_node or erring_channel '%.*s'",
+				   (int)idlen, idstr);
+		else
+			node_err = false;
+	}
 
-	for (size_t i = 0; i < tal_count(routehint); i++)
-		if (short_channel_id_eq(&scid, &routehint[i].short_channel_id))
-			return true;
-
+	for (size_t i = 0; i < tal_count(routehint); i++) {
+		if (node_err)
+			if (node_id_eq(&nodeid, &routehint[i].pubkey))
+				return true;
+		else
+			if (short_channel_id_eq(&scid, &routehint[i].short_channel_id))
+				return true;
+	}
 	return false;
 }
 
@@ -252,8 +262,9 @@ static bool routehint_excluded(const struct route_info *routehint,
 	 * found that one direction of a channel is unavailable, but they
 	 * are suggesting we use it the other way.  Very unlikely though! */
 	for (size_t i = 0; i < tal_count(excludes); i++)
-		if (channel_in_routehint(routehint,
-					 excludes[i], strlen(excludes[i])))
+		if (node_or_channel_in_routehint(routehint,
+						 excludes[i],
+						 strlen(excludes[i])))
 			return true;
 	return false;
 }
@@ -294,8 +305,9 @@ static struct command_result *waitsendpay_error(struct command *cmd,
 						const jsmntok_t *error,
 						struct pay_command *pc)
 {
-	const jsmntok_t *codetok, *scidtok, *dirtok;
-	int code;
+	const jsmntok_t *codetok, *failcodetok, *nodeidtok, *scidtok, *dirtok;
+	int code, failcode;
+	bool node_err = false;
 
 	attempt_failed_tok(pc, "waitsendpay", buf, error);
 
@@ -311,31 +323,59 @@ static struct command_result *waitsendpay_error(struct command *cmd,
 		return forward_error(cmd, buf, error, pc);
 	}
 
-	scidtok = json_delve(buf, error, ".data.erring_channel");
-	if (!scidtok)
-		plugin_err("waitsendpay error no erring_channel '%.*s'",
+	failcodetok = json_delve(buf, error, ".data.failcode");
+	if (!json_to_int(buf, failcodetok, &failcode))
+		plugin_err("waitsendpay error gave no 'failcode'? '%.*s'",
 			   error->end - error->start, buf + error->start);
-	dirtok = json_delve(buf, error, ".data.erring_direction");
-	if (!dirtok)
-		plugin_err("waitsendpay error no erring_direction '%.*s'",
-			   error->end - error->start, buf + error->start);
+
+	if (failcode & NODE) {
+		nodeidtok = json_delve(buf, error, ".data.erring_node");
+		if (!nodeidtok)
+			plugin_err("waitsendpay error no erring_node '%.*s'",
+				   error->end - error->start, buf + error->start);
+		node_err = true;
+	} else {
+		scidtok = json_delve(buf, error, ".data.erring_channel");
+		if (!scidtok)
+			plugin_err("waitsendpay error no erring_channel '%.*s'",
+				   error->end - error->start, buf + error->start);
+		dirtok = json_delve(buf, error, ".data.erring_direction");
+		if (!dirtok)
+			plugin_err("waitsendpay error no erring_direction '%.*s'",
+				   error->end - error->start, buf + error->start);
+	}
 
 	if (time_after(time_now(), pc->stoptime)) {
 		return waitsendpay_expired(cmd, pc);
 	}
 
-	/* If failure is in routehint part, try next one */
-	if (channel_in_routehint(pc->current_routehint,
-				 buf + scidtok->start,
-				 scidtok->end - scidtok->start))
-		return next_routehint(cmd, pc);
+	if (node_err) {
+		/* If failure is in routehint part, try next one */
+		if (node_or_channel_in_routehint(pc->current_routehint,
+						 buf + nodeidtok->start,
+						 nodeidtok->end - nodeidtok->start))
+			return next_routehint(cmd, pc);
 
-	/* Otherwise, add erring channel to exclusion list. */
-	tal_arr_expand(&pc->excludes,
-		       tal_fmt(pc->excludes, "%.*s/%c",
+		/* Otherwise, add erring channel to exclusion list. */
+		tal_arr_expand(&pc->excludes,
+			       tal_fmt(pc->excludes, "%.*s",
+			       nodeidtok->end - nodeidtok->start,
+			       buf + nodeidtok->start));
+	} else {
+		/* If failure is in routehint part, try next one */
+		if (node_or_channel_in_routehint(pc->current_routehint,
+						 buf + scidtok->start,
+						 scidtok->end - scidtok->start))
+			return next_routehint(cmd, pc);
+
+		/* Otherwise, add erring channel to exclusion list. */
+		tal_arr_expand(&pc->excludes,
+			       tal_fmt(pc->excludes, "%.*s/%c",
 			       scidtok->end - scidtok->start,
 			       buf + scidtok->start,
 			       buf[dirtok->start]));
+	}
+
 	/* Try again. */
 	return start_pay_attempt(cmd, pc, "Excluded channel %s",
 				 pc->excludes[tal_count(pc->excludes)-1]);
@@ -481,8 +521,9 @@ static bool maybe_exclude(struct pay_command *pc,
 
 	scid = json_get_member(buf, route, "channel");
 
-	if (channel_in_routehint(pc->current_routehint,
-				 buf + scid->start, scid->end - scid->start))
+	if (node_or_channel_in_routehint(pc->current_routehint,
+					 buf + scid->start,
+					 scid->end - scid->start))
 		return false;
 
 	dir = json_get_member(buf, route, "direction");
