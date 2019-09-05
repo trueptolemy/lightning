@@ -430,7 +430,7 @@ def test_htlc_accepted_hook_fail(node_factory):
     inv = l2.rpc.invoice(1000, "lbl", "desc")['bolt11']
     with pytest.raises(RpcError) as excinfo:
         l1.rpc.pay(inv)
-    assert excinfo.value.error['data']['failcode'] == 16399
+    assert excinfo.value.error['data']['failcode'] == 0x2002
     assert excinfo.value.error['data']['erring_index'] == 1
 
     # And the invoice must still be unpaid
