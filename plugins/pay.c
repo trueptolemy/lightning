@@ -1155,7 +1155,7 @@ static void add_attempt(struct json_out *ret,
 		json_out_end(ret, ']');
 	}
 	if (tal_count(attempt->excludes)) {
-		json_out_start(ret, "excluded_channels", '[');
+		json_out_start(ret, "excluded_nodes_or_channels", '[');
 		for (size_t i = 0; i < tal_count(attempt->excludes); i++)
 			json_out_addstr(ret, NULL, attempt->excludes[i]);
 		json_out_end(ret, ']');
