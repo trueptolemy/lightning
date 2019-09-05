@@ -145,7 +145,6 @@ def test_pay_exclude_node(node_factory, bitcoind):
     assert status[1]['strategy'].startswith("Excluded node {}".format(l2.info['id']))
     assert 'failure' in status[1]
 
-
     l4 = node_factory.get_node()
     l1.rpc.connect(l4.info['id'], 'localhost', l4.port)
     l4.rpc.connect(l3.info['id'], 'localhost', l3.port)
