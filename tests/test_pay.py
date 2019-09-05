@@ -126,9 +126,9 @@ def test_pay_exclude_node(node_factory, bitcoind):
     """
     opts = [{}, {'plugin': os.path.join(os.getcwd(), 'tests/plugins/fail_htlcs.py')}, {}]
     l1, l2, l3 = node_factory.line_graph(3, opts=opts)
-
-    inv = l3.rpc.invoice("any", "test1", 'description')['bolt11']
-    with pytest.raises(RpcError, match=r'Route wanted fee of .*msat') as err:
+    amount = 10**8
+    inv = l3.rpc.invoice(amount, "test1", 'description')['bolt11']
+    with pytest.raises(RpcError):
         l1.rpc.pay(inv)
 
     # It should have retried (once without routehint, too)
@@ -158,7 +158,7 @@ def test_pay_exclude_node(node_factory, bitcoind):
                              r'update for channel {}/1 now ACTIVE'
                              .format(scid43)])
 
-    inv = l3.rpc.invoice("any", "test2", 'description')['bolt11']
+    inv = l3.rpc.invoice(amount, "test2", 'description')['bolt11']
 
     # This time pay will work
     l1.rpc.pay(inv)
