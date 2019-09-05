@@ -125,9 +125,9 @@ def test_pay_exclude_node(node_factory, bitcoind):
     """Test excluding the node if there's the NODE-level error in the failure_code
     """
     opts = [{}, {'plugin': os.path.join(os.getcwd(), 'tests/plugins/fail_htlcs.py')}, {}]
-    l1, l2, l3 = node_factory.line_graph(3, opts=opts)
-    amount = 10**7
-    """
+    l1, l2, l3 = node_factory.line_graph(3, opts=opts, wait_for_announce=True)
+    amount = 10**8
+
     inv = l3.rpc.invoice(amount, "test1", 'description')['bolt11']
     with pytest.raises(RpcError):
         l1.rpc.pay(inv)
@@ -137,12 +137,12 @@ def test_pay_exclude_node(node_factory, bitcoind):
 
     # Excludes channel, then ignores routehint which includes that, then
     # it excludes other channel.
-    assert len(status) == 1
+    assert len(status) == 2
     assert status[0]['strategy'] == "Initial attempt"
     assert status[0]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
     assert status[1]['strategy'].startswith("Excluded node {}".format(l2.info['id']))
     assert status[1]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
-"""
+
     l4 = node_factory.get_node()
     l1.rpc.connect(l4.info['id'], 'localhost', l4.port)
     l4.rpc.connect(l3.info['id'], 'localhost', l3.port)
@@ -169,13 +169,13 @@ def test_pay_exclude_node(node_factory, bitcoind):
 
     # Excludes channel, then ignores routehint which includes that, then
     # it excludes other channel.
-    assert len(status) == 2
+    assert len(status) == 3
     assert status[0]['strategy'] == "Initial attempt"
     assert status[0]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
     assert status[1]['strategy'].startswith("Excluded node {}".format(l2.info['id']))
-#    assert status[1]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
-#    assert status[2]['strategy'].startswith("Excluded node {}".format(l2.info['id']))
-    assert 'success' in status[1]
+    assert status[1]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
+    assert status[2]['strategy'].startswith("Excluded node {}".format(l2.info['id']))
+    assert 'success' in status[2]
 
 '''
 def test_pay0(node_factory):
