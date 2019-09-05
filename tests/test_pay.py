@@ -124,6 +124,8 @@ def test_pay_limits(node_factory):
 def test_pay_exclude_node(node_factory, bitcoind):
     """Test excluding the node if there's the NODE-level error in the failure_code
     """
+    # FIXME: Remove our reliance on HTLCs failing on startup and the need for
+    #        this plugin
     opts = [{}, {'plugin': os.path.join(os.getcwd(), 'tests/plugins/fail_htlcs.py')}, {}]
     l1, l2, l3 = node_factory.line_graph(3, opts=opts, wait_for_announce=True)
     amount = 10**8
