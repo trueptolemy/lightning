@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON API: The parameter `exclude` of `getroute` now also support node-id.
 - JSON-API: `pay` can exclude error nodes if the failcode of `sendpay` has the NODE bit set
 - JSON API: The `exclude` argument of `getroute` now also support node-id.
+- JSON-API: `pay` can exclude error nodes if the failcode of `sendpay` has the NODE bit set
 
 ### Deprecated
 
