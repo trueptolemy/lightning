@@ -171,9 +171,9 @@ def test_pay_exclude_node(node_factory, bitcoind):
     assert len(status) == 3
     assert status[0]['strategy'] == "Initial attempt"
     assert status[0]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
-    assert status[1]['strategy'].startswith("Excluded node {}".format(l2.info['id'])
+    assert status[1]['strategy'].startswith("Excluded node {}".format(l2.info['id']))
     assert status[1]['failure']['data']['failcodename'] == 'WIRE_TEMPORARY_NODE_FAILURE'
-    assert status[2]['strategy'].startswith("Excluded node {}".format(l2.info['id'])
+    assert status[2]['strategy'].startswith("Excluded node {}".format(l2.info['id']))
     assert 'success' in status[2]
 
 '''
