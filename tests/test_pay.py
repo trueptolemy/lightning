@@ -146,10 +146,13 @@ def test_pay_exclude_node(node_factory, bitcoind):
     assert 'failure' in status[1]
 
     l4 = node_factory.get_node()
+    l5 = node_factory.get_node()
     l1.rpc.connect(l4.info['id'], 'localhost', l4.port)
-    l4.rpc.connect(l3.info['id'], 'localhost', l3.port)
+    l4.rpc.connect(l5.info['id'], 'localhost', l5.port)
+    l5.rpc.connect(l3.info['id'], 'localhost', l3.port)
     scid14 = l1.fund_channel(l4, 10**6, wait_for_active=False)
-    scid43 = l4.fund_channel(l3, 10**6, wait_for_active=False)
+    scid45 = l4.fund_channel(l5, 10**6, wait_for_active=False)
+    scid53 = l5.fund_channel(l3, 10**6, wait_for_active=False)
     bitcoind.generate_block(5)
 
     l1.daemon.wait_for_logs([r'update for channel {}/0 now ACTIVE'
@@ -159,7 +162,11 @@ def test_pay_exclude_node(node_factory, bitcoind):
                              r'update for channel {}/0 now ACTIVE'
                              .format(scid43),
                              r'update for channel {}/1 now ACTIVE'
-                             .format(scid43)])
+                             .format(scid43),
+                             r'update for channel {}/0 now ACTIVE'
+                             .format(scid53),
+                             r'update for channel {}/1 now ACTIVE'
+                             .format(scid53)])
 
     inv = l3.rpc.invoice(amount, "test2", 'description')['bolt11']
 
