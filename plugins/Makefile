@@ -7,6 +7,9 @@ PLUGIN_AUTOCLEAN_OBJS := $(PLUGIN_AUTOCLEAN_SRC:.c=.o)
 PLUGIN_FUNDCHANNEL_SRC := plugins/fundchannel.c
 PLUGIN_FUNDCHANNEL_OBJS := $(PLUGIN_FUNDCHANNEL_SRC:.c=.o)
 
+PLUGIN_ROUTETRICKS_SRC := plugins/routetricks.c
+PLUGIN_ROUTETRICKS_OBJS := $(PLUGIN_ROUTETRICKS_SRC:.c=.o)
+
 PLUGIN_LIB_SRC := plugins/libplugin.c
 PLUGIN_LIB_HEADER := plugins/libplugin.h
 PLUGIN_LIB_OBJS := $(PLUGIN_LIB_SRC:.c=.o)
@@ -48,17 +51,19 @@ plugins/autoclean: bitcoin/chainparams.o $(PLUGIN_AUTOCLEAN_OBJS) $(PLUGIN_LIB_O
 
 plugins/fundchannel: common/addr.o $(PLUGIN_FUNDCHANNEL_OBJS) $(PLUGIN_LIB_OBJS) $(PLUGIN_COMMON_OBJS) $(JSMN_OBJS) $(CCAN_OBJS)
 
-$(PLUGIN_PAY_OBJS) $(PLUGIN_AUTOCLEAN_OBJS) $(PLUGIN_FUNDCHANNEL_OBJS) $(PLUGIN_LIB_OBJS): $(PLUGIN_LIB_HEADER)
+plugins/routetricks: bitcoin/chainparams.o common/route_hop.o $(PLUGIN_ROUTETRICKS_OBJS) $(PLUGIN_LIB_OBJS) $(PLUGIN_COMMON_OBJS) $(JSMN_OBJS) $(CCAN_OBJS)
+
+$(PLUGIN_PAY_OBJS) $(PLUGIN_AUTOCLEAN_OBJS) $(PLUGIN_FUNDCHANNEL_OBJS) $(PLUGIN_ROUTETRICKS_OBJS) $(PLUGIN_LIB_OBJS): $(PLUGIN_LIB_HEADER)
 
 # Make sure these depend on everything.
-ALL_PROGRAMS += plugins/pay plugins/autoclean plugins/fundchannel
-ALL_OBJS += $(PLUGIN_PAY_OBJS) $(PLUGIN_AUTOCLEAN_OBJS) $(PLUGIN_FUNDCHANNEL_OBJS) $(PLUGIN_LIB_OBJS)
+ALL_PROGRAMS += plugins/pay plugins/autoclean plugins/fundchannel plugins/routetricks
+ALL_OBJS += $(PLUGIN_PAY_OBJS) $(PLUGIN_AUTOCLEAN_OBJS) $(PLUGIN_FUNDCHANNEL_OBJS) $(PLUGIN_ROUTETRICKS_OBJS) $(PLUGIN_LIB_OBJS)
 
-check-source: $(PLUGIN_PAY_SRC:%=check-src-include-order/%) $(PLUGIN_AUTOCLEAN_SRC:%=check-src-include-order/%) $(PLUGIN_FUNDCHANNEL_SRC:%=check-src-include-order/%)
-check-source-bolt: $(PLUGIN_PAY_SRC:%=bolt-check/%) $(PLUGIN_AUTOCLEAN_SRC:%=bolt-check/%) $(PLUGIN_FUNDCHANNEL_SRC:%=bolt-check/%)
-check-whitespace: $(PLUGIN_PAY_SRC:%=check-whitespace/%) $(PLUGIN_AUTOCLEAN_SRC:%=check-whitespace/%) $(PLUGIN_FUNDCHANNEL_SRC:%=check-whitespace/%)
+check-source: $(PLUGIN_PAY_SRC:%=check-src-include-order/%) $(PLUGIN_AUTOCLEAN_SRC:%=check-src-include-order/%) $(PLUGIN_FUNDCHANNEL_SRC:%=check-src-include-order/%) $(PLUGIN_ROUTETRICKS_SRC:%=check-src-include-order/%)
+check-source-bolt: $(PLUGIN_PAY_SRC:%=bolt-check/%) $(PLUGIN_AUTOCLEAN_SRC:%=bolt-check/%) $(PLUGIN_FUNDCHANNEL_SRC:%=bolt-check/%) $(PLUGIN_ROUTETRICKS_SRC:%=bolt-check/%)
+check-whitespace: $(PLUGIN_PAY_SRC:%=check-whitespace/%) $(PLUGIN_AUTOCLEAN_SRC:%=check-whitespace/%) $(PLUGIN_FUNDCHANNEL_SRC:%=check-whitespace/%) $(PLUGIN_ROUTETRICKS_SRC:%=check-whitespace/%)
 
 clean: plugin-clean
 
 plugin-clean:
-	$(RM) $(PLUGIN_PAY_OBJS) $(PLUGIN_AUTOCLEAN_OBJS) $(PLUGIN_FUNDCHANNEL_OBJS) $(PLUGIN_LIB_OBJS)
+	$(RM) $(PLUGIN_PAY_OBJS) $(PLUGIN_AUTOCLEAN_OBJS) $(PLUGIN_FUNDCHANNEL_OBJS) $(PLUGIN_ROUTETRICKS_OBJS) $(PLUGIN_LIB_OBJS)
