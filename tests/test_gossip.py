@@ -17,7 +17,7 @@ with open('config.vars') as configfile:
 
 DEVELOPER = os.getenv("DEVELOPER", config['DEVELOPER']) == "1"
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "needs --dev-broadcast-interval, --dev-channelupdate-interval")
 def test_gossip_pruning(node_factory, bitcoind):
     """ Create channel and see it being updated in time before pruning
@@ -1393,3 +1393,4 @@ def test_gossip_no_backtalk(node_factory):
     # With DEVELOPER, this is long enough for gossip flush.
     time.sleep(2)
     assert not l3.daemon.is_in_log(r'\[OUT\] 0100')
+'''
