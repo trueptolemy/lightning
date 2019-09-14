@@ -84,7 +84,7 @@ def test_pay_limits(node_factory):
     l1, l2, l3 = node_factory.line_graph(3, wait_for_announce=True)
 
     scid12 = l1.get_channel_scid(l2)
-    scid23 = l1.get_channel_scid(l2)
+    scid23 = l2.get_channel_scid(l3)
 
     assert scid12 == '103x2x1'
     assert scid23 == '103x1x1'
