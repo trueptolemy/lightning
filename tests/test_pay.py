@@ -85,8 +85,9 @@ def test_pay_limits(node_factory):
 
     scid12 = l1.get_channel_scid(l2)
     scid23 = l1.get_channel_scid(l2)
-    assert scid12 == 103x1x1
-    assert scid23 == 103x2x1
+    print(scid12)
+    assert scid12 == '103x1x1'
+    assert scid23 == '103x2x1'
 
     # FIXME: pylightning should define these!
     PAY_ROUTE_TOO_EXPENSIVE = 206
