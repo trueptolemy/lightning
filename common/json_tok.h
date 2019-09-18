@@ -12,6 +12,7 @@ struct command;
 struct command_result;
 struct json_escape;
 struct sha256;
+struct short_channel_id;
 
 /* Extract json array token */
 struct command_result *param_array(struct command *cmd, const char *name,
@@ -88,6 +89,13 @@ struct command_result *param_node_id(struct command *cmd,
 				     const char *buffer,
 				     const jsmntok_t *tok,
 				     struct node_id **id);
+
+/* Extract short_channel_id from this string. */
+struct command_result *param_short_channel_id(struct command *cmd,
+					      const char *name,
+					      const char *buffer,
+					      const jsmntok_t *tok,
+					      struct short_channel_id **scid);
 
 /*
  * Set the address of @out to @tok.  Used as a callback by handlers that

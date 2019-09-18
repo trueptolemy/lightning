@@ -1,3 +1,4 @@
+#include <bitcoin/short_channel_id.h>
 #include <ccan/crypto/sha256/sha256.h>
 #include <ccan/json_escape/json_escape.h>
 #include <ccan/str/hex/hex.h>
@@ -211,6 +212,22 @@ struct command_result *param_node_id(struct command *cmd, const char *name,
 
 	return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
 			    "'%s' should be a node id, not '%.*s'",
+			    name, json_tok_full_len(tok),
+			    json_tok_full(buffer, tok));
+}
+
+struct command_result *param_short_channel_id(struct command *cmd,
+					      const char *name,
+					      const char *buffer,
+					      const jsmntok_t *tok,
+					      struct short_channel_id **scid)
+{
+	*scid = tal(cmd, struct short_channel_id);
+	if (json_to_short_channel_id(buffer, tok, *scid))
+		return NULL;
+
+	return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+			    "'%s' should be a short channel id, not '%.*s'",
 			    name, json_tok_full_len(tok),
 			    json_tok_full(buffer, tok));
 }

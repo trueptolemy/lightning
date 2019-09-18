@@ -65,12 +65,6 @@ struct command_result *param_txid(struct command *cmd, const char *name,
 				  const char *buffer, const jsmntok_t *tok,
 				  struct bitcoin_txid **txid);
 
-struct command_result *param_short_channel_id(struct command *cmd,
-					      const char *name,
-					      const char *buffer,
-					      const jsmntok_t *tok,
-					      struct short_channel_id **scid);
-
 enum feerate_style {
 	FEERATE_PER_KSIPA,
 	FEERATE_PER_KBYTE

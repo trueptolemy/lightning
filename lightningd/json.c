@@ -116,22 +116,6 @@ void json_add_short_channel_id(struct json_stream *response,
 			short_channel_id_outnum(scid));
 }
 
-struct command_result *param_short_channel_id(struct command *cmd,
-					      const char *name,
-					      const char *buffer,
-					      const jsmntok_t *tok,
-					      struct short_channel_id **scid)
-{
-	*scid = tal(cmd, struct short_channel_id);
-	if (json_to_short_channel_id(buffer, tok, *scid))
-		return NULL;
-
-	return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
-			    "'%s' should be a short channel id, not '%.*s'",
-			    name, json_tok_full_len(tok),
-			    json_tok_full(buffer, tok));
-}
-
 const char *json_feerate_style_name(enum feerate_style style)
 {
 	switch (style) {
