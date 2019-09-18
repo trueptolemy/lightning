@@ -32,4 +32,8 @@ void json_out_add_raw_len(struct json_out *jout, const char *fieldname,
 void json_out_add_raw(struct json_out *jout, const char *fieldname,
 		      const char *jsonstr);
 
+/* Helper to add a boolean to a json_out */
+void json_out_add_bool(struct json_out *jout, const char *fieldname,
+		       const bool val);
+
 #endif /* LIGHTNING_COMMON_JSON_OUT_H */

@@ -85,3 +85,12 @@ void json_out_add_raw(struct json_out *jout, const char *fieldname,
 {
 	json_out_add_raw_len(jout, fieldname, jsonstr, strlen(jsonstr));
 }
+
+void json_out_add_bool(struct json_out *jout, const char *fieldname,
+		       const bool val)
+{
+	if (val)
+		json_out_add(jout, fieldname, false, "true");
+	else
+		json_out_add(jout, fieldname, false, "false");
+}

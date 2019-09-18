@@ -5,6 +5,7 @@
 #include <ccan/tal/str/str.h>
 #include <common/addr.h>
 #include <common/amount.h>
+#include <common/json_out.h>
 #include <common/json_tok.h>
 #include <common/type_to_string.h>
 #include <common/utils.h>
@@ -36,28 +37,6 @@ struct funding_req {
 	/* Raw JSON from RPC output */
 	const char *error;
 };
-
-/* Helper to copy JSON object directly into a json_out */
-static void json_out_add_raw_len(struct json_out *jout,
-				 const char *fieldname,
-				 const char *jsonstr, size_t len)
-{
-	char *p;
-
-	p = json_out_member_direct(jout, fieldname, len);
-	memcpy(p, jsonstr, len);
-}
-
-/* Helper to add a boolean to a json_out */
-static void json_out_addbool(struct json_out *jout,
-		             const char *fieldname,
-			     const bool val)
-{
-	if (val)
-		json_out_add(jout, fieldname, false, "true");
-	else
-		json_out_add(jout, fieldname, false, "false");
-}
 
 /* Copy field and member to output, if it exists: return member */
 static const jsmntok_t *copy_member(struct json_out *ret,
@@ -316,7 +295,7 @@ static struct command_result *fundchannel_start(struct command *cmd,
 	if (fr->feerate_str)
 		json_out_addstr(ret, "feerate", fr->feerate_str);
 	if (fr->announce_channel)
-		json_out_addbool(ret, "announce", *fr->announce_channel);
+		json_out_add_bool(ret, "announce", *fr->announce_channel);
 
 	json_out_end(ret, '}');
 	json_out_finished(ret);
