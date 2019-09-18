@@ -70,3 +70,18 @@ void json_out_add_route(struct json_out *jout, struct route_hop *route,
 	json_out_end(jout, ']');
 	json_out_end(jout, '}');
 }
+
+void json_out_add_raw_len(struct json_out *jout, const char *fieldname,
+			  const char *jsonstr, size_t len)
+{
+	char *p;
+
+	p = json_out_member_direct(jout, fieldname, len);
+	memcpy(p, jsonstr, len);
+}
+
+void json_out_add_raw(struct json_out *jout, const char *fieldname,
+		      const char *jsonstr)
+{
+	json_out_add_raw_len(jout, fieldname, jsonstr, strlen(jsonstr));
+}

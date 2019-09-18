@@ -25,4 +25,11 @@ void json_out_add_route_hop(struct json_out *jout, struct route_hop *hop);
 void json_out_add_route(struct json_out *jout, struct route_hop *route,
 			struct route_hop *hint);
 
+/* Helper to copy JSON object directly into a json_out */
+void json_out_add_raw_len(struct json_out *jout, const char *fieldname,
+			  const char *jsonstr, size_t len);
+
+void json_out_add_raw(struct json_out *jout, const char *fieldname,
+		      const char *jsonstr);
+
 #endif /* LIGHTNING_COMMON_JSON_OUT_H */

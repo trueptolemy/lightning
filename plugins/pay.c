@@ -5,6 +5,7 @@
 #include <ccan/tal/str/str.h>
 #include <common/amount.h>
 #include <common/bolt11.h>
+#include <common/json_out.h>
 #include <common/pseudorand.h>
 #include <common/type_to_string.h>
 #include <gossipd/gossip_constants.h>
@@ -112,24 +113,6 @@ static struct pay_attempt *current_attempt(struct pay_command *pc)
 	return &pc->ps->attempts[tal_count(pc->ps->attempts)-1];
 }
 
-/* Helper to copy JSON object directly into a json_out */
-static void json_out_add_raw_len(struct json_out *jout,
-				 const char *fieldname,
-				 const char *jsonstr, size_t len)
-{
-	char *p;
-
-	p = json_out_member_direct(jout, fieldname, len);
-	memcpy(p, jsonstr, len);
-}
-
-static void json_out_add_raw(struct json_out *jout,
-			     const char *fieldname,
-			     const char *jsonstr)
-{
-	json_out_add_raw_len(jout, fieldname, jsonstr, strlen(jsonstr));
-}
-
 static struct json_out *failed_start(struct pay_command *pc)
 {
 	struct pay_attempt *attempt = current_attempt(pc);
@@ -176,14 +159,6 @@ static void attempt_failed_tok(struct pay_command *pc, const char *method,
 		     buf + msg->start);
 	copy_member(failed, buf, errtok, "data");
 	failed_end(failed);
-}
-
-/* Helper to add a u64. */
-static void json_out_add_u64(struct json_out *jout,
-			     const char *fieldname,
-			     u64 val)
-{
-	json_out_add(jout, fieldname, false, "%"PRIu64, val);
 }
 
 static struct command_result *start_pay_attempt(struct command *cmd,
