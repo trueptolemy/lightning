@@ -4,13 +4,13 @@
 #include "config.h"
 #include <ccan/short_types/short_types.h>
 #include <common/json.h>
-#include <common/node_id.h>
 
 struct amount_msat;
 struct amount_sat;
 struct command;
 struct command_result;
 struct json_escape;
+struct node_id;
 struct sha256;
 struct short_channel_id;
 

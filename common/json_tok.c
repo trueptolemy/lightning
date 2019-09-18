@@ -8,6 +8,7 @@
 #include <common/json_helpers.h>
 #include <common/json_tok.h>
 #include <common/jsonrpc_errors.h>
+#include <common/node_id.h>
 #include <common/param.h>
 
 struct command_result *param_array(struct command *cmd, const char *name,

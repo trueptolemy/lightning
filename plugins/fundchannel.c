@@ -7,6 +7,7 @@
 #include <common/amount.h>
 #include <common/json_out.h>
 #include <common/json_tok.h>
+#include <common/node_id.h>
 #include <common/type_to_string.h>
 #include <common/utils.h>
 #include <lightningd/json.h>
