@@ -2,12 +2,14 @@
 #define LIGHTNING_GOSSIPD_ROUTING_H
 #include "config.h"
 #include <bitcoin/pubkey.h>
+#include <bitcoin/short_channel_id.h>
 #include <ccan/crypto/siphash24/siphash24.h>
 #include <ccan/htable/htable_type.h>
 #include <ccan/intmap/intmap.h>
 #include <ccan/time/time.h>
 #include <common/amount.h>
 #include <common/node_id.h>
+#include <common/route_hop.h>
 #include <gossipd/broadcast.h>
 #include <gossipd/gossip_constants.h>
 #include <gossipd/gossip_store.h>
@@ -259,14 +261,6 @@ get_channel(const struct routing_state *rstate,
 {
 	return uintmap_get(&rstate->chanmap, scid->u64);
 }
-
-struct route_hop {
-	struct short_channel_id channel_id;
-	int direction;
-	struct node_id nodeid;
-	struct amount_msat amount;
-	u32 delay;
-};
 
 enum exclude_entry_type {
 	EXCLUDE_CHANNEL = 1,
