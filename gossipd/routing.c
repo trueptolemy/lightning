@@ -1232,6 +1232,8 @@ find_route(const tal_t *ctx, struct routing_state *rstate,
 		 unvisited, max_limit, normal_cost_function);
 	dijkstra_cleanup(unvisited);
 
+	status_debug("after dijkstra: max_nodes value %zu", max_limit);
+
 	if (!max_limit) {
 		if (max_nodes == ROUTING_MAX_SCAN_NODES)
 			status_unusual("find_route: cannot find route with "
