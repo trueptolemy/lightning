@@ -893,6 +893,8 @@ static void dijkstra(struct routing_state *rstate,
 					   riskfactor, riskbias,
 					   fuzz, base_seed, unvisited, costfn);
 
+		status_debug("dijkstra: max_nodes value %zu", max_nodes);
+
 		remove_unvisited(cur, unvisited, costfn);
 
 		if (cur == dst) {
