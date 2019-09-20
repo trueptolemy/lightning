@@ -877,34 +877,34 @@ static void dijkstra(struct routing_state *rstate,
 		     u64 riskbias,
 		     double fuzz, const struct siphash_seed *base_seed,
 		     struct unvisited *unvisited,
-		     size_t max_nodes,
+		     size_t *max_nodes,
 		     costfn_t *costfn)
 {
 	struct node *cur;
-	size_t nodes_limit = max_nodes;
+	size_t nodes_limit = *max_nodes;
 
-	if (!max_nodes)
+	if (!(*max_nodes))
 		return;
 
 	/* Include the source node. */
-	max_nodes++;
+	(*max_nodes)++;
 	while ((cur = first_unvisited(unvisited)) != NULL) {
 		update_unvisited_neighbors(rstate, cur, me,
 					   riskfactor, riskbias,
 					   fuzz, base_seed, unvisited, costfn);
 
-		status_debug("dijkstra: max_nodes value %zu", max_nodes);
+		status_debug("dijkstra: max_nodes value %zu", *max_nodes);
 
 		remove_unvisited(cur, unvisited, costfn);
 
 		if (cur == dst) {
 			status_debug("dijkstra: scan %zu nodes",
-				     nodes_limit + 1 - max_nodes);
+				     nodes_limit + 1 - *max_nodes);
 			return;
 		}
 
 		/* Exclude the source node. */
-		if (!(--max_nodes))
+		if (!(--(*max_nodes)))
 			return;
 	}
 }
@@ -1095,7 +1095,7 @@ find_shorter_route(const tal_t *ctx, struct routing_state *rstate,
 		     type_to_string(tmpctx, struct node_id, &dst->id),
 		     type_to_string(tmpctx, struct node_id, &src->id));
 	dijkstra(rstate, dst, NULL, riskfactor, 1, fuzz, base_seed,
-		 unvisited, max_limit, shortest_cost_function);
+		 unvisited, &max_limit, shortest_cost_function);
 	dijkstra_cleanup(unvisited);
 
 	/* Before find_shorter_route, we already find the route under
@@ -1146,7 +1146,7 @@ find_shorter_route(const tal_t *ctx, struct routing_state *rstate,
 		unvisited = dijkstra_prepare(tmpctx, rstate, src, msat,
 					     normal_cost_function);
 		dijkstra(rstate, dst, me, riskfactor, riskbias, fuzz, base_seed,
-			 unvisited, bin_limit, normal_cost_function);
+			 unvisited, &bin_limit, normal_cost_function);
 		dijkstra_cleanup(unvisited);
 
 		assert(bin_limit);
@@ -1229,7 +1229,7 @@ find_route(const tal_t *ctx, struct routing_state *rstate,
 	unvisited = dijkstra_prepare(tmpctx, rstate, src, msat,
 				     normal_cost_function);
 	dijkstra(rstate, dst, me, riskfactor, 1, fuzz, base_seed,
-		 unvisited, max_limit, normal_cost_function);
+		 unvisited, &max_limit, normal_cost_function);
 	dijkstra_cleanup(unvisited);
 
 	status_debug("after dijkstra: max_nodes value %zu", max_limit);
