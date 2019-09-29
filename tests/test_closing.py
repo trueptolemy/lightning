@@ -341,11 +341,11 @@ def test_closing_specified_destination(node_factory, bitcoind):
     # Make sure both nodes have grabbed their close tx funds
     outputs = l2.rpc.listfunds()['outputs']
     assert closetxid in set([o['txid'] for o in outputs])
-    output_to_l2 = [o for o in outputs if o['txid'] == closetxid]
-    output_num_to_addr = 0 if output_to_l2['output'] == 1 else 1
+    output_num2 = [o for o in outputs if o['txid'] == closetxid][0]['output']
+    output_num1 = 0 if output_num2 == 1 else 1
 
-    assert addr == bitcoind.rpc.gettxout(closetxid, output_num_to_addr)['scriptPubKey']['addresses'][0]
-    assert 1 == bitcoind.rpc.gettxout(closetxid, output_num_to_addr)['confirmations']
+    assert addr == bitcoind.rpc.gettxout(closetxid, output_num1)['scriptPubKey']['addresses'][0]
+    assert 1 == bitcoind.rpc.gettxout(closetxid, output_num1)['confirmations']
 
 '''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
