@@ -463,6 +463,8 @@ static struct migration dbmigrations[] = {
     {SQL("ALTER TABLE vars ADD COLUMN blobval BLOB"), NULL},
     {SQL("UPDATE vars SET intval = CAST(val AS INTEGER) WHERE name IN ('bip32_max_index', 'last_processed_block', 'next_pay_index')"), NULL},
     {SQL("UPDATE vars SET blobval = CAST(val AS BLOB) WHERE name = 'genesis_hash'"), NULL},
+    {SQL("ALTER TABLE channels ADD shutdown_scriptpubkey_local BLOB;"),
+     NULL},
 };
 
 /* Leak tracking. */
