@@ -303,7 +303,7 @@ def test_closing_specified_destination(node_factory, bitcoind):
 
     l1.pay(l2, 200000000)
 
-    addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvz'
+    addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
     l1.rpc.close(chan, destination=addr)
 
     # Both nodes should have disabled the channel in their view
