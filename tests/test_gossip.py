@@ -11,7 +11,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 with open('config.vars') as configfile:
     config = dict([(line.rstrip().split('=', 1)) for line in configfile])
 
@@ -1446,3 +1446,4 @@ def test_gossip_no_backtalk(node_factory):
     # With DEVELOPER, this is long enough for gossip flush.
     time.sleep(2)
     assert not l3.daemon.is_in_log(r'\[OUT\] 0100')
+'''
