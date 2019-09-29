@@ -335,13 +335,17 @@ def test_closing_specified_destination(node_factory, bitcoind):
 
     # l1 can't spent the output to addr.
     assert not l1.daemon.is_in_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
+    # Check the txid has at least 1 confirmation
     l2.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
 
     # Make sure both nodes have grabbed their close tx funds
-    assert closetxid in set([o['txid'] for o in l1.rpc.listfunds()['outputs']])
-    assert closetxid in set([o['txid'] for o in l2.rpc.listfunds()['outputs']])
-    assert addr in set([o['address'] for o in l1.rpc.listfunds()['outputs']])
-    assert addr in set([o['address'] for o in l2.rpc.listfunds()['outputs']])
+    outputs = l2.rpc.listfunds()['outputs']
+    assert closetxid in set([o['txid'] for o in outputs])
+    output_num2 = [for o in outputs if o['txid'] == closetxid]['output']
+    output_num1 = 0 if output_num == 1 else 1
+
+    assert addr == bitcoind.rpc.gettxout(closetxid, output_num1)['scriptPubKey']['addresses'][0]
+    assert 1 == bitcoind.rpc.gettxout(closetxid, output_num1)['confirmations']
 
 '''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
