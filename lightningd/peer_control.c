@@ -6,7 +6,9 @@
 #include <bitcoin/script.h>
 #include <bitcoin/tx.h>
 #include <ccan/array_size/array_size.h>
+#include <ccan/cast/cast.h>
 #include <ccan/io/io.h>
+#include <ccan/mem/mem.h>
 #include <ccan/noerr/noerr.h>
 #include <ccan/str/str.h>
 #include <ccan/take/take.h>
@@ -1230,6 +1232,10 @@ static struct command_result *json_close(struct command *cmd,
 	unsigned int *timeout;
 	bool force = true;
 	bool do_timeout;
+	const u8 *local_shutdown_script = NULL;
+	unsigned int *old_timeout;
+	bool *old_force;
+	bool old_style;
 
 	/* For generating help, give new-style. */
 	if (!params || !deprecated_apis) {
@@ -1237,34 +1243,58 @@ static struct command_result *json_close(struct command *cmd,
 			   p_req("id", param_tok, &idtok),
 			   p_opt_def("unilateraltimeout", param_number,
 				     &timeout, 48 * 3600),
+			   p_opt("destination", param_bitcoin_address,
+				 &local_shutdown_script),
 			   NULL))
 			return command_param_failed();
 		do_timeout = (*timeout != 0);
 	} else if (params->type == JSMN_ARRAY) {
-		const jsmntok_t *tok;
-
+		const jsmntok_t *firsttok, *secondtok;
 		/* Could be new or old style; get as tok. */
-		if (!param(cmd, buffer, params,
+ 		if (!param(cmd, buffer, params,
 			   p_req("id", param_tok, &idtok),
-			   p_opt("unilateraltimeout_or_force", param_tok, &tok),
-			   p_opt("timeout", param_number, &timeout),
+			   p_opt("unilateraltimeout_or_force", param_tok, &firsttok),
+			   p_opt("destination_or_timeout", param_tok, &secondtok),
 			   NULL))
 			return command_param_failed();
 
-		if (tok) {
+		if (firsttok) {
 			/* old-style force bool? */
-			if (json_to_bool(buffer, tok, &force)) {
-				/* Old default timeout */
-				if (!timeout) {
-					timeout = tal(cmd, unsigned int);
-					*timeout = 30;
-				}
+			if (json_to_bool(buffer, firsttok, &force))
+				old_style = true;
 			/* New-style timeout */
-			} else {
+			else {
+				old_style = false;
 				timeout = tal(cmd, unsigned int);
-				if (!json_to_number(buffer, tok, timeout)) {
+				if (!json_to_number(buffer, firsttok, timeout))
 					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
 							    "Expected unilerataltimeout to be a number");
+			}
+
+			if (old_style) {
+				timeout = tal(cmd, unsigned int);
+				/* Old default timeout */
+				if (!secondtok)
+					*timeout = 30;
+				else if (!json_to_number(buffer, secondtok, timeout)
+					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+							    "(old-style)close: "
+							    "Expected timeout to be a number. "
+							    "This old-style is deprecated!");
+			} else {
+				if (secondtok) {
+					enum address_parse_result res;
+					res = json_tok_address_scriptpubkey(cmd,
+									    get_chainparams(cmd->ld),
+									    buffer, &secondtok,
+									    &local_shutdown_script);
+					if (res == ADDRESS_PARSE_UNRECOGNIZED)
+						return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+								"Could not parse destination address");
+					else if (res == ADDRESS_PARSE_WRONG_NETWORK)
+						return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+								"Destination address is not on network %s",
+								get_chainparams(cmd->ld)->network_name);
 				}
 			}
 		}
@@ -1274,29 +1304,36 @@ static struct command_result *json_close(struct command *cmd,
 			timeout = tal(cmd, unsigned int);
 			*timeout = 48 * 3600;
 		}
-		do_timeout = true;
+		/* New style: do_timeout unless it's 0 */
+		if (!old_style)
+			do_timeout = (*timeout != 0);
+		else
+			do_timeout = true;
 	} else {
-		unsigned int *old_timeout;
-		bool *old_force;
-
 		/* Named parameters are easy to distinguish */
 		if (!param(cmd, buffer, params,
 			   p_req("id", param_tok, &idtok),
 			   p_opt_def("unilateraltimeout", param_number,
 				     &timeout, 48 * 3600),
+			   p_opt("destination", param_bitcoin_address,
+				 &local_shutdown_script),
 			   p_opt("force", param_bool, &old_force),
 			   p_opt("timeout", param_number, &old_timeout),
 			   NULL))
 			return command_param_failed();
-		/* Old style. */
-		if (old_timeout) {
-			*timeout = *old_timeout;
-		}
-		if (old_force) {
-			/* Use old default */
-			if (!old_timeout)
-				*timeout = 30;
-			force = *old_force;
+
+		/* Old style has lower priority. */
+		if (!local_shutdown_script) {
+			/* Old style. */
+			if (old_timeout) {
+				*timeout = *old_timeout;
+			}
+			if (old_force) {
+				/* Use old default */
+				if (!old_timeout)
+					*timeout = 30;
+				force = *old_force;
+			}
 		}
 
 		/* New style: do_timeout unless it's 0 */
@@ -1333,31 +1370,107 @@ static struct command_result *json_close(struct command *cmd,
 	 * close command may have timed out, and this current command
 	 * will continue waiting for the effects of the previous
 	 * close command. */
-	if (channel->state != CHANNELD_NORMAL &&
-	    channel->state != CHANNELD_AWAITING_LOCKIN &&
-	    channel->state != CHANNELD_SHUTTING_DOWN &&
-	    channel->state != CLOSINGD_SIGEXCHANGE) {
-		return command_fail(cmd, LIGHTNINGD, "Channel is in state %s",
-				    channel_state_name(channel));
-	}
 
 	/* If normal or locking in, transition to shutting down
 	 * state.
 	 * (if already shutting down or sigexchange, just keep
 	 * waiting) */
 	if (channel->state == CHANNELD_NORMAL || channel->state == CHANNELD_AWAITING_LOCKIN) {
+		/* Change the channel state first. */
 		channel_set_state(channel,
 				  channel->state, CHANNELD_SHUTTING_DOWN);
 
+		/* FIXME: When we support local upfront_shutdown_script, local_shutdown_script
+		 * must equal to the local upfront_shutdown_script. */
+		if (local_shutdown_script) {
+			tal_free(channel->shutdown_scriptpubkey[LOCAL]);
+			channel->shutdown_scriptpubkey[LOCAL]
+				= tal_steal(channel, cast_const(u8 *, local_shutdown_script));
+		}
+
 		if (channel->owner)
 			subd_send_msg(channel->owner,
-				      take(towire_channel_send_shutdown(channel)));
-	}
+				      take(towire_channel_send_shutdown(NULL,
+					   channel->shutdown_scriptpubkey[LOCAL])));
+	} else if (channel->state == CHANNELD_SHUTTING_DOWN) {
+		/* FIXME: Add to spec that we must allow repeated shutdown! */
+		if (local_shutdown_script)
+			log_debug(channel->log, "Repeated close command: "
+				  "the new local scriptpubkey is %s, "
+				  "and the old local scriptpubkey is %s",
+				  local_shutdown_script,
+				  channel->shutdown_scriptpubkey[LOCAL]);
+		else {
+			local_shutdown_script = p2wpkh_for_keyidx(channel,
+								  cmd->ld,
+								  channel->final_key_idx);
+			log_debug(channel->log, "Repeated close command: "
+				  "the new local scriptpubkey is %s(the default address), "
+				  "and the old local scriptpubkey is %s",
+				  local_shutdown_script,
+				  channel->shutdown_scriptpubkey[LOCAL]);
+		}
+
+		bool change_script = !memeq(local_shutdown_script,
+					    tal_count(local_shutdown_script),
+					    channel->shutdown_scriptpubkey[LOCAL],
+					    tal_count(channel->shutdown_scriptpubkey[LOCAL]));
+		if (change_script && !channel->owner)
+			return command_fail(cmd, LIGHTNINGD,
+					    "The sub-daemon of channel is down(state %s), "
+					    "can't change to-local destination "
+					    "from %s to %s",
+					    channel_state_name(channel),
+					    channel->shutdown_scriptpubkey[LOCAL],
+					    local_shutdown_script);
+
+		tal_free(channel->shutdown_scriptpubkey[LOCAL]);
+		channel->shutdown_scriptpubkey[LOCAL]
+			= tal_steal(channel, cast_const(u8 *, local_shutdown_script));
+
+		if (channel->owner)
+			subd_send_msg(channel->owner,
+				      take(towire_channel_send_shutdown(NULL,
+					   channel->shutdown_scriptpubkey[LOCAL])));
+	} else if (channel->state == CLOSINGD_SIGEXCHANGE) {
+		u8 *default_script = p2wpkh_for_keyidx(tmpctx, cmd->ld,
+						       channel->final_key_idx);
+		bool is_default = memeq(default_script,
+					tal_count(default_script),
+					channel->shutdown_scriptpubkey[LOCAL],
+					tal_count(channel->shutdown_scriptpubkey[LOCAL]));
+
+		if (local_shutdown_script) {
+			if (!memeq(local_shutdown_script,
+				   tal_count(local_shutdown_script),
+				   channel->shutdown_scriptpubkey[LOCAL],
+				   tal_count(channel->shutdown_scriptpubkey[LOCAL])))
+				return command_fail(cmd, LIGHTNINGD,
+						    "Channel is closing now (in state %s) "
+						    "with to-local destination %s",
+						    channel_state_name(channel),
+						    is_default ?
+						    tal_fmt(tmpctx, "(default) %s",
+							    channel->shutdown_scriptpubkey[LOCAL]) :
+						    (char *)channel->shutdown_scriptpubkey[LOCAL]);
+		} else {
+			if (!is_default)
+				return command_fail(cmd, LIGHTNINGD,
+						    "Channel is closing now (in state %s) "
+						    "with to-local destination %s",
+						    channel_state_name(channel),
+						    channel->shutdown_scriptpubkey[LOCAL]);
+		}
+	} else
+		return command_fail(cmd, LIGHTNINGD, "Channel is in state %s",
+				    channel_state_name(channel));
 
 	/* Register this command for later handling. */
 	register_close_command(cmd->ld, cmd, channel,
 			       do_timeout ? timeout : NULL, force);
 
+	/* We may set new `channel->shutdown_scriptpubkey[LOCAL]` field. Save it. */
+	wallet_channel_save(cmd->ld->wallet, channel);
 	/* Wait until close drops down to chain. */
 	return command_still_pending(cmd);
 }
