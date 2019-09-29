@@ -341,7 +341,7 @@ def test_closing_specified_destination(node_factory, bitcoind):
     # Make sure both nodes have grabbed their close tx funds
     outputs = l2.rpc.listfunds()['outputs']
     assert closetxid in set([o['txid'] for o in outputs])
-    output_num2 = [for o in outputs if o['txid'] == closetxid]['output']
+    output_num2 = [o for o in outputs if o['txid'] == closetxid]['output']
     output_num1 = 0 if output_num == 1 else 1
 
     assert addr == bitcoind.rpc.gettxout(closetxid, output_num1)['scriptPubKey']['addresses'][0]
