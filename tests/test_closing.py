@@ -298,6 +298,58 @@ def test_closing_negotiation_reconnect(node_factory, bitcoind):
 
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
+def test_closing_specified_destination(node_factory, bitcoind):
+    l1, l2 = node_factory.line_graph(2)
+    chan = l1.get_channel_scid(l2)
+
+    l1.pay(l2, 200000000)
+
+    bitcoind.generate_block(5)
+    addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
+    l1.rpc.close(chan, destination=addr)
+
+    l1.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
+    l2.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
+
+    l1.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
+    l2.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
+
+    # And should put closing into mempool.
+    l1.daemon.wait_for_log('sendrawtx exit 0')
+    l2.daemon.wait_for_log('sendrawtx exit 0')
+
+    # Both nodes should have disabled the channel in their view
+    wait_for(lambda: len(l1.getactivechannels()) == 0)
+    wait_for(lambda: len(l2.getactivechannels()) == 0)
+
+    assert bitcoind.rpc.getmempoolinfo()['size'] == 1
+
+    # Now grab the close transaction
+    closetxid = only_one(bitcoind.rpc.getrawmempool(False))
+
+    billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
+    assert billboard == [
+        'CLOSINGD_SIGEXCHANGE:We agreed on a closing fee of 5430 satoshi for tx:{}'.format(closetxid),
+    ]
+    bitcoind.generate_block(1)
+    sync_blockheight(bitcoind, [l1, l2])
+
+    # l1 can't spent the output to addr.
+    assert not l1.daemon.is_in_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
+    # Check the txid has at least 1 confirmation
+    l2.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
+
+    # Make sure both nodes have grabbed their close tx funds
+    outputs = l2.rpc.listfunds()['outputs']
+    assert closetxid in set([o['txid'] for o in outputs])
+    output_num2 = [o for o in outputs if o['txid'] == closetxid][0]['output']
+    output_num1 = 0 if output_num2 == 1 else 1
+
+    assert addr == bitcoind.rpc.gettxout(closetxid, output_num1)['scriptPubKey']['addresses'][0]
+    assert 1 == bitcoind.rpc.gettxout(closetxid, output_num1)['confirmations']
+
+
+@unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_penalty_inhtlc(node_factory, bitcoind, executor, chainparams):
     """Test penalty transaction with an incoming HTLC"""
     # We suppress each one after first commit; HTLC gets added not fulfilled.
