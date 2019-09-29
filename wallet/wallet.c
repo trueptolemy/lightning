@@ -787,6 +787,7 @@ static struct channel *wallet_stmt2channel(struct wallet *w, struct db_stmt *stm
 	struct bitcoin_txid funding_txid;
 	struct bitcoin_signature last_sig;
 	u8 *remote_shutdown_scriptpubkey;
+	u8 *local_shutdown_scriptpubkey;
 	struct changed_htlc *last_sent_commit;
 	s64 final_key_idx, channel_config_id;
 	struct basepoints local_basepoints;
@@ -815,6 +816,7 @@ static struct channel *wallet_stmt2channel(struct wallet *w, struct db_stmt *stm
 	ok &= wallet_shachain_load(w, db_column_u64(stmt, 27), &wshachain);
 
 	remote_shutdown_scriptpubkey = db_column_arr(tmpctx, stmt, 28, u8);
+	local_shutdown_scriptpubkey = db_column_arr(tmpctx, stmt, 46, u8);
 
 	/* Do we have a last_sent_commit, if yes, populate */
 	if (!db_column_is_null(stmt, 41)) {
@@ -910,6 +912,7 @@ static struct channel *wallet_stmt2channel(struct wallet *w, struct db_stmt *stm
 						 db_column_u64(stmt, 0)),
 			   &channel_info,
 			   remote_shutdown_scriptpubkey,
+			   local_shutdown_scriptpubkey,
 			   final_key_idx,
 			   db_column_int(stmt, 34) != 0,
 			   last_sent_commit,
@@ -995,6 +998,7 @@ static bool wallet_channels_load_active(struct wallet *w)
 					", feerate_ppm"
 					", remote_upfront_shutdown_script"
 					", option_static_remotekey"
+					", shutdown_scriptpubkey_local"
 					" FROM channels WHERE state < ?;"));
 	db_bind_int(stmt, 0, CLOSED);
 	db_query_prepared(stmt);
@@ -1257,7 +1261,8 @@ void wallet_channel_save(struct wallet *w, struct channel *chan)
 					"  feerate_base=?,"
 					"  feerate_ppm=?,"
 					"  remote_upfront_shutdown_script=?,"
-					"  option_static_remotekey=?"
+					"  option_static_remotekey=?,"
+					"  shutdown_scriptpubkey_local=?"
 					" WHERE id=?"));
 	db_bind_u64(stmt, 0, chan->their_shachain.id);
 	if (chan->scid)
@@ -1281,9 +1286,9 @@ void wallet_channel_save(struct wallet *w, struct channel *chan)
 	db_bind_amount_msat(stmt, 13, &chan->push);
 	db_bind_amount_msat(stmt, 14, &chan->our_msat);
 
-	if (chan->remote_shutdown_scriptpubkey)
-		db_bind_blob(stmt, 15, chan->remote_shutdown_scriptpubkey,
-			     tal_count(chan->remote_shutdown_scriptpubkey));
+	if (chan->shutdown_scriptpubkey[REMOTE])
+		db_bind_blob(stmt, 15, chan->shutdown_scriptpubkey[REMOTE],
+			     tal_count(chan->shutdown_scriptpubkey[REMOTE]));
 	else
 		db_bind_null(stmt, 15);
 
@@ -1305,7 +1310,12 @@ void wallet_channel_save(struct wallet *w, struct channel *chan)
 	else
 		db_bind_null(stmt, 27);
 	db_bind_int(stmt, 28, chan->option_static_remotekey);
-	db_bind_u64(stmt, 29, chan->dbid);
+	if (chan->shutdown_scriptpubkey[LOCAL])
+		db_bind_blob(stmt, 29, chan->shutdown_scriptpubkey[LOCAL],
+			     tal_count(chan->shutdown_scriptpubkey[LOCAL]));
+	else
+		db_bind_null(stmt, 29);
+	db_bind_u64(stmt, 30, chan->dbid);
 	db_exec_prepared_v2(take(stmt));
 
 	wallet_channel_config_save(w, &chan->channel_info.their_config);

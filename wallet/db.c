@@ -460,6 +460,8 @@ static struct migration dbmigrations[] = {
     /* option_static_remotekey is nailed at creation time. */
     {SQL("ALTER TABLE channels ADD COLUMN option_static_remotekey"
 	 " DEFAULT FALSE;"), NULL },
+    {SQL("ALTER TABLE channels ADD shutdown_scriptpubkey_local BLOB;"),
+     NULL},
 };
 
 /* Leak tracking. */
