@@ -303,8 +303,19 @@ def test_closing_specified_destination(node_factory, bitcoind):
 
     l1.pay(l2, 200000000)
 
+    bitcoind.generate_block(5)
     addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
     l1.rpc.close(chan, destination=addr)
+
+    l1.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
+    l2.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
+
+    l1.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
+    l2.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
+
+    # And should put closing into mempool.
+    l1.daemon.wait_for_log('sendrawtx exit 0')
+    l2.daemon.wait_for_log('sendrawtx exit 0')
 
     # Both nodes should have disabled the channel in their view
     wait_for(lambda: len(l1.getactivechannels()) == 0)
@@ -315,6 +326,10 @@ def test_closing_specified_destination(node_factory, bitcoind):
     # Now grab the close transaction
     closetxid = only_one(bitcoind.rpc.getrawmempool(False))
 
+    billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
+    assert billboard == [
+        'CLOSINGD_SIGEXCHANGE:We agreed on a closing fee of 5430 satoshi for tx:{}'.format(closetxid),
+    ]
     bitcoind.generate_block(1)
 
     l1.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
