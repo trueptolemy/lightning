@@ -558,7 +558,7 @@ u8 *towire_channel_offer_htlc(const tal_t *ctx UNNEEDED, struct amount_msat amou
 u8 *towire_channel_sending_commitsig_reply(const tal_t *ctx UNNEEDED)
 { fprintf(stderr, "towire_channel_sending_commitsig_reply called!\n"); abort(); }
 /* Generated stub for towire_channel_send_shutdown */
-u8 *towire_channel_send_shutdown(const tal_t *ctx UNNEEDED)
+u8 *towire_channel_send_shutdown(const tal_t *ctx UNNEEDED, const u8 *shutdown_scriptpubkey UNNEEDED)
 { fprintf(stderr, "towire_channel_send_shutdown called!\n"); abort(); }
 /* Generated stub for towire_channel_specific_feerates */
 u8 *towire_channel_specific_feerates(const tal_t *ctx UNNEEDED, u32 feerate_base UNNEEDED, u32 feerate_ppm UNNEEDED)
