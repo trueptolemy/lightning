@@ -331,6 +331,7 @@ def test_closing_specified_destination(node_factory, bitcoind):
         'CLOSINGD_SIGEXCHANGE:We agreed on a closing fee of 5430 satoshi for tx:{}'.format(closetxid),
     ]
     bitcoind.generate_block(1)
+    sync_blockheight(bitcoind, [l1, l2])
 
     l1.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
     l2.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
