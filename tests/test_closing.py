@@ -297,6 +297,37 @@ def test_closing_negotiation_reconnect(node_factory, bitcoind):
 
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
+def test_closing_specified_destination(node_factory, bitcoind):
+    l1, l2 = node_factory.line_graph(2)
+    chan = l1.get_channel_scid(l2)
+
+    l1.pay(l2, 200000000)
+
+    addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvz'
+    l1.rpc.close(chan, destination=addr)
+
+    # Both nodes should have disabled the channel in their view
+    wait_for(lambda: len(l1.getactivechannels()) == 0)
+    wait_for(lambda: len(l2.getactivechannels()) == 0)
+
+    assert bitcoind.rpc.getmempoolinfo()['size'] == 1
+
+    # Now grab the close transaction
+    closetxid = only_one(bitcoind.rpc.getrawmempool(False))
+
+    bitcoind.generate_block(1)
+
+    l1.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
+    l2.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
+
+    # Make sure both nodes have grabbed their close tx funds
+    assert closetxid in set([o['txid'] for o in l1.rpc.listfunds()['outputs']])
+    assert closetxid in set([o['txid'] for o in l2.rpc.listfunds()['outputs']])
+    assert addr in set([o['address'] for o in l1.rpc.listfunds()['outputs']])
+    assert addr in set([o['address'] for o in l2.rpc.listfunds()['outputs']])
+
+
+@unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_penalty_inhtlc(node_factory, bitcoind, executor):
     """Test penalty transaction with an incoming HTLC"""
     # We suppress each one after first commit; HTLC gets added not fulfilled.
