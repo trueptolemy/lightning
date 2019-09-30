@@ -4,7 +4,7 @@ from fixtures import *  # noqa: F401,F403
 from fixtures import TEST_NETWORK
 from flaky import flaky  # noqa: F401
 from lightning import RpcError
-from utils import DEVELOPER, only_one, wait_for, sync_blockheight, VALGRIND, TIMEOUT, SLOW_MACHINE
+from utils import DEVELOPER, only_one, wait_for, sync_blockheight, VALGRIND, TIMEOUT, SLOW_MACHINE, COMPAT
 from bitcoin.core import CMutableTransaction, CMutableTxOut
 
 import binascii
@@ -699,6 +699,61 @@ def test_shutdown_awaiting_lockin(node_factory, bitcoind):
     bitcoind.generate_block(100)
     wait_for(lambda: l1.rpc.listpeers()['peers'] == [])
     wait_for(lambda: l2.rpc.listpeers()['peers'] == [])
+
+
+@unittest.skipIf(not COMPAT, "needs COMPAT=1")
+def test_deprecated_fundchannel_start(node_factory, bitcoind):
+    """Test the deprecated old-style:
+       fundchannel {id} {satoshi} {feerate} {announce}
+    """
+    l1, l2 = node_factory.get_nodes(2, opts=[{'allow-deprecated-apis': True}, {}])
+    nodeid = l2.info['id']
+
+    # New style
+    l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, amount=10**6, feerate='2000perkw', announce=True)
+    l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, amount=10**6)
+    # Array
+    l1.rpc.call('check', ['fundchannel_start', nodeid, 10**6, '2000perkw', True])
+    l1.rpc.call('check', ['fundchannel_start', nodeid, 10**6, '2000perkw'])
+    l1.rpc.call('check', ['fundchannel_start', nodeid, 10**6])
+    # No 'amount' nor 'satoshi'
+    with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
+        l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, feerate='2000perkw')
+    # Old style
+    l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, satoshi=10**6, feerate='2000perkw', announce=False)
+    l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, satoshi=10**6, feerate='2000perkw')
+    l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, satoshi=10**6)
+
+
+@unittest.skipIf(not COMPAT, "needs COMPAT=1")
+def test_deprecated_fundchannel(node_factory, bitcoind):
+    """Test the deprecated old-style:
+       fundchannel {id} {satoshi} {feerate} {announce} {minconf} {utxos}
+    """
+    l1, l2 = node_factory.get_nodes(2, opts=[{'allow-deprecated-apis': True}, {}])
+    nodeid = l2.info['id']
+    amount = int(0.007 * 10**8)
+
+    # Get 1 utxo
+    l1.fundwallet(0.01 * 10**8)
+    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 1)
+    utxos = [utxo["txid"] + ":" + str(utxo["output"]) for utxo in l1.rpc.listfunds()["outputs"]][0]
+
+    # New style
+    l1.rpc.check(command_to_check='fundchannel', id=nodeid, amount="all", feerate=7500, minconf=6, utxos=utxos)
+    l1.rpc.check(command_to_check='fundchannel', id=nodeid, amount=amount)
+    # Array
+    l1.rpc.call('check', ['fundchannel', nodeid, amount, 7500, 6, utxos])
+    l1.rpc.call('check', ['fundchannel', nodeid, amount, "normal", 6])
+    l1.rpc.call('check', ['fundchannel', nodeid, "all", 7500])
+    l1.rpc.call('check', ['fundchannel', nodeid, amount])
+    # No 'amount' nor 'satoshi'
+    with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
+        l1.rpc.check(command_to_check='fundchannel', id=nodeid, feerate=7500, utxos=utxos)
+    # Old style
+    l1.rpc.check(command_to_check='fundchannel', id=nodeid, satoshi="all", feerate=7500, minconf=6, utxos=utxos)
+    l1.rpc.check(command_to_check='fundchannel', id=nodeid, satoshi=amount, feerate="slow", utxos=utxos)
+    l1.rpc.check(command_to_check='fundchannel', id=nodeid, satoshi=amount)
 
 
 def test_funding_change(node_factory, bitcoind):
