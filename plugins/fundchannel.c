@@ -402,7 +402,7 @@ static struct command_result *json_fundchannel(struct command *cmd,
 			   p_opt_def("announce", param_bool, &fr->announce_channel, true),
 			   p_opt_def("minconf", param_number, &fr->minconf, 1),
 			   p_opt("utxos", param_string, &fr->utxo_str),
-			   NULL)) {
+			   NULL))
 			return command_param_failed();
 
 		if (!fr->funding_str) {
