@@ -3,7 +3,7 @@ from decimal import Decimal
 from fixtures import *  # noqa: F401,F403
 from flaky import flaky  # noqa: F401
 from lightning import RpcError
-from utils import DEVELOPER, only_one, wait_for, sync_blockheight, VALGRIND, TIMEOUT, SLOW_MACHINE, EXPERIMENTAL_FEATURES
+from utils import DEVELOPER, only_one, wait_for, sync_blockheight, VALGRIND, TIMEOUT, SLOW_MACHINE, EXPERIMENTAL_FEATURES, COMPAT
 from bitcoin.core import CMutableTransaction, CMutableTxOut
 
 import binascii
@@ -697,6 +697,52 @@ def test_shutdown_awaiting_lockin(node_factory, bitcoind):
     bitcoind.generate_block(100)
     wait_for(lambda: l1.rpc.listpeers()['peers'] == [])
     wait_for(lambda: l2.rpc.listpeers()['peers'] == [])
+
+
+@unittest.skipIf(not COMPAT, "needs COMPAT=1")
+def test_fundchannel_start_compact(node_factory, bitcoind):
+    """Test the deprecated old-style:
+       fundchannel {id} {satoshi} {feerate} {announce}
+    """
+    l1, l2, l3, l4, l5 = node_factory.get_nodes(5)
+
+    l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
+    l1.rpc.connect(l3.info["id"], "localhost", l3.port)
+    l1.rpc.connect(l4.info["id"], "localhost", l4.port)
+    l1.rpc.connect(l5.info["id"], "localhost", l5.port)
+
+    l1.rpc.fundchannel_start(node_id=l2.info["id"], satoshi=10**6, feerate='2000perkw')
+    l1.rpc.fundchannel_start(l3.info["id"], satoshi=10**6)
+    l1.rpc.fundchannel_start(l4.info["id"], 10**6, feerate='7500perkw')
+    l1.rpc.fundchannel_start(l5.info["id"], 10**6)
+
+
+@unittest.skipIf(not COMPAT, "needs COMPAT=1")
+def test_fundchannel_compact(node_factory, bitcoind):
+    """Test the deprecated old-style:
+       fundchannel {id} {satoshi} {feerate} {announce} {minconf} {utxos}
+    """
+    l1, l2, l3, l4, l5, l6 = node_factory.get_nodes(6)
+
+    # Get 2 utxos
+    l1.fundwallet(0.01 * 10**8)
+    l1.fundwallet(0.01 * 10**8)
+    l1.fundwallet(0.01 * 10**9)
+    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 3)
+
+    utxos = [utxo["txid"] + ":" + str(utxo["output"]) for utxo in l1.rpc.listfunds()["outputs"]]
+
+    l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
+    l1.rpc.connect(l3.info["id"], "localhost", l3.port)
+    l1.rpc.connect(l4.info["id"], "localhost", l4.port)
+    l1.rpc.connect(l5.info["id"], "localhost", l5.port)
+    l1.rpc.connect(l6.info["id"], "localhost", l6.port)
+
+    l1.rpc.fundchannel(l2.info["id"], satoshi="all", feerate=7500, utxos=[utxos[0]])['channel_id']
+    l1.rpc.fundchannel(l3.info["id"], satoshi=int(0.007 * 10**8), feerate="slow", utxos=[utxos[1]])['channel_id']
+    l1.rpc.fundchannel(node_id=l4.info["id"], satoshi=int(0.007 * 10**8))['channel_id']
+    l1.rpc.fundchannel(l5.info["id"], 10**6, announce=True)['channel_id']
+    l1.rpc.fundchannel(l6.info["id"], 10**6)['channel_id']
 
 
 def test_funding_change(node_factory, bitcoind):
