@@ -411,7 +411,6 @@ static struct command_result *json_fundchannel(struct command *cmd,
 			else
 				return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
 						    "Need set 'amount' field");
-			
 		}
 	}
 
