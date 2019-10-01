@@ -711,9 +711,9 @@ def test_fundchannel_start_compact(node_factory, bitcoind):
     l1.rpc.connect(l4.info["id"], "localhost", l4.port)
     l1.rpc.connect(l5.info["id"], "localhost", l5.port)
 
-    l1.rpc.fundchannel_start(node_id=l2.info["id"], satoshi=10**6, feerate=7500)
+    l1.rpc.fundchannel_start(node_id=l2.info["id"], satoshi=10**6, feerate='2000perkw')
     l1.rpc.fundchannel_start(l3.info["id"], satoshi=10**6)
-    l1.rpc.fundchannel_start(l4.info["id"], 10**6, feerate=7500)
+    l1.rpc.fundchannel_start(l4.info["id"], 10**6, feerate='7500perkw')
     l1.rpc.fundchannel_start(l5.info["id"], 10**6)
 
 
@@ -727,7 +727,8 @@ def test_fundchannel_compact(node_factory, bitcoind):
     # Get 2 utxos
     l1.fundwallet(0.01 * 10**8)
     l1.fundwallet(0.01 * 10**8)
-    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 2)
+    l1.fundwallet(0.01 * 10**8)
+    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 3)
 
     utxos = [utxo["txid"] + ":" + str(utxo["output"]) for utxo in l1.rpc.listfunds()["outputs"]]
 
@@ -738,7 +739,7 @@ def test_fundchannel_compact(node_factory, bitcoind):
     l1.rpc.connect(l6.info["id"], "localhost", l6.port)
 
     l1.rpc.fundchannel(l2.info["id"], satoshi="all", feerate=7500, utxos=[utxos[0]])['channel_id']
-    l1.rpc.fundchannel(l3.info["id"], satoshi=int(0.007 * 10**8), feerate=7500, utxos=[utxos[1]])['channel_id']
+    l1.rpc.fundchannel(l3.info["id"], satoshi=int(0.007 * 10**8), feerate="slow", utxos=[utxos[1]])['channel_id']
     l1.rpc.fundchannel(node_id=l4.info["id"], satoshi=int(0.007 * 10**8))['channel_id']
     l1.rpc.fundchannel(l5.info["id"], 10**6, announce=True)['channel_id']
     l1.rpc.fundchannel(l6.info["id"], 10**6)['channel_id']
