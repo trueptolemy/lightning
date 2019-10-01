@@ -3,7 +3,7 @@ from decimal import Decimal
 from fixtures import *  # noqa: F401,F403
 from flaky import flaky  # noqa: F401
 from lightning import RpcError
-from utils import DEVELOPER, only_one, wait_for, sync_blockheight, VALGRIND, TIMEOUT, SLOW_MACHINE, EXPERIMENTAL_FEATURES
+from utils import DEVELOPER, only_one, wait_for, sync_blockheight, VALGRIND, TIMEOUT, SLOW_MACHINE, EXPERIMENTAL_FEATURES, COMPAT
 from bitcoin.core import CMutableTransaction, CMutableTxOut
 
 import binascii
