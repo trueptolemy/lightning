@@ -700,7 +700,7 @@ def test_shutdown_awaiting_lockin(node_factory, bitcoind):
 
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
-def test_fundchannel_start_compact(node_factory, bitcoind):
+def test_deprecated_fundchannel_start(node_factory, bitcoind):
     """Test the deprecated old-style:
        fundchannel {id} {satoshi} {feerate} {announce}
     """
@@ -711,10 +711,10 @@ def test_fundchannel_start_compact(node_factory, bitcoind):
     l1.rpc.connect(l4.info["id"], "localhost", l4.port)
     l1.rpc.connect(l5.info["id"], "localhost", l5.port)
 
-    l1.rpc.fundchannel_start(node_id=l2.info["id"], satoshi=10**6, feerate='2000perkw')
-    l1.rpc.fundchannel_start(l3.info["id"], satoshi=10**6)
-    l1.rpc.fundchannel_start(l4.info["id"], 10**6, feerate='7500perkw')
-    l1.rpc.fundchannel_start(l5.info["id"], 10**6)
+    l1.rpc.call('fundchannel_start', {'id': l2.info["id"], 'satoshi': 10**6, 'feerate': '2000perkw'})
+    l1.rpc.call('fundchannel_start', [l5.info["id"], 10**6])
+    l1.rpc.call('fundchannel_start', {'id': l3.info["id"], 'satoshi': 10**6})
+    l1.rpc.call('fundchannel_start', {'id': l4.info["id"], 10**6, 'feerate': '7500perkw'})
 
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
