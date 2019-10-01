@@ -105,7 +105,7 @@ set_defaults()
     CDEBUGFLAGS=${CDEBUGFLAGS--std=gnu11 -g -fstack-protector}
     DEVELOPER=${DEVELOPER:-0}
     EXPERIMENTAL_FEATURES=${EXPERIMENTAL_FEATURES:-0}
-    COMPAT=${COMPAT:-1}
+    COMPAT=${COMPAT:-0}
     STATIC=${STATIC:-0}
     ASAN=${ASAN:-0}
     PYTEST=${PYTEST-$(default_pytest)}

@@ -724,11 +724,13 @@ def test_fundchannel_compact(node_factory, bitcoind):
     """
     l1, l2, l3, l4, l5, l6 = node_factory.get_nodes(6)
 
-    # Get 2 utxos
+    # Get 5 utxos
     l1.fundwallet(0.01 * 10**8)
     l1.fundwallet(0.01 * 10**8)
-    l1.fundwallet(0.01 * 10**10)
-    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 3)
+    l1.fundwallet(0.01 * 10**8)
+    l1.fundwallet(0.01 * 10**8)
+    l1.fundwallet(0.01 * 10**8)
+    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 5)
 
     utxos = [utxo["txid"] + ":" + str(utxo["output"]) for utxo in l1.rpc.listfunds()["outputs"]]
 
