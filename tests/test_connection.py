@@ -711,7 +711,7 @@ def test_fundchannel_start_compact(node_factory, bitcoind):
     l1.rpc.connect(l4.info["id"], "localhost", l4.port)
     l1.rpc.connect(l5.info["id"], "localhost", l5.port)
 
-    l1.rpc.fundchannel_start(id=l2.info["id"], satoshi=10**6, feerate=7500)
+    l1.rpc.fundchannel_start(node_id=l2.info["id"], satoshi=10**6, feerate=7500)
     l1.rpc.fundchannel_start(l3.info["id"], satoshi=10**6)
     l1.rpc.fundchannel_start(l4.info["id"], 10**6, feerate=7500)
     l1.rpc.fundchannel_start(l5.info["id"], 10**6)
@@ -738,8 +738,8 @@ def test_fundchannel_compact(node_factory, bitcoind):
     l1.rpc.connect(l6.info["id"], "localhost", l6.port)
 
     l1.rpc.fundchannel(l2.info["id"], satoshi="all", feerate=7500, utxos=[utxos[0]])['channel_id']
-    l1.rpc.fundchannel(l3.info["id"], satoshi=int(0.007 * 10**8), feerate=1000, utxos=[utxos[1]])['channel_id']
-    l1.rpc.fundchannel(id=l4.info["id"], satoshi=int(0.007 * 10**8))['channel_id']
+    l1.rpc.fundchannel(l3.info["id"], satoshi=int(0.007 * 10**8), feerate=7500, utxos=[utxos[1]])['channel_id']
+    l1.rpc.fundchannel(node_id=l4.info["id"], satoshi=int(0.007 * 10**8))['channel_id']
     l1.rpc.fundchannel(l5.info["id"], 10**6, announce=True)['channel_id']
     l1.rpc.fundchannel(l6.info["id"], 10**6)['channel_id']
 
