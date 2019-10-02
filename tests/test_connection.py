@@ -721,7 +721,7 @@ def test_deprecated_fundchannel_start(node_factory, bitcoind):
     l1.rpc.call('fundchannel_start', {'id': nodes[2].info["id"], 'satoshi': 10**6, 'feerate': '2000perkw'})
     # Test pylightning API
     l1.rpc.fundchannel_start(nodes[3].info["id"], 10**6, feerate='7500perkw')
-    l1.rpc.fundchannel_start(nodes[4].info["id"], 'satoshi'=10**6, feerate='7500perkw')
+    l1.rpc.fundchannel_start(nodes[4].info["id"], satoshi=10**6, feerate='7500perkw')
 
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
@@ -755,7 +755,7 @@ def test_fundchannel_compact(node_factory, bitcoind):
     l1.rpc.call('fundchannel', [nodes[3].info["id"], int(0.007 * 10**8), "normal"])
     # Test pylightning API
     l1.rpc.fundchannel(nodes[4].info["id"], 10**6, announce=True)
-    l1.rpc.fundchannel(nodes[5].info["id"], 'satoshi'=10**6, announce=True)
+    l1.rpc.fundchannel(nodes[5].info["id"], satoshi=10**6, announce=True)
 
 
 def test_funding_change(node_factory, bitcoind):
