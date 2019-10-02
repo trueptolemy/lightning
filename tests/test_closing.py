@@ -392,7 +392,7 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(l1.rpc.socket_path)
 
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["sendpay", [{"msatoshi": 200000000, "id": "0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518", "delay": 5, "channel": "1x1x1"}], "hello", "lebal"]}')
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["sendpay", [{"msatoshi": 200000000, "id": "0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518", "delay": 5, "channel": "1x1x1"}], "d4ae787a6df32638e9be404ae85d6f4124b29b9a5ab48612109cf5e571c3df30", "hello", "lebal"]}')
     obj, _ = l1.rpc._readobj(sock, b'')
     assert obj['id'] == 1
     assert 'result' in obj
