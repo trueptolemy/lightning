@@ -1276,11 +1276,12 @@ static struct command_result *json_close(struct command *cmd,
 				/* Old default timeout */
 				if (!secondtok)
 					*timeout = 30;
-				else if (!json_to_number(buffer, secondtok, timeout) {
-					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
-							    "(old-style)close: "
-							    "Expected timeout to be a number. "
-							    "This old-style is deprecated!");
+				else {
+					if (!json_to_number(buffer, secondtok, timeout))
+						return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+								    "(old-style)close: "
+								    "Expected timeout to be a number. "
+								    "This old-style is deprecated!");
 				}
 			} else {
 				if (secondtok) {
