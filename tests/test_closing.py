@@ -368,6 +368,8 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     l1.rpc.check(command_to_check='close', id=l2.info['id'], timeout=10)
     l1.rpc.check(command_to_check='close', id=l2.info['id'])
 
+    l1.rpc.call('check', ['close', l2.info['id']])
+
     # FIXME: python wrapper doesn't let us test array params.
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(l1.rpc.socket_path)
