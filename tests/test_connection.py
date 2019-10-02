@@ -704,7 +704,7 @@ def test_deprecated_fundchannel_start(node_factory, bitcoind):
     """Test the deprecated old-style:
        fundchannel {id} {satoshi} {feerate} {announce}
     """
-    l1 = node_factory.get_node(opts={'allow-deprecated-apis': True})
+    l1 = node_factory.get_node(options={'allow-deprecated-apis': True})
     nodes = node_factory.get_nodes(5)
 
     for n in nodes:
@@ -729,7 +729,7 @@ def test_fundchannel_compact(node_factory, bitcoind):
     """Test the deprecated old-style:
        fundchannel {id} {satoshi} {feerate} {announce} {minconf} {utxos}
     """
-    l1 = node_factory.get_node(opts={'allow-deprecated-apis': True})
+    l1 = node_factory.get_node(options={'allow-deprecated-apis': True})
     nodes = node_factory.get_nodes(6)
 
     # Get 6 utxos
