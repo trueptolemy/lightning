@@ -378,6 +378,9 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     l1.rpc.call('check', ['close', nodeid, False])
     # Not new-style nor old-style
     l1.rpc.call('check', ['close', nodeid, "Given enough eyeballs, all bugs are shallow."])
+    l1.rpc.connect(nodeid, 'localhost', l2.port)
+    l1.fund_channel(l2, 10**6)
+    l1.rpc.call('close', [nodeid, "Given enough eyeballs, all bugs are shallow."])
 
 
 '''
