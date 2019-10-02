@@ -1229,7 +1229,7 @@ static struct command_result *json_close(struct command *cmd,
 	const jsmntok_t *idtok;
 	struct peer *peer;
 	struct channel *channel COMPILER_WANTS_INIT("gcc 7.3.0 fails, 8.3 OK");
-	unsigned int *timeout;
+	unsigned int *timeout = NULL;
 	bool force = true;
 	bool do_timeout;
 	const u8 *local_shutdown_script = NULL;
