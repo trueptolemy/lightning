@@ -714,7 +714,7 @@ def test_deprecated_fundchannel_start(node_factory, bitcoind):
     l1.rpc.call('fundchannel_start', {'id': l2.info["id"], 'satoshi': 10**6, 'feerate': '2000perkw'})
     l1.rpc.call('fundchannel_start', [l5.info["id"], 10**6])
     l1.rpc.call('fundchannel_start', {'id': l3.info["id"], 'satoshi': 10**6})
-    l1.rpc.fundchannel_start(node_id=l4.info["id"], 10**6, feerate='7500perkw')
+    l1.rpc.fundchannel_start(l4.info["id"], 10**6, feerate='7500perkw')
 
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
