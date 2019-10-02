@@ -377,6 +377,10 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     l1.rpc.call('check', ['close', nodeid, True, 10])
     l1.rpc.call('check', ['close', nodeid, False])
 
+    l1.rpc.connect(nodeid, 'localhost', l2.port)
+    l1.fund_channel(l2, 10**6)
+    l1.rpc.call('close', [nodeid, "bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg"])
+
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(l1.rpc.socket_path)
 
