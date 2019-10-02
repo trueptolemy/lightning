@@ -385,7 +385,7 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     rhash = inv['payment_hash']
     bolt11 = inv['bolt11']
     route = [{'msatoshi': amt, 'id': l2.info['id'], 'delay': 5, 'channel': '1x1x1'}]
-    l1.rpc.call('sendpay', [route, rhash, bolt11])
+    l1.rpc.call('sendpay', [route, rhash, bolt11, "label"])
 
     l1.rpc.call('close', [nodeid, "bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg"])
 
