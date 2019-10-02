@@ -11,7 +11,7 @@ import socket
 import threading
 import unittest
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "Too slow without --dev-bitcoind-poll")
 def test_closing(node_factory, bitcoind):
     l1, l2 = node_factory.line_graph(2)
@@ -347,7 +347,7 @@ def test_closing_specified_destination(node_factory, bitcoind):
 
     assert addr == bitcoind.rpc.gettxout(closetxid, output_num1)['scriptPubKey']['addresses'][0]
     assert 1 == bitcoind.rpc.gettxout(closetxid, output_num1)['confirmations']
-
+'''
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
 def test_deprecated_closing_compat(node_factory, bitcoind):
@@ -391,7 +391,7 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     assert 'result' in obj
     assert 'error' not in obj
 
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, false]}' % l2.info['id'])
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, false]}' % l2.info['id'])
     obj, _ = l1.rpc._readobj(sock, b'')
     assert obj['id'] == 1
     assert 'result' in obj
@@ -405,6 +405,7 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     assert 'result' not in obj
     assert 'error' in obj
 
+'''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_penalty_inhtlc(node_factory, bitcoind, executor):
     """Test penalty transaction with an incoming HTLC"""
@@ -1677,3 +1678,4 @@ def test_option_upfront_shutdown_script(node_factory, bitcoind):
     l1.rpc.fundchannel(l2.info['id'], 1000000)
     l1.rpc.close(l2.info['id'])
     wait_for(lambda: sorted([c['state'] for c in only_one(l1.rpc.listpeers()['peers'])['channels']]) == ['CLOSINGD_COMPLETE', 'ONCHAIN', 'ONCHAIN'])
+'''
