@@ -404,6 +404,12 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     assert 'result' in obj
     assert 'error' not in obj
 """
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", "Given enough eyeballs, all bugs are shallow.", 10]}')
+    obj, _ = l1.rpc._readobj(sock, b'')
+    assert obj['id'] == 1
+    assert 'result' in obj
+    assert 'error' not in obj
+
     sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", "Given enough eyeballs, all bugs are shallow."]}')
     obj, _ = l1.rpc._readobj(sock, b'')
     assert obj['id'] == 1
