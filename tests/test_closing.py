@@ -358,6 +358,8 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     l1, l2 = node_factory.get_nodes(2, opts=[{'allow-deprecated-apis': True}, {}])
     addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
     nodeid = l2.info['id']
+
+    l1.rpc.check(command_to_check='close', id=nodeid)
     # New-style
     l1.rpc.check(command_to_check='close', id=nodeid, unilateraltimeout=10, destination=addr)
     l1.rpc.check(command_to_check='close', id=nodeid, unilateraltimeout=0)
@@ -366,7 +368,8 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     l1.rpc.check(command_to_check='close', id=nodeid, force=False)
     l1.rpc.check(command_to_check='close', id=nodeid, force=False, timeout=10)
     l1.rpc.check(command_to_check='close', id=nodeid, timeout=10)
-    l1.rpc.check(command_to_check='close', id=nodeid)
+
+    l1.rpc.call('check', ['close', nodeid])
     # Array(new-style)
     l1.rpc.call('check', ['close', nodeid, 10])
     l1.rpc.call('check', ['close', nodeid, 0, addr])
