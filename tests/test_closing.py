@@ -3,9 +3,10 @@ from flaky import flaky
 from lightning import RpcError
 from utils import only_one, sync_blockheight, wait_for, DEVELOPER, TIMEOUT, VALGRIND, SLOW_MACHINE, COMPAT
 
+import json
 import os
-import queue
 import pytest
+import queue
 import re
 import socket
 import threading
