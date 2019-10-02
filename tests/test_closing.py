@@ -353,35 +353,56 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     """ The old-style close command is:
         close {id} {force} {timeout}
     """
-    l1 = node_factory.get_node(options={'allow-deprecated-apis': True})
-    nodes = node_fatory.get_nodes(13)
+    l1, l2 = node_factory.get_nodes(2, opts=[{'allow-deprecated-apis': True}, {}])
     addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
 
-    for n in nodes:
-        l1.rpc.connect(n.info['id'], 'localhost', n.port)
-        l1.fund_channel(n, 10**6)
-
     # New-style
-    l1.rpc.call('close', {'id': nodes[0].info['id'], 'unilateraltimeout': 10, 'destination': addr})
-    l1.rpc.call('close', {'id': nodes[1].info['id'], 'unilateraltimeout': 0})
-    l1.rpc.call('close', {'id': nodes[2].info['id'], 'destination': addr})
-    # Array(new-style)
-    l1.rpc.call('close', [nodes[3].info['id'], 10, addr])
-    l1.rpc.call('close', [nodes[4].info['id'], 10])
-    # Array(old-style)
-    l1.rpc.call('close', [nodes[5].info['id'], True, 10])
-    l1.rpc.call('close', [nodes[6].info['id'], True])
-    # Not new-style nor old-style
-    with pytest.raises(RpcError, match=r'Expected unilerataltimeout to be a number'):
-        l1.rpc.call('close', [nodes[7].info['id'], "Given enough eyeballs, all bugs are shallow."])
+    l1.rpc.check(command_to_check='close', id=l2.info['id'], unilateraltimeout=10, destination=addr)
+    l1.rpc.check(command_to_check='close', id=l2.info['id'], unilateraltimeout=0)
+    l1.rpc.check(command_to_check='close', id=l2.info['id'], destination=addr)
     # Old-style
-    l1.rpc.call('close', {'id': nodes[7].info['id'], 'force': False})
-    l1.rpc.call('close', {'id': nodes[8].info['id'], 'force': False, 'timeout': 10})
-    l1.rpc.call('close', {'id': nodes[9].info['id'], 'timeout': 10})
-    l1.rpc.call('close', {'id': nodes[10].info['id']})
-    # Test pylightning
-    l1.rpc.close(nodes[11].info['id'], True)
-    l1.rpc.close(nodes[12].info['id'], force=False, timeout=10)
+    l1.rpc.check(command_to_check='close', id=l2.info['id'], force=False)
+    l1.rpc.check(command_to_check='close', id=l2.info['id'], force=False, timeout=10)
+    l1.rpc.check(command_to_check='close', id=l2.info['id'], timeout=10)
+    l1.rpc.check(command_to_check='close', id=l2.info['id'])
+
+    # FIXME: python wrapper doesn't let us test array params.
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.connect(l1.rpc.socket_path)
+
+    # Array(new-style)
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, 10, {}]}'.format(l2.info['id'], addr))
+    obj, _ = l1.rpc._readobj(sock, b'')
+    assert obj['id'] == 1
+    assert 'result' in obj
+    assert 'error' not in obj
+
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, 10]}'.format(l2.info['id']))
+    obj, _ = l1.rpc._readobj(sock, b'')
+    assert obj['id'] == 1
+    assert 'result' in obj
+    assert 'error' not in obj
+
+    # Array(old-style)
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, true, 10]}'.format(l2.info['id']))
+    obj, _ = l1.rpc._readobj(sock, b'')
+    assert obj['id'] == 1
+    assert 'result' in obj
+    assert 'error' not in obj
+
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, false]}'.format(l2.info['id']))
+    obj, _ = l1.rpc._readobj(sock, b'')
+    assert obj['id'] == 1
+    assert 'result' in obj
+    assert 'error' not in obj
+
+    # Not new-style nor old-style
+    invalid = "Given enough eyeballs, all bugs are shallow."
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, {}]}'.format(l2.info['id'], invalid))
+    obj, _ = l1.rpc._readobj(sock, b'')
+    assert obj['id'] == 1
+    assert 'result' not in obj
+    assert 'error' in obj
 
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
