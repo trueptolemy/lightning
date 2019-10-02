@@ -372,26 +372,26 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     sock.connect(l1.rpc.socket_path)
 
     # Array(new-style)
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, 10, {}]}'.format(l2.info['id'], addr))
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, 10, %s]}' % (l2.info['id'], addr))
     obj, _ = l1.rpc._readobj(sock, b'')
     assert obj['id'] == 1
     assert 'result' in obj
     assert 'error' not in obj
 
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, 10]}'.format(l2.info['id']))
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, 10]}' % l2.info['id'])
     obj, _ = l1.rpc._readobj(sock, b'')
     assert obj['id'] == 1
     assert 'result' in obj
     assert 'error' not in obj
 
     # Array(old-style)
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, true, 10]}'.format(l2.info['id']))
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, true, 10]}' % l2.info['id'])
     obj, _ = l1.rpc._readobj(sock, b'')
     assert obj['id'] == 1
     assert 'result' in obj
     assert 'error' not in obj
 
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, false]}'.format(l2.info['id']))
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, false]}' % l2.info['id'])
     obj, _ = l1.rpc._readobj(sock, b'')
     assert obj['id'] == 1
     assert 'result' in obj
@@ -399,13 +399,11 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
 
     # Not new-style nor old-style
     invalid = "Given enough eyeballs, all bugs are shallow."
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", {}, {}]}'.format(l2.info['id'], invalid))
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, %s]}' % (l2.info['id'], invalid))
     obj, _ = l1.rpc._readobj(sock, b'')
     assert obj['id'] == 1
     assert 'result' not in obj
-    # debug
-    assert 'error' not in obj
-
+    assert 'error' in obj
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_penalty_inhtlc(node_factory, bitcoind, executor):
