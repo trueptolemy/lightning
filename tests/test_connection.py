@@ -704,17 +704,24 @@ def test_deprecated_fundchannel_start(node_factory, bitcoind):
     """Test the deprecated old-style:
        fundchannel {id} {satoshi} {feerate} {announce}
     """
-    l1, l2, l3, l4, l5 = node_factory.get_nodes(5)
+    l1 = node_factory.get_node(opts={'allow-deprecated-apis': True})
+    nodes = node_factory.get_nodes(5)
 
-    l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
-    l1.rpc.connect(l3.info["id"], "localhost", l3.port)
-    l1.rpc.connect(l4.info["id"], "localhost", l4.port)
-    l1.rpc.connect(l5.info["id"], "localhost", l5.port)
+    for n in nodes:
+        l1.rpc.connect(n.info['id'], 'localhost', n.port)
 
-    l1.rpc.call('fundchannel_start', {'id': l2.info["id"], 'satoshi': 10**6, 'feerate': '2000perkw'})
-    l1.rpc.call('fundchannel_start', [l5.info["id"], 10**6])
-    l1.rpc.call('fundchannel_start', {'id': l3.info["id"], 'satoshi': 10**6})
-    l1.rpc.fundchannel_start(l4.info["id"], 10**6, feerate='7500perkw')
+    # New style
+    l1.rpc.call('fundchannel_start', {'id': nodes[0].info["id"], 'amount': 10**6, 'feerate': '2000perkw'})
+    # Array
+    l1.rpc.call('fundchannel_start', [nodes[1].info["id"], 10**6, '2000perkw'])
+    # No 'amount' nor 'satoshi'
+    with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
+        l1.rpc.call('fundchannel_start', {'id': nodes[2].info["id"], 'feerate': '2000perkw'})
+    # Old style
+    l1.rpc.call('fundchannel_start', {'id': nodes[2].info["id"], 'satoshi': 10**6, 'feerate': '2000perkw'})
+    # Test pylightning API
+    l1.rpc.fundchannel_start(nodes[3].info["id"], 10**6, feerate='7500perkw')
+    l1.rpc.fundchannel_start(nodes[4].info["id"], 'satoshi'=10**6, feerate='7500perkw')
 
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
@@ -722,27 +729,33 @@ def test_fundchannel_compact(node_factory, bitcoind):
     """Test the deprecated old-style:
        fundchannel {id} {satoshi} {feerate} {announce} {minconf} {utxos}
     """
-    l1, l2, l3, l4, l5, l6 = node_factory.get_nodes(6)
+    l1 = node_factory.get_node(opts={'allow-deprecated-apis': True})
+    nodes = node_factory.get_nodes(6)
 
-    # Get 2 utxos
-    l1.fundwallet(0.01 * 10**8)
-    l1.fundwallet(0.01 * 10**8)
-    l1.fundwallet(0.01 * 10**10)
-    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 3)
+    # Get 6 utxos
+    for i in range(6):
+        l1.fundwallet(0.01 * 10**8)
+
+    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 6)
 
     utxos = [utxo["txid"] + ":" + str(utxo["output"]) for utxo in l1.rpc.listfunds()["outputs"]]
 
-    l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
-    l1.rpc.connect(l3.info["id"], "localhost", l3.port)
-    l1.rpc.connect(l4.info["id"], "localhost", l4.port)
-    l1.rpc.connect(l5.info["id"], "localhost", l5.port)
-    l1.rpc.connect(l6.info["id"], "localhost", l6.port)
+    for n in nodes:
+        l1.rpc.connect(n.info['id'], 'localhost', n.port)
 
-    l1.rpc.fundchannel(l2.info["id"], satoshi="all", feerate=7500, utxos=[utxos[0]])['channel_id']
-    l1.rpc.fundchannel(l3.info["id"], satoshi=int(0.007 * 10**8), feerate="slow", utxos=[utxos[1]])['channel_id']
-    l1.rpc.fundchannel(node_id=l4.info["id"], satoshi=int(0.007 * 10**8))['channel_id']
-    l1.rpc.fundchannel(l5.info["id"], 10**6, announce=True)['channel_id']
-    l1.rpc.fundchannel(l6.info["id"], 10**6)['channel_id']
+    # New style
+    l1.rpc.call('fundchannel', {'id': nodes[0].info["id"], amount: "all", feerate: 7500, utxos: [utxos[0]]})
+    # No 'amount' nor 'satoshi'
+    with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
+        l1.rpc.call('fundchannel', {'id': nodes[1].info["id"], feerate: 7500, utxos: [utxos[1]]})
+    # Old style
+    l1.rpc.call('fundchannel', {'id': nodes[1].info["id"], satoshi: "all", feerate: 7500, utxos: [utxos[1]]})
+    l1.rpc.call('fundchannel', {'id': nodes[2].info["id"], satoshi: int(0.007 * 10**8), feerate: "slow", utxos: [utxos[2]]})
+    # Array
+    l1.rpc.call('fundchannel', [nodes[3].info["id"], int(0.007 * 10**8), "normal"])
+    # Test pylightning API
+    l1.rpc.fundchannel(nodes[4].info["id"], 10**6, announce=True)
+    l1.rpc.fundchannel(nodes[5].info["id"], 'satoshi'=10**6, announce=True)
 
 
 def test_funding_change(node_factory, bitcoind):
