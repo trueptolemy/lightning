@@ -371,11 +371,24 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
 
     l1.rpc.call('check', ['close', nodeid])
     # Array(new-style)
-    l1.rpc.call('check', ['close', nodeid, "hello", 10])
+    l1.rpc.call('check', ['close', nodeid, 10])
     l1.rpc.call('check', ['close', nodeid, 0, addr])
     # Array(old-style)
     l1.rpc.call('check', ['close', nodeid, True, 10])
     l1.rpc.call('check', ['close', nodeid, False])
+
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", \'0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518\', 10, \'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg\']}')
+    obj, _ = l1.rpc._readobj(sock, b'')
+    assert obj['id'] == 1
+    assert 'result' in obj
+    assert 'error' not in obj
+
+    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", "Given enough eyeballs, all bugs are shallow."]}')
+    obj, _ = l1.rpc._readobj(sock, b'')
+    assert obj['id'] == 1
+    assert 'result' in obj
+    assert 'error' not in obj
+
     # Not new-style nor old-style
     res = l1.rpc.call('check', ['close', nodeid, "Given enough eyeballs, all bugs are shallow."])
     assert res == 1
