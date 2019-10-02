@@ -371,9 +371,16 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(l1.rpc.socket_path)
 
+    def _param_json_array_call(arr, sock, node):
+        s = json.dumps(arr, cls=json.JSONEncoder)
+        sock.sendall(bytearray(s, 'UTF-8'))
+        obj, _ = node.rpc._readobj(sock, b'')
+        return obj
+
     # Array(new-style)
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, 10, %s]}' % (l2.info['id'], addr))
-    obj, _ = l1.rpc._readobj(sock, b'')
+
+    arr = ["close", l2.info['id'], 10, addr]
+    obj = _param_json_array_call(arr, sock, l1)
     assert obj['id'] == 1
     assert 'result' in obj
     assert 'error' not in obj
