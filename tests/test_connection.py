@@ -15,7 +15,7 @@ import shutil
 import time
 import unittest
 
-
+'''
 def test_connect(node_factory):
     l1, l2 = node_factory.line_graph(2, fundchannel=False)
 
@@ -697,7 +697,7 @@ def test_shutdown_awaiting_lockin(node_factory, bitcoind):
     bitcoind.generate_block(100)
     wait_for(lambda: l1.rpc.listpeers()['peers'] == [])
     wait_for(lambda: l2.rpc.listpeers()['peers'] == [])
-
+'''
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
 def test_deprecated_fundchannel_start(node_factory, bitcoind):
@@ -757,7 +757,7 @@ def test_fundchannel_compact(node_factory, bitcoind):
     l1.rpc.fundchannel(nodes[4].info["id"], 10**6, announce=True)
     l1.rpc.fundchannel(nodes[5].info["id"], satoshi=10**6, announce=True)
 
-
+'''
 def test_funding_change(node_factory, bitcoind):
     """Add some funds, fund a channel, and make sure we remember the change
     """
@@ -2042,3 +2042,4 @@ def test_feerate_spam(node_factory):
     # But it won't do it again once it's at max.
     with pytest.raises(TimeoutError):
         l1.daemon.wait_for_log('peer_out WIRE_UPDATE_FEE', timeout=5)
+'''

@@ -11,7 +11,7 @@ import subprocess
 import time
 import unittest
 
-
+'''
 with open('config.vars') as configfile:
     config = dict([(line.rstrip().split('=', 1)) for line in configfile])
 
@@ -1502,3 +1502,4 @@ def test_gossip_ratelimit(node_factory):
                    check=True, timeout=TIMEOUT)
 
     wait_for(lambda: [c['fee_per_millionth'] for c in l3.rpc.listchannels()['channels']] == [1006])
+'''
