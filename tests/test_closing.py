@@ -1,7 +1,7 @@
 from fixtures import *  # noqa: F401,F403
 from flaky import flaky
 from lightning import RpcError
-from utils import only_one, sync_blockheight, wait_for, DEVELOPER, TIMEOUT, VALGRIND, SLOW_MACHINE
+from utils import only_one, sync_blockheight, wait_for, DEVELOPER, TIMEOUT, VALGRIND, SLOW_MACHINE, COMPAT
 
 import os
 import queue
@@ -346,6 +346,42 @@ def test_closing_specified_destination(node_factory, bitcoind):
 
     assert addr == bitcoind.rpc.gettxout(closetxid, output_num1)['scriptPubKey']['addresses'][0]
     assert 1 == bitcoind.rpc.gettxout(closetxid, output_num1)['confirmations']
+
+
+@unittest.skipIf(not COMPAT, "needs COMPAT=1")
+def test_deprecated_closing_compat(node_factory, bitcoind):
+    """ The old-style close command is:
+        close {id} {force} {timeout}
+    """
+    l1 = node_factory.get_node(options={'allow-deprecated-apis': True})
+    nodes = node_fatory.get_nodes(13)
+    addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
+
+    for n in nodes:
+        l1.rpc.connect(n.info['id'], 'localhost', n.port)
+        l1.fund_channel(n, 10**6)
+
+    # New-style
+    l1.rpc.call('close', {'id': nodes[0].info['id'], 'unilateraltimeout': 10, 'destination': addr})
+    l1.rpc.call('close', {'id': nodes[1].info['id'], 'unilateraltimeout': 0})
+    l1.rpc.call('close', {'id': nodes[2].info['id'], 'destination': addr})
+    # Array(new-style)
+    l1.rpc.call('close', [nodes[3].info['id'], 10, addr])
+    l1.rpc.call('close', [nodes[4].info['id'], 10])
+    # Array(old-style)
+    l1.rpc.call('close', [nodes[5].info['id'], True, 10])
+    l1.rpc.call('close', [nodes[6].info['id'], True])
+    # Not new-style nor old-style
+    with pytest.raises(RpcError, match=r'Expected unilerataltimeout to be a number'):
+        l1.rpc.call('close', [nodes[7].info['id'], "Given enough eyeballs, all bugs are shallow."])
+    # Old-style
+    l1.rpc.call('close', {'id': nodes[7].info['id'], 'force': False})
+    l1.rpc.call('close', {'id': nodes[8].info['id'], 'force': False, 'timeout': 10})
+    l1.rpc.call('close', {'id': nodes[9].info['id'], 'timeout': 10})
+    l1.rpc.call('close', {'id': nodes[10].info['id']})
+    # Test pylightning
+    l1.rpc.close(nodes[11].info['id'], True)
+    l1.rpc.close(nodes[12].info['id'], force=False, timeout=10)
 
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
