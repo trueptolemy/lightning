@@ -7,6 +7,7 @@ import os
 import queue
 import pytest
 import re
+import socket
 import threading
 import unittest
 

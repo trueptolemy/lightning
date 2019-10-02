@@ -1235,7 +1235,7 @@ static struct command_result *json_close(struct command *cmd,
 	const u8 *local_shutdown_script = NULL;
 	unsigned int *old_timeout;
 	bool *old_force;
-	bool old_style;
+	bool old_style = false;
 
 	/* For generating help, give new-style. */
 	if (!params || !deprecated_apis) {
@@ -1264,7 +1264,6 @@ static struct command_result *json_close(struct command *cmd,
 				old_style = true;
 			/* New-style timeout */
 			else {
-				old_style = false;
 				timeout = tal(cmd, unsigned int);
 				if (!json_to_number(buffer, firsttok, timeout))
 					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
