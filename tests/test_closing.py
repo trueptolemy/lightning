@@ -357,63 +357,25 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     """
     l1, l2 = node_factory.get_nodes(2, opts=[{'allow-deprecated-apis': True}, {}])
     addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
-
+    nodeid = l2.info['id']
     # New-style
-    l1.rpc.check(command_to_check='close', id=l2.info['id'], unilateraltimeout=10, destination=addr)
-    l1.rpc.check(command_to_check='close', id=l2.info['id'], unilateraltimeout=0)
-    l1.rpc.check(command_to_check='close', id=l2.info['id'], destination=addr)
+    l1.rpc.check(command_to_check='close', id=nodeid, unilateraltimeout=10, destination=addr)
+    l1.rpc.check(command_to_check='close', id=nodeid, unilateraltimeout=0)
+    l1.rpc.check(command_to_check='close', id=nodeid, destination=addr)
     # Old-style
-    l1.rpc.check(command_to_check='close', id=l2.info['id'], force=False)
-    l1.rpc.check(command_to_check='close', id=l2.info['id'], force=False, timeout=10)
-    l1.rpc.check(command_to_check='close', id=l2.info['id'], timeout=10)
-    l1.rpc.check(command_to_check='close', id=l2.info['id'])
-
-    l1.rpc.call('check', ['close', l2.info['id']])
-
-    # FIXME: python wrapper doesn't let us test array params.
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(l1.rpc.socket_path)
-
-    def _param_json_array_call(arr, sock, node):
-        s = json.dumps(arr, cls=json.JSONEncoder)
-        sock.sendall(bytearray(s, 'UTF-8'))
-        obj, _ = node.rpc._readobj(sock, b'')
-        return obj
-
+    l1.rpc.check(command_to_check='close', id=nodeid, force=False)
+    l1.rpc.check(command_to_check='close', id=nodeid, force=False, timeout=10)
+    l1.rpc.check(command_to_check='close', id=nodeid, timeout=10)
+    l1.rpc.check(command_to_check='close', id=nodeid)
     # Array(new-style)
-
-    arr = ["close", l2.info['id'], 10, addr]
-    obj = _param_json_array_call(arr, sock, l1)
-    assert obj['id'] == 1
-    assert 'result' in obj
-    assert 'error' not in obj
-
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, 10]}' % l2.info['id'])
-    obj, _ = l1.rpc._readobj(sock, b'')
-    assert obj['id'] == 1
-    assert 'result' in obj
-    assert 'error' not in obj
-
+    l1.rpc.call('check', ['close', nodeid, 10])
+    l1.rpc.call('check', ['close', nodeid, 0, addr])
     # Array(old-style)
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, true, 10]}' % l2.info['id'])
-    obj, _ = l1.rpc._readobj(sock, b'')
-    assert obj['id'] == 1
-    assert 'result' in obj
-    assert 'error' not in obj
-
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, false]}' % l2.info['id'])
-    obj, _ = l1.rpc._readobj(sock, b'')
-    assert obj['id'] == 1
-    assert 'result' in obj
-    assert 'error' not in obj
-
+    l1.rpc.call('check', ['close', nodeid, True, 10])
+    l1.rpc.call('check', ['close', nodeid, False])
     # Not new-style nor old-style
-    invalid = "Given enough eyeballs, all bugs are shallow."
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", %s, %s]}' % (l2.info['id'], invalid))
-    obj, _ = l1.rpc._readobj(sock, b'')
-    assert obj['id'] == 1
-    assert 'result' not in obj
-    assert 'error' in obj
+    l1.rpc.call('check', ['close', nodeid, "Given enough eyeballs, all bugs are shallow."])
+
 
 '''
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
