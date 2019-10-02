@@ -367,7 +367,7 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     # Old-style
     l1.rpc.check(command_to_check='close', id=nodeid, force=False)
     l1.rpc.check(command_to_check='close', id=nodeid, force=False, timeout=10)
-    l1.rpc.check(command_to_check='close', id=nodeid, timeout=10)
+    l1.rpc.check(command_to_check='close', id=nodeid, timeout="hello")
 
     l1.rpc.call('check', ['close', nodeid])
     # Array(new-style)
