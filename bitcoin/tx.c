@@ -47,7 +47,6 @@ int bitcoin_tx_add_output(struct bitcoin_tx *tx, const u8 *script,
 	assert(ret == WALLY_OK);
 
 	wally_tx_output_free(output);
-	bitcoin_tx_output_set_amount(tx, i, amount);
 
 	return i;
 }
