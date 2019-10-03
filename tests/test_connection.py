@@ -712,17 +712,25 @@ def test_deprecated_fundchannel_start(node_factory, bitcoind):
     # New style
     l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, amount=10**6, feerate='2000perkw', announce=True)
     l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, amount=10**6)
+
     # Array
     l1.rpc.call('check', ['fundchannel_start', nodeid, 10**6, '2000perkw', True])
     l1.rpc.call('check', ['fundchannel_start', nodeid, 10**6, '2000perkw'])
     l1.rpc.call('check', ['fundchannel_start', nodeid, 10**6])
-    # No 'amount' nor 'satoshi'
-    with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
-        l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, feerate='2000perkw')
+
+    # No 'amount' nor 'satoshi'(array type)
+    with pytest.raises(RpcError, match=r'.*should be a satoshi amount, not.*'):
+        l1.rpc.call('check', ['fundchannel_start', nodeid, '2000perkw'])
     # Old style
     l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, satoshi=10**6, feerate='2000perkw', announce=False)
     l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, satoshi=10**6, feerate='2000perkw')
     l1.rpc.check(command_to_check='fundchannel_start', id=nodeid, satoshi=10**6)
+
+    # For json object type, 'check' command can't find the error.
+    l1.rpc.connect(nodeid, 'localhost', l2.port)
+    # No 'amount' nor 'satoshi'(object type)
+    with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
+        l1.rpc.call('fundchannel_start', {'id': nodeid, 'feerate': '2000perkw'])
 
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
@@ -742,18 +750,27 @@ def test_deprecated_fundchannel(node_factory, bitcoind):
     # New style
     l1.rpc.check(command_to_check='fundchannel', id=nodeid, amount="all", feerate=7500, minconf=6, utxos=utxos)
     l1.rpc.check(command_to_check='fundchannel', id=nodeid, amount=amount)
+
     # Array
     l1.rpc.call('check', ['fundchannel', nodeid, amount, 7500, 6, utxos])
     l1.rpc.call('check', ['fundchannel', nodeid, amount, "normal", 6])
     l1.rpc.call('check', ['fundchannel', nodeid, "all", 7500])
     l1.rpc.call('check', ['fundchannel', nodeid, amount])
-    # No 'amount' nor 'satoshi'
+
+    # No 'amount' nor 'satoshi'(array type)
     with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
-        l1.rpc.check(command_to_check='fundchannel', id=nodeid, feerate=7500, utxos=utxos)
+        l1.rpc.call('check', ['fundchannel', nodeid, 7500, utxos])
+
     # Old style
     l1.rpc.check(command_to_check='fundchannel', id=nodeid, satoshi="all", feerate=7500, minconf=6, utxos=utxos)
     l1.rpc.check(command_to_check='fundchannel', id=nodeid, satoshi=amount, feerate="slow", utxos=utxos)
     l1.rpc.check(command_to_check='fundchannel', id=nodeid, satoshi=amount)
+
+    # For json object type, 'check' command can't find the error.
+    l1.rpc.connect(nodeid, 'localhost', l2.port)
+    # No 'amount' nor 'satoshi'(object type)
+    with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
+        l1.rpc.call('fundchannel', {'id': nodeid, 'feerate': 7500, 'utxos': utxos})
 
 
 def test_funding_change(node_factory, bitcoind):
