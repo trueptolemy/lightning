@@ -736,7 +736,7 @@ def test_deprecated_fundchannel(node_factory, bitcoind):
     for i in range(7):
         l1.fundwallet(0.01 * 10**8)
 
-    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 6)
+    wait_for(lambda: len(l1.rpc.listfunds()["outputs"]) == 7)
 
     utxos = [utxo["txid"] + ":" + str(utxo["output"]) for utxo in l1.rpc.listfunds()["outputs"]]
 
