@@ -371,7 +371,8 @@ void bitcoin_txid(const struct bitcoin_tx *tx, struct bitcoin_txid *txid)
 /* Use the bitcoin_tx destructor to also free the wally_tx */
 static void bitcoin_tx_destroy(struct bitcoin_tx *tx)
 {
-	wally_tx_free(tx->wtx);
+	int ret = wally_tx_free(tx->wtx);
+	assert(ret == WALLY_OK);
 }
 
 struct bitcoin_tx *bitcoin_tx(const tal_t *ctx,
