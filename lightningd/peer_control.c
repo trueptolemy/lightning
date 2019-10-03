@@ -1221,6 +1221,55 @@ command_find_channel(struct command *cmd,
 	}
 }
 
+static struct command_result *param_tok_timeout_or_force(
+					struct command *cmd, const char *name,
+					const char *buffer, const jsmntok_t * tok,
+					const jsmntok_t **out)
+{
+	if (command_check_only(cmd)) {
+		unsigned int timeout;
+		bool force;
+		if (!json_to_bool(buffer, tok, &force)) {
+			if (!json_to_number(buffer, tok, &timeout))
+				return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+						    "Expected unilerataltimeout to be a number");
+		}
+		return NULL;
+	}
+
+	*out = tok;
+	return NULL;
+}
+
+static struct command_result *param_tok_dest_or_timeout(
+					struct command *cmd, const char *name,
+					const char *buffer, const jsmntok_t * tok,
+					const jsmntok_t **out)
+{
+	if (command_check_only(cmd)) {
+		unsigned int timeout;
+		const u8 *script;
+		if (!json_to_number(buffer, tok, &timeout)) {
+			enum address_parse_result res;
+			res = json_tok_address_scriptpubkey(cmd,
+							    get_chainparams(cmd->ld),
+							    buffer, tok,
+							    &script);
+			if (res == ADDRESS_PARSE_UNRECOGNIZED)
+				return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+						    "Could not parse destination address");
+			else if (res == ADDRESS_PARSE_WRONG_NETWORK)
+				return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+						    "Destination address is not on network %s",
+						    get_chainparams(cmd->ld)->network_name);
+		}
+		return NULL;
+	}
+
+	*out = tok;
+	return NULL;
+}
+
 static struct command_result *json_close(struct command *cmd,
 					 const char *buffer,
 					 const jsmntok_t *obj UNNEEDED,
@@ -1253,8 +1302,10 @@ static struct command_result *json_close(struct command *cmd,
 		/* Could be new or old style; get as tok. */
  		if (!param(cmd, buffer, params,
 			   p_req("id", param_tok, &idtok),
-			   p_opt("unilateraltimeout_or_force", param_tok, &firsttok),
-			   p_opt("destination_or_timeout", param_tok, &secondtok),
+			   p_opt("unilateraltimeout_or_force",
+				 param_tok_timeout_or_force, &firsttok),
+			   p_opt("destination_or_timeout",
+				 param_tok_dest_or_timeout, &secondtok),
 			   NULL))
 			return command_param_failed();
 
@@ -1291,11 +1342,11 @@ static struct command_result *json_close(struct command *cmd,
 									    &local_shutdown_script);
 					if (res == ADDRESS_PARSE_UNRECOGNIZED)
 						return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
-								"Could not parse destination address");
+								    "Could not parse destination address");
 					else if (res == ADDRESS_PARSE_WRONG_NETWORK)
 						return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
-								"Destination address is not on network %s",
-								get_chainparams(cmd->ld)->network_name);
+								    "Destination address is not on network %s",
+								    get_chainparams(cmd->ld)->network_name);
 				}
 			}
 		}
