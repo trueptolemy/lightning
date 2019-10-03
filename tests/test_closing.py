@@ -376,50 +376,9 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     # Array(old-style)
     l1.rpc.call('check', ['close', nodeid, True, 10])
     l1.rpc.call('check', ['close', nodeid, False])
-
-    l1.rpc.connect(nodeid, 'localhost', l2.port)
-    l1.fund_channel(l2, 10**6)
-
-    amt = 200000000
-    inv = l2.rpc.invoice(amt, 'testpayment2', 'desc')
-    rhash = inv['payment_hash']
-    bolt11 = inv['bolt11']
-    route = [{'msatoshi': amt, 'id': l2.info['id'], 'delay': 5, 'channel': '1x1x1'}]
-#    l1.rpc.call('sendpay', [route, rhash, 10**8, "label"])
-
-#    l1.rpc.call('close', [nodeid, "bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg"])
-
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(l1.rpc.socket_path)
-#    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["sendpay", [{"msatoshi": 200000000, "id": "0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518", "delay": 5, "channel": "1x1x1"}], "d4ae787a6df32638e9be404ae85d6f4124b29b9a5ab48612109cf5e571c3df30", "hello", "lebal"]}')
-#    obj, _ = l1.rpc._readobj(sock, b'')
-#    assert obj['id'] == 1
-#    assert 'result' in obj
-#    assert 'error' not in obj
-
-#    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", "0266e4598d1d3c415f572a8488830b60f7e744ed9235eb0b1ba93283b315c03518", "bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg", 10]}')
-#    obj, _ = l1.rpc._readobj(sock, b'')
-#    assert obj['id'] == 1
-#    assert 'result' in obj
-#    assert 'error' not in obj
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", "Given enough eyeballs, all bugs are shallow.", 10]}')
-    obj, _ = l1.rpc._readobj(sock, b'')
-    assert obj['id'] == 1
-    assert 'result' in obj
-    assert 'error' not in obj
-
-    sock.sendall(b'{"id":1, "jsonrpc":"2.0","method":"check","params":["close", "Given enough eyeballs, all bugs are shallow."]}')
-    obj, _ = l1.rpc._readobj(sock, b'')
-    assert obj['id'] == 1
-    assert 'result' in obj
-    assert 'error' not in obj
-
     # Not new-style nor old-style
-    res = l1.rpc.call('check', ['close', nodeid, "Given enough eyeballs, all bugs are shallow."])
-    assert res == 1
-    l1.rpc.connect(nodeid, 'localhost', l2.port)
-    l1.fund_channel(l2, 10**6)
-    l1.rpc.call('close', [nodeid, "Given enough eyeballs, all bugs are shallow."])
+    with pytest.raises(RpcError, match=r'Expected unilerataltimeout to be a number'):
+        l1.rpc.call('check', ['close', nodeid, "Given enough eyeballs, all bugs are shallow."])
 
 
 '''
