@@ -730,7 +730,7 @@ def test_deprecated_fundchannel_start(node_factory, bitcoind):
     l1.rpc.connect(nodeid, 'localhost', l2.port)
     # No 'amount' nor 'satoshi'(object type)
     with pytest.raises(RpcError, match=r'Need set \'amount\' field'):
-        l1.rpc.call('fundchannel_start', {'id': nodeid, 'feerate': '2000perkw'])
+        l1.rpc.call('fundchannel_start', {'id': nodeid, 'feerate': '2000perkw'})
 
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
