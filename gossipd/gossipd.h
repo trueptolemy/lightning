@@ -124,6 +124,9 @@ struct peer {
 
 	/* The daemon_conn used to queue messages to/from the peer. */
 	struct daemon_conn *dc;
+
+	/* Gossiped only accept one "ping" per 30 seconds */
+	struct oneshot *ping_timer;
 };
 
 /* Search for a peer. */

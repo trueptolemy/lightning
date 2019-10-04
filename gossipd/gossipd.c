@@ -359,10 +359,32 @@ void update_peers_broadcast_index(struct list_head *peers, u32 offset)
 	}
 }
 
+static void ping_flooding_prevent_timeout(struct peer *peer)
+{
+	tal_free(peer->ping_timer);
+	peer->ping_timer = NULL;
+}
+
 /*~ For simplicity, all pings and pongs are forwarded to us here in gossipd. */
 static u8 *handle_ping(struct peer *peer, const u8 *ping)
 {
 	u8 *pong;
+
+	if(peer->ping_timer) {
+		destroy_peer(peer);
+		return;
+	}
+
+	/* BOLT #1:
+	 *
+	 * A node receiving a `ping` message:
+	 *  - SHOULD fail the channels if it has received significantly in
+	 *    excess of one `ping` per 30 seconds.
+	 */
+
+	peer->ping_timer
+		= new_reltimer(&peer->daemon->timers, peer, time_from_sec(30),
+			       ping_flooding_prevent_timeout, peer);
 
 	/* This checks the ping packet and makes a pong reply if needed; peer
 	 * can specify it doesn't want a response, to simulate traffic. */
@@ -639,6 +661,7 @@ static struct io_plan *connectd_new_peer(struct io_conn *conn,
 	peer->query_channel_blocks = NULL;
 	peer->query_channel_range_cb = NULL;
 	peer->num_pings_outstanding = 0;
+	peer->ping_timer = NULL;
 	peer->gossip_level = peer_gossip_level(daemon,
 					       peer->gossip_queries_feature);
 
