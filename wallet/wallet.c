@@ -1345,11 +1345,8 @@ void wallet_channel_save(struct wallet *w, struct channel *chan)
 	else
 		db_bind_null(stmt, 27);
 	db_bind_int(stmt, 28, chan->option_static_remotekey);
-	if (chan->shutdown_scriptpubkey[LOCAL])
-		db_bind_blob(stmt, 29, chan->shutdown_scriptpubkey[LOCAL],
-			     tal_count(chan->shutdown_scriptpubkey[LOCAL]));
-	else
-		db_bind_null(stmt, 29);
+	db_bind_blob(stmt, 29, chan->shutdown_scriptpubkey[LOCAL],
+		     tal_count(chan->shutdown_scriptpubkey[LOCAL]));
 	db_bind_u64(stmt, 30, chan->dbid);
 	db_exec_prepared_v2(take(stmt));
 
