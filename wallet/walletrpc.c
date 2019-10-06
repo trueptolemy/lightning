@@ -266,11 +266,12 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 				}
 			}
 		} else {
+			const jsmntok_t *satoshitok = NULL;
 			if (!param(cmd, buffer, params,
 				   p_opt("outputs", param_array, &outputstok),
 				   p_opt("destination", param_bitcoin_address,
 					 &destination),
-				   p_opt("satoshi", param_wtx, (*utx)->wtx),
+				   p_opt("satoshi", param_tok, &satoshitok),
 				   p_opt("feerate", param_feerate, &feerate_per_kw),
 				   p_opt_def("minconf", param_number, &minconf, 1),
 				   p_opt("utxos", param_utxos, &chosen_utxos),
@@ -280,9 +281,14 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 				return command_param_failed();
 
 			if (!outputstok) {
-				if (!destination || amount_eq((*utx)->wtx->amount, AMOUNT_SAT(-1ULL)))
+				if (!destination || !satoshitok)
 					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
 							    "Need set 'outputs' field. ");
+
+				result = param_wtx(cmd, "satoshi", buffer,
+						   satoshitok, (*utx)->wtx);
+				if (result)
+					return result;
 			}
 		}
 	} else {
