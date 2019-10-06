@@ -157,7 +157,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 					      struct unreleased_tx **utx,
 					      bool for_withdraw)
 {
-	u32 *feerate_per_kw;
+	u32 *feerate_per_kw = NULL;
 	struct command_result *result;
 	u32 *minconf, maxheight;
 	struct pubkey *changekey;
