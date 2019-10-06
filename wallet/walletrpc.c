@@ -183,7 +183,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 				   p_opt("utxos", param_utxos, &chosen_utxos),
 				   NULL))
 				return command_param_failed();
-		} else if (params->type == JSMN_ARRAY)
+		} else if (params->type == JSMN_ARRAY) {
 			const jsmntok_t *firsttok, *secondtok, *thirdtok, *fourthtok;
 
 			if (!param(cmd, buffer, params,
