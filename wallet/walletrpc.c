@@ -158,11 +158,11 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 					      bool for_withdraw)
 {
 	u32 *feerate_per_kw;
-	struct command_result *res;
+	struct command_result *result;
 	u32 *minconf, maxheight;
 	struct pubkey *changekey;
 	struct bitcoin_tx_output **outputs;
-	const jsmntok_t *outputstok, *t;
+	const jsmntok_t *outputstok = NULL, *t;
 	const u8 *destination = NULL;
 	size_t out_len, i;
 	const struct utxo **chosen_utxos;
@@ -174,29 +174,116 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	if (!for_withdraw) {
 		/* From v0.7.3, the new style for *txprepare* use array of outputs
 		 * to replace original 'destination' and 'satoshi' parameters.*/
-		if (!param(cmd, buffer, params,
-			   p_req("outputs", param_array, &outputstok),
-			   p_opt("feerate", param_feerate, &feerate_per_kw),
-			   p_opt_def("minconf", param_number, &minconf, 1),
-			   p_opt("utxos", param_utxos, &chosen_utxos),
-			   NULL)) {
-
-			/* For generating help, give new-style. */
-			if (!params || !deprecated_apis)
-				return command_param_failed();
-
-			/* For the old style:
-			 * *txprepare* 'destination' 'satoshi' ['feerate'] ['minconf'] */
+		/* For generating help, give new-style. */
+		if (!params || !deprecated_apis) {
 			if (!param(cmd, buffer, params,
-				   p_req("destination", param_bitcoin_address,
-					 &destination),
-				   p_req("satoshi", param_wtx, (*utx)->wtx),
+				   p_req("outputs", param_array, &outputstok),
 				   p_opt("feerate", param_feerate, &feerate_per_kw),
 				   p_opt_def("minconf", param_number, &minconf, 1),
+				   p_opt("utxos", param_utxos, &chosen_utxos),
+				   NULL))
+				return command_param_failed();
+		} else if (params->type == JSMN_ARRAY)
+			const jsmntok_t *firsttok, *secondtok, *thirdtok, *fourthtok;
+
+			if (!param(cmd, buffer, params,
+				   p_req("outputs_or_destination", param_tok, &firsttok),
+				   p_opt("feerate_or_sat", param_tok, &secondtok),
+				   p_opt("minconf_or_feerate", param_tok, &thirdtok),
+				   p_opt("utxos_or_minconf", param_tok, &fourthtok),
+				   NULL))
+				return command_param_failed();
+
+			if (firsttok->type == JSMN_ARRAY) {
+				/* New style:
+				 * *txprepare* 'outputs' ['feerate'] ['minconf'] ['utxos'] */
+
+				/* outputs (required) */
+				outputstok = firsttok;
+
+				/* feerate (optional) */
+				if (secondtok) {
+					result = param_feerate(cmd, "feerate", buffer,
+							       secondtok, &feerate_per_kw);
+					if (result)
+						return result;
+				}
+
+				/* minconf (optional) */
+				if (thirdtok) {
+					result = param_number(cmd, "minconf", buffer,
+							      thirdtok, &minconf);
+					if (result)
+						return result;
+				} else {
+					minconf = tal(cmd, u32);
+					*minconf = 1;
+				}
+
+				/* utxos (optional) */
+				if (fourthtok) {
+					result = param_utxos(cmd, "utxos", buffer,
+							     fourthtok, &chosen_utxos);
+					if (result)
+						return result;
+				}
+			} else {
+				/* Old style:
+				 * *txprepare* 'destination' 'satoshi' ['feerate'] ['minconf'] */
+
+				/* destination (required) */
+				result = param_bitcoin_address(cmd, "destination", buffer,
+							       firsttok, &destination);
+				if (result)
+					return result;
+
+				/* satoshi (required) */
+				if (!secondtok)
+					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+							    "Need set 'satoshi' field. ");
+				result = param_wtx(cmd, "satoshi", buffer,
+						   secondtok, (*utx)->wtx);
+				if (result)
+					return result;
+
+				/* feerate (optional) */
+				if (thirddtok) {
+					result = param_feerate(cmd, "feerate", buffer,
+							       thirdtok, &feerate_per_kw);
+					if (result)
+						return result;
+				}
+
+				/* minconf (optional) */
+				if (fourthtok) {
+					result = param_number(cmd, "minconf", buffer,
+							      fourthtok, &minconf);
+					if (result)
+						return result;
+				} else {
+					minconf = tal(cmd, u32);
+					*minconf = 1;
+				}
+			}
+		} else {
+			if (!param(cmd, buffer, params,
+				   p_opt("outputs", param_array, &outputstok),
+				   p_opt("destination", param_bitcoin_address,
+					 &destination),
+				   p_opt("satoshi", param_wtx, (*utx)->wtx),
+				   p_opt("feerate", param_feerate, &feerate_per_kw),
+				   p_opt_def("minconf", param_number, &minconf, 1),
+				   p_opt("utxos", param_utxos, &chosen_utxos),
 				   NULL))
 				/* If the parameters mixed the new style and the old style,
 				 * fail it. */
-				return command_param_failed();
+				return command_param_failed()
+
+			if (!outputstok) {
+				if (!destination || amount_eq((*utx)->wtx->amount, AMOUNT_SAT(-1ULL)))
+					return command_fail(cmd, JSONRPC2_INVALID_PARAMS,
+							    "Need set 'outputs' field. ");
+			}
 		}
 	} else {
 		/* *withdraw* command still use 'destination' and 'satoshi' as parameters. */
@@ -212,10 +299,10 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 	}
 
 	if (!feerate_per_kw) {
-		res = param_feerate_estimate(cmd, &feerate_per_kw,
+		result = param_feerate_estimate(cmd, &feerate_per_kw,
 					     FEERATE_NORMAL);
-		if (res)
-			return res;
+		if (result)
+			return result;
 	}
 
 	maxheight = minconf_to_maxheight(*minconf, cmd->ld);
