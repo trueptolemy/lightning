@@ -247,7 +247,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 					return result;
 
 				/* feerate (optional) */
-				if (thirddtok) {
+				if (thirdtok) {
 					result = param_feerate(cmd, "feerate", buffer,
 							       thirdtok, &feerate_per_kw);
 					if (result)
@@ -277,7 +277,7 @@ static struct command_result *json_prepare_tx(struct command *cmd,
 				   NULL))
 				/* If the parameters mixed the new style and the old style,
 				 * fail it. */
-				return command_param_failed()
+				return command_param_failed();
 
 			if (!outputstok) {
 				if (!destination || amount_eq((*utx)->wtx->amount, AMOUNT_SAT(-1ULL)))
@@ -389,15 +389,15 @@ create_tx:
 	(*utx)->outputs = tal_steal(*utx, outputs);
 
 	if (chosen_utxos)
-		res = wtx_from_utxos((*utx)->wtx, *feerate_per_kw,
+		result = wtx_from_utxos((*utx)->wtx, *feerate_per_kw,
 				     out_len, maxheight,
 				     chosen_utxos);
 	else
-		res = wtx_select_utxos((*utx)->wtx, *feerate_per_kw,
+		result = wtx_select_utxos((*utx)->wtx, *feerate_per_kw,
 				       out_len, maxheight);
 
-	if (res)
-		return res;
+	if (result)
+		return result;
 
 	/* Because of the max limit of AMOUNT_SAT(-1ULL),
 	 * `(*utx)->wtx->all_funds` won't change in `wtx_select_utxos()` */
