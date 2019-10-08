@@ -1381,7 +1381,6 @@ static struct command_result *json_close(struct command *cmd,
 								    "Destination address is not on network %s",
 								    get_chainparams(cmd->ld)->network_name);
 				}
-			}
 		} else
 			old_style = false;
 
