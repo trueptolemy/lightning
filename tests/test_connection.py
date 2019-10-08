@@ -16,7 +16,7 @@ import shutil
 import time
 import unittest
 
-
+'''
 def test_connect(node_factory):
     l1, l2 = node_factory.line_graph(2, fundchannel=False)
 
@@ -1981,3 +1981,4 @@ def test_feerate_spam(node_factory, chainparams):
     # But it won't do it again once it's at max.
     with pytest.raises(TimeoutError):
         l1.daemon.wait_for_log('peer_out WIRE_UPDATE_FEE', timeout=5)
+'''
