@@ -317,7 +317,7 @@ def test_closing_specified_destination(node_factory, bitcoind):
     addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
     l1.rpc.close(chan12, destination=addr)
     l1.rpc.call('close', {'id': chan13, 'destination': addr})
-    l1.rpc.call('close', [chan14, addr])
+    l1.rpc.call('close', [chan14, None, addr])
 
     l1.daemon.wait_for_logs([' to CHANNELD_SHUTTING_DOWN'] * 3)
     l2.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
