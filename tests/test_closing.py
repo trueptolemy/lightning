@@ -306,9 +306,9 @@ def test_closing_specified_destination(node_factory, bitcoind):
     l1.rpc.connect(l4.info['id'], 'localhost', l4.port)
 
     amount = 10**6
-
+    local_addr = l1.rpc.newaddr()['bech32']
     for i in range(3):
-        l1.bitcoin.rpc.sendtoaddress(addr, (amount + 1000000) / 10**8)
+        l1.bitcoin.rpc.sendtoaddress(local_addr, (amount + 1000000) / 10**8)
 
     bitcoin.generate_block(1)
     wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 10)
