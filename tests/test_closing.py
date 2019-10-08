@@ -311,7 +311,7 @@ def test_closing_specified_destination(node_factory, bitcoind):
         bitcoind.rpc.sendtoaddress(local_addr, (amount + 1000000) / 10**8)
 
     bitcoind.generate_block(1)
-    wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 10)
+    wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 3)
 
     l1.rpc.call("fundchannel", [l2.info['id'], 10**6, None, True])
     l1.rpc.call("fundchannel", [l3.info['id'], 10**6, True])
