@@ -313,8 +313,8 @@ def test_closing_specified_destination(node_factory, bitcoind):
     bitcoind.generate_block(1)
     wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 3)
 
-    l1.rpc.call("fundchannel", [l2.info['id'], 10**6, None, True])
-    l1.rpc.call("fundchannel", [l3.info['id'], 10**6, True])
+    l1.rpc.call("fundchannel_start", [l2.info['id'], 10**6, None, True])
+    l1.rpc.call("fundchannel_start", [l3.info['id'], 10**6, True])
 
     chan13 = l1.fund_channel(l3, 10**6)
     chan14 = l1.fund_channel(l4, 10**6)
