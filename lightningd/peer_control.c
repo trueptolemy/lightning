@@ -1364,7 +1364,7 @@ static struct command_result *json_close(struct command *cmd,
 
 				if (json_to_number(buffer, secondtok, tmp_timeout)) {
 					old_style = true;
-					timeout = teal(cmd, tmp_timeout);
+					timeout = tal_steal(cmd, tmp_timeout);
 				} else {
 					old_style = false;
 					enum address_parse_result res;
