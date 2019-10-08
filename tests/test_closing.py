@@ -401,11 +401,11 @@ def test_deprecated_closing_compat(node_factory, bitcoind):
     # Array(new-style)
     l1.rpc.call('check', ['close', nodeid, 10])
     l1.rpc.call('check', ['close', nodeid, 0, addr])
-    l1.rpc.call('check', ['close', nodeid, addr])
+    l1.rpc.call('check', ['close', nodeid, None, addr])
     # Array(old-style)
     l1.rpc.call('check', ['close', nodeid, True, 10])
     l1.rpc.call('check', ['close', nodeid, False])
-    l1.rpc.call('check', ['close', nodeid, 10])
+    l1.rpc.call('check', ['close', nodeid, None, 10])
     # Not new-style nor old-style
     with pytest.raises(RpcError, match=r'Expected unilerataltimeout to be a number'):
         l1.rpc.call('check', ['close', nodeid, "Given enough eyeballs, all bugs are shallow."])
