@@ -299,54 +299,83 @@ def test_closing_negotiation_reconnect(node_factory, bitcoind):
 
 @unittest.skipIf(not DEVELOPER, "needs DEVELOPER=1")
 def test_closing_specified_destination(node_factory, bitcoind):
-    l1, l2 = node_factory.line_graph(2)
-    chan = l1.get_channel_scid(l2)
+    l1, l2, l3, l4 = node_factory.get_nodes(4)
 
-    l1.pay(l2, 200000000)
+    l1.rpc.connect(l2.info['id'], 'localhost', l2.port)
+    l1.rpc.connect(l3.info['id'], 'localhost', l3.port)
+    l1.rpc.connect(l4.info['id'], 'localhost', l4.port)
+
+    chan12 = l1.fund_channel(l2, 10**6)
+    chan13 = l1.fund_channel(l3, 10**6)
+    chan14 = l1.fund_channel(l4, 10**6)
+
+    l1.pay(l2, 100000000)
+    l1.pay(l3, 100000000)
+    l1.pay(l4, 100000000)
 
     bitcoind.generate_block(5)
     addr = 'bcrt1qeyyk6sl5pr49ycpqyckvmttus5ttj25pd0zpvg'
-    l1.rpc.close(chan, destination=addr)
+    l1.rpc.close(chan12, destination=addr)
+    l1.rpc.call('close', {'id': chan13, 'destination': addr})
+    l1.rpc.call('close', [chan14, addr])
 
-    l1.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
+    l1.daemon.wait_for_logs([' to CHANNELD_SHUTTING_DOWN'] * 3)
     l2.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
+    l3.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
+    l4.daemon.wait_for_log(' to CHANNELD_SHUTTING_DOWN')
 
-    l1.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
+    l1.daemon.wait_for_logs([' to CLOSINGD_SIGEXCHANGE'] *3)
     l2.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
+    l3.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
+    l4.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
 
     # And should put closing into mempool.
-    l1.daemon.wait_for_log('sendrawtx exit 0')
+    l1.daemon.wait_for_logs(['sendrawtx exit 0'] * 3)
     l2.daemon.wait_for_log('sendrawtx exit 0')
+    l3.daemon.wait_for_log('sendrawtx exit 0')
+    l4.daemon.wait_for_log('sendrawtx exit 0')
 
     # Both nodes should have disabled the channel in their view
     wait_for(lambda: len(l1.getactivechannels()) == 0)
     wait_for(lambda: len(l2.getactivechannels()) == 0)
+    wait_for(lambda: len(l3.getactivechannels()) == 0)
+    wait_for(lambda: len(l4.getactivechannels()) == 0)
 
-    assert bitcoind.rpc.getmempoolinfo()['size'] == 1
+    assert bitcoind.rpc.getmempoolinfo()['size'] == 3
 
     # Now grab the close transaction
-    closetxid = only_one(bitcoind.rpc.getrawmempool(False))
+    closetxid = bitcoind.rpc.getrawmempool(False)
+    assert len(closetxid) == 3
 
-    billboard = only_one(l1.rpc.listpeers(l2.info['id'])['peers'][0]['channels'])['status']
-    assert billboard == [
-        'CLOSINGD_SIGEXCHANGE:We agreed on a closing fee of 5430 satoshi for tx:{}'.format(closetxid),
-    ]
+    idindex = {}
+    for n in [l2, l3, l4]:
+        billboard = only_one(l1.rpc.listpeers(n.info['id'])['peers'][0]['channels'])['status']
+        idindex[n] = [i for i in range(3) if billboard == [
+            'CLOSINGD_SIGEXCHANGE:We agreed on a closing fee of 5430 satoshi for tx:{}'.format(closetxid[i]),
+        ]]
+        assert idindex[n] in range(3)
+
     bitcoind.generate_block(1)
-    sync_blockheight(bitcoind, [l1, l2])
+    sync_blockheight(bitcoind, [l1, l2, l3, l4])
 
     # l1 can't spent the output to addr.
-    assert not l1.daemon.is_in_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
+    assert not l1.daemon.is_in_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid[0])
+    assert not l1.daemon.is_in_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid[1])
+    assert not l1.daemon.is_in_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid[2])
     # Check the txid has at least 1 confirmation
-    l2.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid)
+    l2.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid[idindex[l2]])
+    l3.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid[idindex[l3]])
+    l4.daemon.wait_for_log(r'Owning output.* \(SEGWIT\).* txid %s.* CONFIRMED' % closetxid[idindex[l4]])
 
-    # Make sure both nodes have grabbed their close tx funds
-    outputs = l2.rpc.listfunds()['outputs']
-    assert closetxid in set([o['txid'] for o in outputs])
-    output_num2 = [o for o in outputs if o['txid'] == closetxid][0]['output']
-    output_num1 = 0 if output_num2 == 1 else 1
-
-    assert addr == bitcoind.rpc.gettxout(closetxid, output_num1)['scriptPubKey']['addresses'][0]
-    assert 1 == bitcoind.rpc.gettxout(closetxid, output_num1)['confirmations']
+    for n in [l2, l3, l4]:
+        # Make sure both nodes have grabbed their close tx funds
+        outputs = n.rpc.listfunds()['outputs']
+        assert closetxid in set([o['txid'] for o in outputs])
+        output_num2 = [o for o in outputs if o['txid'] == closetxid[idindex[n]]][0]['output']
+        output_num1 = 0 if output_num2 == 1 else 1
+        # Check the another address is addr
+        assert addr == bitcoind.rpc.gettxout(closetxid[idindex[n]], output_num1)['scriptPubKey']['addresses'][0]
+        assert 1 == bitcoind.rpc.gettxout(closetxid[idindex[n]], output_num1)['confirmations']
 
 
 @unittest.skipIf(not COMPAT, "needs COMPAT=1")
