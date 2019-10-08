@@ -339,9 +339,9 @@ def test_closing_specified_destination(node_factory, bitcoind):
     idindex = {}
     for n in [l2, l3, l4]:
         billboard = only_one(l1.rpc.listpeers(n.info['id'])['peers'][0]['channels'])['status']
-        idindex[n] = i for i in range(3) if billboard == [
+        idindex[n] = [i for i in range(3) if billboard == [
             'CLOSINGD_SIGEXCHANGE:We agreed on a closing fee of 5430 satoshi for tx:{}'.format(closetxid[i]),
-        ]
+        ]][0]
         assert idindex[n] in range(3)
 
     bitcoind.generate_block(1)
