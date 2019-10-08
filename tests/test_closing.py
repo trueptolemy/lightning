@@ -320,15 +320,9 @@ def test_closing_specified_destination(node_factory, bitcoind):
     l1.rpc.call('close', [chan14, None, addr])
 
     l1.daemon.wait_for_logs([' to CLOSINGD_SIGEXCHANGE'] * 3)
-    l2.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
-    l3.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
-    l4.daemon.wait_for_log(' to CLOSINGD_SIGEXCHANGE')
 
     # And should put closing into mempool.
     l1.daemon.wait_for_logs(['sendrawtx exit 0'] * 3)
-    l2.daemon.wait_for_log('sendrawtx exit 0')
-    l3.daemon.wait_for_log('sendrawtx exit 0')
-    l4.daemon.wait_for_log('sendrawtx exit 0')
 
     # Both nodes should have disabled the channel in their view
     wait_for(lambda: len(l1.getactivechannels()) == 0)
