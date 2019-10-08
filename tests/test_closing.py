@@ -305,7 +305,17 @@ def test_closing_specified_destination(node_factory, bitcoind):
     l1.rpc.connect(l3.info['id'], 'localhost', l3.port)
     l1.rpc.connect(l4.info['id'], 'localhost', l4.port)
 
-    chan12 = l1.fund_channel(l2, 10**6)
+    amount = 10**6
+
+    for i in range(3):
+        l1.bitcoin.rpc.sendtoaddress(addr, (amount + 1000000) / 10**8)
+
+    bitcoin.generate_block(1)
+    wait_for(lambda: len(l1.rpc.listfunds()['outputs']) == 10)
+
+    l1.rpc.call("fundchannel", [l2.info['id'], 10**6, None, True])
+    l1.rpc.call("fundchannel", [l3.info['id'], 10**6, True])
+
     chan13 = l1.fund_channel(l3, 10**6)
     chan14 = l1.fund_channel(l4, 10**6)
 
