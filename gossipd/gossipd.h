@@ -64,6 +64,11 @@ struct daemon {
 
 	/* Channels we have an announce for, but aren't deep enough. */
 	struct short_channel_id *deferred_txouts;
+
+	/* The limit on the number of pings received per 30s. */
+	/* If this's not NULL, the number of pings we send will also be
+	 * limited to 1 per 30s. */
+	u32 *ping_limit;
 };
 
 /*~ How gossipy do we ask a peer to be? */
@@ -79,10 +84,14 @@ enum gossip_level {
 };
 
 struct ping_pong_timer {
+	/* The number of ping we received in 30s.
+	 * The timer begins when we received the first ping. */
 	u32 ping_count;
-	/**/
+
+	/* Only accept one "ping" per 30 seconds */
 	struct oneshot *ping_timer;
-	/* Only send */
+
+	/* Only send a new "ping" 30 seconds after receiving last "pong" */
 	struct oneshot *pong_timer;
 };
 
@@ -133,8 +142,8 @@ struct peer {
 	/* The daemon_conn used to queue messages to/from the peer. */
 	struct daemon_conn *dc;
 
-	/* Gossiped only accept one "ping" per 30 seconds */
-	struct oneshot *ping_timer;
+	/* Monitor the number of pings we receive and send in 30s. */
+	struct ping_pong_timer *ping_pong_timer;
 };
 
 /* Search for a peer. */

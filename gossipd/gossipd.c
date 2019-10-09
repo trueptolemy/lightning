@@ -365,12 +365,15 @@ static void ping_flooding_prevent_timeout(struct peer *peer)
 	peer->ping_timer = NULL;
 }
 
+static bool 
+
 /*~ For simplicity, all pings and pongs are forwarded to us here in gossipd. */
 static u8 *handle_ping(struct peer *peer, const u8 *ping)
 {
 	u8 *pong;
 
-	if(peer->ping_timer) {
+	/* New wire? */
+	if(peer->ping_pong_timer->pong_timer) {
 		destroy_peer(peer);
 		return;
 	}
@@ -661,7 +664,10 @@ static struct io_plan *connectd_new_peer(struct io_conn *conn,
 	peer->query_channel_blocks = NULL;
 	peer->query_channel_range_cb = NULL;
 	peer->num_pings_outstanding = 0;
-	peer->ping_timer = NULL;
+	if (peer->daemon->ping_limit)
+		peer->ping_pong_timer = new_ping_pong_timer(peer);
+	else
+		peer->ping_pong_timer = NULL;
 	peer->gossip_level = peer_gossip_level(daemon,
 					       peer->gossip_queries_feature);
 
@@ -961,7 +967,8 @@ static struct io_plan *gossip_init(struct io_conn *conn,
 				     &daemon->announcable,
 				     &dev_gossip_time,
 				     &dev_fast_gossip,
-				     &dev_fast_gossip_prune)) {
+				     &dev_fast_gossip_prune,
+				     &daemon->ping_limit)) {
 		master_badmsg(WIRE_GOSSIPCTL_INIT, msg);
 	}
 
