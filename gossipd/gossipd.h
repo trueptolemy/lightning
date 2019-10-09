@@ -80,9 +80,11 @@ enum gossip_level {
 
 struct ping_pong_timer {
 	u32 ping_count;
+	/**/
 	struct oneshot *ping_timer;
+	/* Only send */
 	struct oneshot *pong_timer;
-}
+};
 
 /* This represents each peer we're gossiping with */
 struct peer {
