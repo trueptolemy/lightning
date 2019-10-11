@@ -406,7 +406,7 @@ static u8 *handle_node_announce(struct peer *peer, const u8 *msg)
  * of their peers, however if the gossip is about us, we should spray it to
  * everyone whether they've set the filter or not, otherwise it might not
  * propagate! */
-void push_gossip(struct daemon *daemon, const u8 *msg)
+void push_gossip(struct daemon *daemon, const u8 *msg TAKES)
 {
 	struct peer *peer;
 
@@ -438,7 +438,7 @@ static bool handle_local_channel_announcement(struct daemon *daemon,
 		return false;
 	}
 
-	push_gossip(daemon, cannouncement);
+	push_gossip(daemon, take(cannouncement));
 	return true;
 }
 
