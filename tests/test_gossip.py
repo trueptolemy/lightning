@@ -20,7 +20,7 @@ with open('config.vars') as configfile:
 
 DEVELOPER = os.getenv("DEVELOPER", config['DEVELOPER']) == "1"
 
-
+'''
 @unittest.skipIf(not DEVELOPER, "needs --dev-fast-gossip-prune")
 def test_gossip_pruning(node_factory, bitcoind):
     """ Create channel and see it being updated in time before pruning
@@ -1015,7 +1015,7 @@ def test_gossip_store_load_amount_truncated(node_factory):
         l1.rpc.call('dev-compact-gossip-store')
         l1.restart()
         l1.rpc.call('dev-compact-gossip-store')
-
+'''
 
 @unittest.skipIf(not DEVELOPER, "Needs fast gossip propagation")
 def test_node_reannounce(node_factory, bitcoind):
@@ -1069,7 +1069,7 @@ def test_node_reannounce(node_factory, bitcoind):
     # Won't have queued up another one, either.
     assert not l1.daemon.is_in_log('node_announcement: delaying')
 
-
+'''
 def test_gossipwith(node_factory):
     l1, l2 = node_factory.line_graph(2, wait_for_announce=True)
 
@@ -1589,3 +1589,4 @@ def test_gossip_ratelimit(node_factory):
                    check=True, timeout=TIMEOUT)
 
     wait_for(lambda: [c['fee_per_millionth'] for c in l3.rpc.listchannels()['channels']] == [1006])
+'''

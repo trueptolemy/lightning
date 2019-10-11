@@ -15,7 +15,7 @@ import string
 import time
 import unittest
 
-
+'''
 def test_pay(node_factory):
     l1, l2 = node_factory.line_graph(2)
 
@@ -2331,3 +2331,4 @@ def test_error_returns_blockheight(node_factory, bitcoind):
     #    * [`u32`:`height`]
     assert (err.value.error['data']['raw_message']
             == '400f{:016x}{:08x}'.format(100, bitcoind.rpc.getblockcount()))
+'''
