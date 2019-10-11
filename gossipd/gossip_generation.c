@@ -208,7 +208,7 @@ static void update_own_node_announcement(struct daemon *daemon)
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
 			      "rejected own node announcement: %s",
 			      tal_hex(tmpctx, err));
-	push_gossip(daemon, take(nannounce));
+	push_gossip(daemon, nannounce);
 }
 
 /* Should we announce our own node?  Called at strategic places. */
@@ -400,7 +400,7 @@ static void update_local_channel(struct local_cupdate *lc /* frees! */)
 			      tal_hex(tmpctx, msg));
 
 	if (is_chan_public(chan))
-		push_gossip(daemon, take(update));
+		push_gossip(daemon, update);
 
 	tal_free(lc);
 }
