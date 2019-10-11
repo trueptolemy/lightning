@@ -411,7 +411,7 @@ void push_gossip(struct daemon *daemon, const u8 *msg)
 	struct peer *peer;
 
 	list_for_each(&daemon->peers, peer, list)
-		queue_peer_msg(peer, take(msg));
+		queue_peer_msg(peer, msg);
 }
 
 static bool handle_local_channel_announcement(struct daemon *daemon,
